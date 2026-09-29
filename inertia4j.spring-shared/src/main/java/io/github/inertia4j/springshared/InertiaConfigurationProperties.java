@@ -3,7 +3,6 @@ package io.github.inertia4j.springshared;
 import io.github.inertia4j.core.PropertyNaming;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.bind.ConstructorBinding;
-import org.springframework.context.annotation.Configuration;
 
 /**
  * Configuration properties for Inertia4j integration with Spring Boot.
@@ -17,7 +16,6 @@ import org.springframework.context.annotation.Configuration;
  * inertia.property-naming=snake
  * </pre>
  */
-@Configuration
 @ConfigurationProperties(prefix = "inertia")
 public class InertiaConfigurationProperties {
     private static final String defaultTemplatePath = "templates/app.html";
@@ -48,7 +46,7 @@ public class InertiaConfigurationProperties {
      */
     @ConstructorBinding
     public InertiaConfigurationProperties(String templatePath, boolean encryptHistory, PropertyNaming propertyNaming) {
-        this.templatePath = templatePath;
+        this.templatePath = templatePath == null ? defaultTemplatePath : templatePath;
         this.encryptHistory = encryptHistory;
         this.propertyNaming = propertyNaming == null ? PropertyNaming.Camel : propertyNaming;
     }
@@ -90,5 +88,19 @@ public class InertiaConfigurationProperties {
      */
     public PropertyNaming getPropertyNaming() {
         return propertyNaming;
+    }
+
+    /**
+     * @return classpath path of the HTML template.
+     */
+    public String getTemplatePath() {
+        return templatePath;
+    }
+
+    /**
+     * @return whether browser history state is encrypted by default.
+     */
+    public boolean isEncryptHistory() {
+        return encryptHistory;
     }
 }

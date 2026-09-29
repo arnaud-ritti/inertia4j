@@ -6,6 +6,7 @@ import io.github.inertia4j.spi.PageObjectSerializer;
 import io.github.inertia4j.spi.TemplateRenderer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 
 /**
@@ -14,6 +15,7 @@ import org.springframework.context.annotation.Bean;
  * {@link PageObjectSerializer}, and {@link TemplateRenderer} if they are not
  * already present in the application context.
  */
+@EnableConfigurationProperties(InertiaConfigurationProperties.class)
 public abstract class AbstractInertiaSpringAutoconfiguration {
     @Autowired
     protected InertiaConfigurationProperties properties;
