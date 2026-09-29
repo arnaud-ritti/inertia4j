@@ -6,6 +6,13 @@ version = "2.0.0"
 
 dependencies {
     api(project(":inertia4j.spring-shared"))
+
+    compileOnly("org.springframework.boot:spring-boot-actuator")
+    compileOnly("org.springframework.boot:spring-boot-actuator-autoconfigure")
+    compileOnly("com.fasterxml.jackson.core:jackson-annotations")
+
+    testImplementation("org.springframework.boot:spring-boot-actuator")
+    testImplementation("org.springframework.boot:spring-boot-actuator-autoconfigure")
 }
 
 dependencyManagement {

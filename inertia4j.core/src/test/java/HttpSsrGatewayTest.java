@@ -8,11 +8,14 @@ import io.github.inertia4j.spi.RenderedPage;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
@@ -29,6 +32,7 @@ public class HttpSsrGatewayTest {
     private HttpServer server;
     private final AtomicReference<String> receivedBody = new AtomicReference<>();
     private final AtomicReference<String> receivedPath = new AtomicReference<>();
+    private final AtomicReference<String> receivedUpgrade = new AtomicReference<>();
     private int status = 200;
     private String responseBody = "";
 
@@ -37,6 +41,7 @@ public class HttpSsrGatewayTest {
         server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
         server.createContext("/", exchange -> {
             receivedPath.set(exchange.getRequestURI().getPath());
+            receivedUpgrade.set(exchange.getRequestHeaders().getFirst("Upgrade"));
             receivedBody.set(new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8));
             byte[] body = responseBody.getBytes(StandardCharsets.UTF_8);
             exchange.sendResponseHeaders(status, body.length == 0 ? -1 : body.length);
@@ -130,6 +135,17 @@ public class HttpSsrGatewayTest {
 
         assertNull(page);
         assertEquals(SsrErrorType.CONNECTION, failures.get(0).getType());
+        assertFalse(failures.get(0).getError().equals("null"), failures.get(0).getError());
+        assertFalse(failures.get(0).getError().isEmpty());
+    }
+
+    @Test
+    void render_sendsHttp11RequestsWithoutH2cUpgrade() {
+        responseBody = "{\"head\":[],\"body\":\"<div></div>\"}";
+
+        gateway().build().render(pageObject, "{}");
+
+        assertNull(receivedUpgrade.get());
     }
 
     @Test
@@ -188,6 +204,78 @@ public class HttpSsrGatewayTest {
     @Test
     void isHealthy_whenUrlIsMalformed_returnsFalse() {
         assertFalse(HttpSsrGateway.builder().url("http://bad host").build().isHealthy());
+    }
+
+    @Test
+    void render_whenBundleIsMissing_fallsBackWithoutRequestOrFailure(@TempDir Path tempDir) {
+        List<SsrRenderFailure> failures = new ArrayList<>();
+        HttpSsrGateway gateway = gateway().bundle(tempDir.resolve("ssr.mjs")).onFailure(failures::add).build();
+
+        assertNull(gateway.render(pageObject, "{}"));
+        assertNull(receivedPath.get());
+        assertTrue(failures.isEmpty());
+        assertFalse(gateway.bundleExists());
+    }
+
+    @Test
+    void render_whenBundleExists_rendersWithServer(@TempDir Path tempDir) throws IOException {
+        responseBody = "{\"head\":[],\"body\":\"<div></div>\"}";
+        Path bundle = Files.writeString(tempDir.resolve("ssr.mjs"), "");
+
+        RenderedPage page = gateway().bundle(bundle).build().render(pageObject, "{}");
+
+        assertEquals("<div></div>", page.getBody());
+        assertEquals("/render", receivedPath.get());
+    }
+
+    @Test
+    void render_whenBundleIsMissingAndViteDevServerRuns_rendersWithViteDevServer(@TempDir Path tempDir) {
+        responseBody = "{\"head\":[],\"body\":\"<div></div>\"}";
+
+        RenderedPage page = gateway().bundle(tempDir.resolve("ssr.mjs")).hotUrl(serverUrl()).build()
+            .render(pageObject, "{}");
+
+        assertEquals("<div></div>", page.getBody());
+        assertEquals("/__inertia_ssr", receivedPath.get());
+    }
+
+    @Test
+    void render_whenBundleCheckIsDisabled_rendersWithServer(@TempDir Path tempDir) {
+        responseBody = "{\"head\":[],\"body\":\"<div></div>\"}";
+
+        gateway().bundle(tempDir.resolve("ssr.mjs")).ensureBundleExists(false).build().render(pageObject, "{}");
+
+        assertEquals("/render", receivedPath.get());
+    }
+
+    @Test
+    void bundleExists_withoutBundle_returnsTrue() {
+        assertTrue(gateway().build().bundleExists());
+    }
+
+    @Test
+    void getHotUrl_followsHotUrlProvider() {
+        AtomicReference<String> hotUrl = new AtomicReference<>("http://localhost:5173");
+        HttpSsrGateway gateway = gateway().hotUrl(hotUrl::get).build();
+
+        assertEquals("http://localhost:5173", gateway.getHotUrl());
+
+        hotUrl.set(null);
+        assertNull(gateway.getHotUrl());
+        assertEquals(serverUrl(), gateway.getUrl());
+    }
+
+    @Test
+    void shutdown_requestsShutdownEndpoint() {
+        assertTrue(gateway().build().shutdown());
+        assertEquals("/shutdown", receivedPath.get());
+    }
+
+    @Test
+    void shutdown_whenServerIsNotRunning_returnsFalse() {
+        server.stop(0);
+
+        assertFalse(gateway().build().shutdown());
     }
 
     private HttpSsrGateway.Builder gateway() {

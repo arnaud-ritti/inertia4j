@@ -436,8 +436,11 @@ inertia.ssr.url=http://127.0.0.1:13714
 # Optional
 inertia.ssr.timeout=2s
 inertia.ssr.except=admin/*
-inertia.ssr.hot-url=http://localhost:5173
+inertia.ssr.hot-url=http://127.0.0.1:5173
 inertia.ssr.throw-on-error=false
+inertia.ssr.bundle=ssr/ssr.js
+inertia.ssr.ensure-bundle-exists=true
+inertia.ssr.check-on-startup=false
 ```
 
 When rendering fails, the page falls back to client-side rendering and an `SsrRenderFailed` application event is
@@ -446,6 +449,30 @@ file exists), pages are rendered through it instead, at `hot-url` when set. `exc
 application, with or without leading slash. See the [Vite guide](../docs/vite.md#server-side-rendering) for the
 frontend setup and the
 [official docs](https://inertiajs.com/docs/v3/advanced/server-side-rendering).
+
+When `bundle` is set and the file is missing, pages are rendered client-side without contacting the SSR server and
+without failure event, unless the Vite dev server renders them or `ensure-bundle-exists` is `false`.
+`check-on-startup` logs a warning when the SSR server is unreachable on startup. With Spring Boot Actuator on the
+classpath, the `inertiaSsr` health indicator reports whether the SSR server answers on `/health` (disable it with
+`management.health.inertia-ssr.enabled=false`). While the Vite dev server renders pages, the startup check is
+skipped and the health indicator reports up.
+
+The application can also run the SSR server itself, like `php artisan inertia:start-ssr`: it starts
+`<runtime> [arguments...] <bundle>` when the context starts, waits until the server is healthy, and stops it through
+its `/shutdown` endpoint (destroying the process if it does not exit) when the context closes. The server is not
+started while the Vite dev server runs, nor when one already answers at `inertia.ssr.url`.
+
+```text
+inertia.ssr.bundle=ssr/ssr.js
+inertia.ssr.process.enabled=true
+# Optional
+inertia.ssr.process.runtime=node
+inertia.ssr.process.arguments=--enable-source-maps
+inertia.ssr.process.working-directory=.
+inertia.ssr.process.environment.NODE_ENV=production
+inertia.ssr.process.startup-timeout=10s
+inertia.ssr.process.shutdown-timeout=5s
+```
 
 ### Testing
 

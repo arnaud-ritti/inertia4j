@@ -8,12 +8,14 @@ import io.github.inertia4j.core.PropertyNaming
 import io.github.inertia4j.core.PropsExtractor
 import io.github.inertia4j.core.SimpleTemplateRenderer
 import io.github.inertia4j.core.SsrRenderFailure
+import io.github.inertia4j.core.SsrServerProcess
 import io.github.inertia4j.core.vite.Vite
 import io.github.inertia4j.spi.JsonReader
 import io.github.inertia4j.spi.PageObjectSerializer
 import io.github.inertia4j.spi.SsrGateway
 import io.github.inertia4j.spi.TemplateRenderer
 import io.ktor.server.application.*
+import java.nio.file.Path
 import java.time.Duration
 import java.util.function.Supplier
 
@@ -200,6 +202,34 @@ class InertiaKtorConfiguration {
          */
         var gateway: SsrGateway? = null
 
+        /**
+         * Path of the server-side rendering bundle, such as `build/ssr/ssr.mjs`. While it is missing, pages are
+         * rendered client-side without contacting the server, unless the Vite dev server renders them.
+         */
+        var bundle: Path? = null
+
+        /**
+         * Whether pages are rendered client-side while the configured [bundle] is missing. Defaults to `true`.
+         */
+        var ensureBundleExists: Boolean = true
+
+        /**
+         * Whether a warning is logged when the application starts and the server-side rendering server is
+         * unreachable. Skipped while the Vite dev server renders pages. Defaults to `false`.
+         */
+        var checkOnStartup: Boolean = false
+
+        internal val processConfiguration = SsrProcessConfiguration()
+
+        /**
+         * Configures the server-side rendering server run by the application.
+         *
+         * @param configure changes applied to the default [SsrProcessConfiguration].
+         */
+        fun process(configure: SsrProcessConfiguration.() -> Unit) {
+            processConfiguration.configure()
+        }
+
         internal var failureListener: ((SsrRenderFailure) -> Unit)? = null
 
         /**
@@ -216,6 +246,25 @@ class InertiaKtorConfiguration {
 
             if (gateway != null) return gateway
 
+            return httpGatewayBuilder(vite)
+                .throwOnError(throwOnError)
+                .onFailure(failureListener ?: defaultFailureListener)
+                .build()
+        }
+
+        internal fun serverGateway(renderGateway: SsrGateway, vite: Vite): HttpSsrGateway {
+            return renderGateway as? HttpSsrGateway ?: httpGatewayBuilder(vite).build()
+        }
+
+        internal fun serverProcessOrNull(serverGateway: HttpSsrGateway): SsrServerProcess? {
+            if (!processConfiguration.enabled) return null
+
+            val bundlePath = checkNotNull(bundle) { "ssr.process.enabled requires ssr.bundle to be set" }
+
+            return processConfiguration.toProcess(serverGateway, bundlePath)
+        }
+
+        private fun httpGatewayBuilder(vite: Vite): HttpSsrGateway.Builder {
             val builder = HttpSsrGateway.builder()
             val fixedHotUrl = hotUrl
 
@@ -228,9 +277,62 @@ class InertiaKtorConfiguration {
             return builder
                 .url(url)
                 .timeout(timeout)
-                .throwOnError(throwOnError)
                 .jsonReader(jsonReader ?: DefaultJsonReader())
-                .onFailure(failureListener ?: defaultFailureListener)
+                .bundle(bundle)
+                .ensureBundleExists(ensureBundleExists)
+        }
+    }
+
+    /**
+     * Settings of the server-side rendering server run by the application: started with
+     * `<runtime> [arguments...] <bundle>` when the application starts, unless the Vite dev server renders pages, and
+     * stopped when it stops.
+     */
+    class SsrProcessConfiguration {
+        /**
+         * Whether the application runs the server-side rendering bundle. Requires [SsrConfiguration.bundle].
+         * Defaults to `false`.
+         */
+        var enabled: Boolean = false
+
+        /**
+         * Program running the bundle, such as `node`, `bun` or an absolute path. Defaults to `node`.
+         */
+        var runtime: String = SsrServerProcess.DefaultRuntime
+
+        /**
+         * Arguments passed to the runtime before the bundle.
+         */
+        var arguments: List<String> = emptyList()
+
+        /**
+         * Working directory of the process, the one of the application when `null`.
+         */
+        var workingDirectory: Path? = null
+
+        /**
+         * Environment variables added to the environment of the process.
+         */
+        var environment: Map<String, String> = emptyMap()
+
+        /**
+         * Time given to the server to become healthy when the application starts.
+         */
+        var startupTimeout: Duration = SsrServerProcess.DefaultStartupTimeout
+
+        /**
+         * Time given to the server to exit after a shutdown request before its process is destroyed.
+         */
+        var shutdownTimeout: Duration = SsrServerProcess.DefaultShutdownTimeout
+
+        internal fun toProcess(gateway: HttpSsrGateway, bundle: Path): SsrServerProcess {
+            return SsrServerProcess.builder(gateway, bundle)
+                .runtime(runtime)
+                .arguments(arguments)
+                .workingDirectory(workingDirectory)
+                .environment(environment)
+                .startupTimeout(startupTimeout)
+                .shutdownTimeout(shutdownTimeout)
                 .build()
         }
     }

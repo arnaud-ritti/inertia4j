@@ -170,6 +170,23 @@ install(Inertia) {
 }
 ```
 
+Outside the adapters, `HttpSsrGateway.builder()` configures the server URL, the Vite dev server URL provider, the
+timeout, the SSR `bundle` (renders are skipped while it is missing, unless `ensureBundleExists(false)`), and the
+failure listener. The gateway also exposes `isHealthy()` (`GET /health`) and `shutdown()` (`/shutdown`), the building
+blocks of the Laravel `inertia:check-ssr` and `inertia:stop-ssr` commands. `SsrServerProcess` runs the bundle as a
+child process, as the adapters do when the process is enabled:
+
+```java
+HttpSsrGateway gateway = HttpSsrGateway.builder().bundle(Path.of("ssr/ssr.js")).build();
+SsrServerProcess process = SsrServerProcess.builder(gateway, Path.of("ssr/ssr.js"))
+    .runtime("node")
+    .startupTimeout(Duration.ofSeconds(10))
+    .build();
+
+process.start(); // waits until /health answers; does nothing if a server already runs
+process.stop();  // /shutdown, then destroys the process if it is still running
+```
+
 ## Core renderer
 
 Adapters delegate to the framework-agnostic `InertiaRenderer`, configured with `InertiaRenderer.builder(...)`: root

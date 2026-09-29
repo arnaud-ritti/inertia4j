@@ -434,8 +434,11 @@ install(Inertia) {
         // Optional
         timeout = Duration.ofSeconds(2)
         except = listOf("admin/*")
-        hotUrl = "http://localhost:5173"
+        hotUrl = "http://127.0.0.1:5173"
         onFailure { failure -> log.warn(failure.toString()) }
+        bundle = Path.of("ssr/ssr.js")
+        ensureBundleExists = true
+        checkOnStartup = false
     }
 }
 ```
@@ -445,6 +448,33 @@ is set. Render requests time out after 10 seconds unless `timeout` is set. While
 file exists), pages are rendered through it instead, at `hotUrl` when set. `except` paths are matched with or without
 leading slash. See the [Vite guide](../docs/vite.md#server-side-rendering) for the frontend setup and the
 [official docs](https://inertiajs.com/docs/v3/advanced/server-side-rendering).
+
+When `bundle` is set and the file is missing, pages are rendered client-side without contacting the SSR server and
+without calling `onFailure`, unless the Vite dev server renders them or `ensureBundleExists` is `false`.
+`checkOnStartup` logs a warning when the SSR server is unreachable as the application starts, unless the Vite dev
+server renders pages.
+
+The application can also run the SSR server itself, like `php artisan inertia:start-ssr`: it starts
+`<runtime> [arguments...] <bundle>` on `ApplicationStarted`, waits until the server is healthy, and stops it through
+its `/shutdown` endpoint (destroying the process if it does not exit) on `ApplicationStopping`. The server is not
+started while the Vite dev server runs, nor when one already answers at `url`.
+
+```kotlin
+ssr {
+    enabled = true
+    bundle = Path.of("ssr/ssr.js")
+    process {
+        enabled = true
+        // Optional
+        runtime = "node"
+        arguments = listOf("--enable-source-maps")
+        workingDirectory = Path.of(".")
+        environment = mapOf("NODE_ENV" to "production")
+        startupTimeout = Duration.ofSeconds(10)
+        shutdownTimeout = Duration.ofSeconds(5)
+    }
+}
+```
 
 ### Testing
 
