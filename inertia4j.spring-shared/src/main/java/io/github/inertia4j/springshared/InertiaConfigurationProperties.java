@@ -6,6 +6,8 @@ import io.github.inertia4j.core.PropertyNaming;
 import io.github.inertia4j.core.vite.ViteConfig;
 import org.jspecify.annotations.Nullable;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.web.context.request.RequestAttributes;
+import org.springframework.web.context.request.RequestContextHolder;
 
 import java.nio.file.Path;
 import java.time.Duration;
@@ -270,6 +272,18 @@ public class InertiaConfigurationProperties {
          */
         private Duration cacheMaxAge = Duration.ofDays(365);
 
+        /**
+         * Manifest field holding the Subresource Integrity hash of chunks, written by `vite-plugin-manifest-sri`;
+         * empty or `false` to render tags without `integrity` attribute.
+         */
+        private String integrityKey = ViteConfig.DefaultIntegrityKey;
+
+        /**
+         * Request attribute holding the Content Security Policy nonce added to the rendered Vite tags; empty to
+         * render tags without nonce.
+         */
+        private String nonceAttribute = "cspNonce";
+
         public boolean isEnabled() {
             return enabled;
         }
@@ -318,13 +332,48 @@ public class InertiaConfigurationProperties {
             this.cacheMaxAge = cacheMaxAge;
         }
 
+        public String getIntegrityKey() {
+            return integrityKey;
+        }
+
+        public void setIntegrityKey(String integrityKey) {
+            this.integrityKey = integrityKey;
+        }
+
+        public String getNonceAttribute() {
+            return nonceAttribute;
+        }
+
+        public void setNonceAttribute(String nonceAttribute) {
+            this.nonceAttribute = nonceAttribute;
+        }
+
         ViteConfig toViteConfig() {
-            return ViteConfig.builder()
+            ViteConfig.Builder builder = ViteConfig.builder()
                 .hotFile(Path.of(hotFile))
                 .buildDirectory(buildDirectory)
                 .manifestPath(manifest)
                 .publicPath(publicPath)
-                .build();
+                .integrityKey("false".equalsIgnoreCase(integrityKey.trim()) ? null : integrityKey);
+
+            if (!nonceAttribute.isBlank()) {
+                String attribute = nonceAttribute.trim();
+                builder.nonceProvider(() -> currentRequestAttribute(attribute));
+            }
+
+            return builder.build();
+        }
+
+        private static @Nullable String currentRequestAttribute(String name) {
+            RequestAttributes attributes = RequestContextHolder.getRequestAttributes();
+
+            if (attributes == null) {
+                return null;
+            }
+
+            Object value = attributes.getAttribute(name, RequestAttributes.SCOPE_REQUEST);
+
+            return value == null ? null : value.toString();
         }
     }
 }

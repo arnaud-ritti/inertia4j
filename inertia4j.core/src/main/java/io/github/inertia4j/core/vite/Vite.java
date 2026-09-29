@@ -80,6 +80,21 @@ public class Vite {
     }
 
     /**
+     * @return the Content Security Policy nonce of the current render, read from the configured nonce provider, or
+     * {@code null} when there is none.
+     * @see ViteConfig.Builder#nonceProvider(java.util.function.Supplier)
+     */
+    public @Nullable String cspNonce() {
+        String nonce = config.getNonceProvider().get();
+
+        if (nonce == null || nonce.isEmpty()) {
+            return null;
+        }
+
+        return nonce;
+    }
+
+    /**
      * @return the React Fast Refresh preamble in dev mode, an empty string otherwise.
      */
     public String reactRefreshTag() {
@@ -90,7 +105,7 @@ public class Vite {
         }
 
         return String.join("\n",
-            "<script type=\"module\">",
+            "<script type=\"module\"" + nonceAttribute(cspNonce()) + ">",
             "  import RefreshRuntime from '" + url + "/@react-refresh'",
             "  RefreshRuntime.injectIntoGlobalHook(window)",
             "  window.$RefreshReg$ = () => {}",
@@ -119,12 +134,38 @@ public class Vite {
         }
 
         String devServerUrl = readDevServerUrl();
+        String nonce = cspNonce();
 
         if (devServerUrl != null) {
-            return devTags(devServerUrl, normalisedEntries);
+            return devTags(devServerUrl, normalisedEntries, nonce);
         }
 
-        return productionTags(normalisedEntries);
+        return productionTags(normalisedEntries, nonce);
+    }
+
+    /**
+     * Resolves the URL of a file processed by Vite, such as an image imported by the frontend, to reference it from
+     * the server-rendered HTML.
+     *
+     * @param path path of the source file relative to the Vite root, such as {@code src/images/logo.png}; a leading
+     *             slash is ignored.
+     * @return the URL of the file on the dev server in dev mode, otherwise the public URL of its built file.
+     * @throws ViteException if the manifest is missing or invalid, or has no chunk for the file.
+     */
+    public String asset(String path) {
+        String normalisedPath = stripLeadingSlash(path);
+        String devServerUrl = readDevServerUrl();
+
+        if (devServerUrl != null) {
+            return devServerUrl + "/" + normalisedPath;
+        }
+
+        ManifestChunk chunk = manifest().manifest.chunk(normalisedPath).orElseThrow(() -> new ViteException(
+            "Unable to locate '" + normalisedPath + "' in the Vite manifest. Only files processed by Vite are listed: "
+                + "import the file from the frontend, or add it to build.rollupOptions.input."
+        ));
+
+        return url(chunk.getFile());
     }
 
     /**
@@ -145,7 +186,7 @@ public class Vite {
         }
     }
 
-    private String productionTags(List<String> entries) {
+    private String productionTags(List<String> entries, @Nullable String nonce) {
         ViteManifest manifest = manifest().manifest;
         Set<String> stylesheets = new LinkedHashSet<>();
         Set<String> entryScripts = new LinkedHashSet<>();
@@ -160,9 +201,9 @@ public class Vite {
             collectStylesheets(manifest, entry, chunk, stylesheets, new HashSet<>());
 
             if (isStylesheet(chunk.getFile())) {
-                stylesheets.add(url(chunk.getFile()));
+                stylesheets.add(chunk.getFile());
             } else {
-                entryScripts.add(url(chunk.getFile()));
+                entryScripts.add(chunk.getFile());
             }
 
             collectPreloads(manifest, entry, chunk, preloads, new HashSet<>());
@@ -171,11 +212,23 @@ public class Vite {
         preloads.removeAll(entryScripts);
 
         List<String> tags = new ArrayList<>();
-        stylesheets.forEach(href -> tags.add(stylesheetTag(href)));
-        entryScripts.forEach(src -> tags.add(scriptTag(src)));
-        preloads.forEach(href -> tags.add("<link rel=\"modulepreload\" href=\"" + escapeHtml(href) + "\">"));
+        stylesheets.forEach(file -> tags.add(stylesheetTag(url(file), nonce, integrity(manifest, file))));
+        entryScripts.forEach(file -> tags.add(scriptTag(url(file), nonce, integrity(manifest, file))));
+        preloads.forEach(file -> tags.add(preloadTag(url(file), nonce, integrity(manifest, file))));
 
         return String.join("\n", tags);
+    }
+
+    private @Nullable String integrity(ViteManifest manifest, String file) {
+        String integrityKey = config.getIntegrityKey();
+
+        if (integrityKey == null) {
+            return null;
+        }
+
+        return manifest.chunkByFile(file)
+            .map(chunk -> chunk.getAttribute(integrityKey))
+            .orElse(null);
     }
 
     private void collectStylesheets(
@@ -189,7 +242,7 @@ public class Vite {
             return;
         }
 
-        chunk.getCss().forEach(file -> stylesheets.add(url(file)));
+        stylesheets.addAll(chunk.getCss());
 
         for (String importKey : chunk.getImports()) {
             collectStylesheets(manifest, importKey, importedChunk(manifest, key, importKey), stylesheets, visited);
@@ -209,7 +262,7 @@ public class Vite {
             }
 
             ManifestChunk imported = importedChunk(manifest, key, importKey);
-            preloads.add(url(imported.getFile()));
+            preloads.add(imported.getFile());
             collectPreloads(manifest, importKey, imported, preloads, visited);
         }
     }
@@ -283,12 +336,35 @@ public class Vite {
         return stylesheetPattern.matcher(path).find();
     }
 
-    private static String scriptTag(String src) {
-        return "<script type=\"module\" src=\"" + escapeHtml(src) + "\"></script>";
+    private static String scriptTag(String src, @Nullable String nonce, @Nullable String integrity) {
+        return "<script type=\"module\" src=\"" + escapeHtml(src) + "\"" + nonceAttribute(nonce)
+            + integrityAttributes(integrity) + "></script>";
     }
 
-    private static String stylesheetTag(String href) {
-        return "<link rel=\"stylesheet\" href=\"" + escapeHtml(href) + "\">";
+    private static String stylesheetTag(String href, @Nullable String nonce, @Nullable String integrity) {
+        return "<link rel=\"stylesheet\" href=\"" + escapeHtml(href) + "\"" + nonceAttribute(nonce)
+            + integrityAttributes(integrity) + ">";
+    }
+
+    private static String preloadTag(String href, @Nullable String nonce, @Nullable String integrity) {
+        return "<link rel=\"modulepreload\" href=\"" + escapeHtml(href) + "\"" + nonceAttribute(nonce)
+            + integrityAttributes(integrity) + ">";
+    }
+
+    private static String nonceAttribute(@Nullable String nonce) {
+        if (nonce == null) {
+            return "";
+        }
+
+        return " nonce=\"" + escapeHtml(nonce) + "\"";
+    }
+
+    private static String integrityAttributes(@Nullable String integrity) {
+        if (integrity == null || integrity.isEmpty()) {
+            return "";
+        }
+
+        return " integrity=\"" + escapeHtml(integrity) + "\" crossorigin=\"anonymous\"";
     }
 
     private static String stripLeadingSlash(String path) {
@@ -325,13 +401,13 @@ public class Vite {
         }
     }
 
-    private String devTags(String devServerUrl, List<String> entries) {
+    private String devTags(String devServerUrl, List<String> entries, @Nullable String nonce) {
         List<String> tags = new ArrayList<>();
-        tags.add(scriptTag(devServerUrl + "/@vite/client"));
+        tags.add(scriptTag(devServerUrl + "/@vite/client", nonce, null));
 
         for (String entry : entries) {
             String url = devServerUrl + "/" + entry;
-            tags.add(isStylesheet(entry) ? stylesheetTag(url) : scriptTag(url));
+            tags.add(isStylesheet(entry) ? stylesheetTag(url, nonce, null) : scriptTag(url, nonce, null));
         }
 
         return String.join("\n", tags);

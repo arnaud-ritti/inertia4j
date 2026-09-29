@@ -6,12 +6,14 @@ import io.github.inertia4j.core.InertiaRenderer
 import io.github.inertia4j.core.InertiaRenderingOptions
 import io.github.inertia4j.core.Precognition as CorePrecognition
 import io.github.inertia4j.core.PropsExtractor
+import io.github.inertia4j.core.vite.Vite
 import io.ktor.http.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import io.ktor.util.*
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.asContextElement
 import kotlinx.coroutines.withContext
 import java.util.function.Supplier
 
@@ -36,6 +38,12 @@ class InertiaKtorRenderer internal constructor(
      */
     inner class Renderer internal constructor(private val call: RoutingCall) {
         private val request = InertiaKtorHttpRequest(call)
+
+        /**
+         * The Vite integration of the plugin, e.g. to resolve the URL of a file processed by Vite with
+         * [Vite.asset].
+         */
+        val vite: Vite get() = configuration.viteInstance
 
         /**
          * Renders an Inertia response for the specified component and props.
@@ -71,8 +79,11 @@ class InertiaKtorRenderer internal constructor(
                 .status(status.value)
                 .build()
 
+            val viteConfiguration = configuration.viteConfiguration
+            val nonce = viteConfiguration.currentNonce.asContextElement(viteConfiguration.nonce?.invoke(call))
+
             // Server-side rendering and lazy props block, so they must not run on an engine event-loop thread.
-            val response = withContext(Dispatchers.IO) { coreRenderer.render(request, options) }
+            val response = withContext(Dispatchers.IO + nonce) { coreRenderer.render(request, options) }
 
             if (!InertiaRenderer.isVersionConflict(response) && stored.isNotEmpty()) {
                 flashStore.write(call, emptyMap())

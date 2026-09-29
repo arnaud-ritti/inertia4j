@@ -5,6 +5,7 @@ import org.jspecify.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -24,6 +25,7 @@ public class ManifestChunk {
     private final List<String> dynamicImports;
     private final List<String> css;
     private final List<String> assets;
+    private final Map<String, String> attributes;
 
     ManifestChunk(String key, Map<?, ?> json) {
         Object file = json.get("file");
@@ -41,6 +43,7 @@ public class ManifestChunk {
         this.dynamicImports = stringList(key, json, "dynamicImports");
         this.css = stringList(key, json, "css");
         this.assets = stringList(key, json, "assets");
+        this.attributes = stringAttributes(json);
     }
 
     /**
@@ -104,6 +107,36 @@ public class ManifestChunk {
      */
     public List<String> getAssets() {
         return assets;
+    }
+
+    /**
+     * @return Subresource Integrity hash of the output file, such as {@code sha384-...}, as written in the
+     * {@code integrity} field by {@code vite-plugin-manifest-sri}, if any.
+     */
+    public @Nullable String getIntegrity() {
+        return getAttribute(ViteConfig.DefaultIntegrityKey);
+    }
+
+    /**
+     * Reads a string field of the chunk, including fields added by Vite plugins.
+     *
+     * @param field name of the field, such as {@code integrity}.
+     * @return the value of the field, or {@code null} when the chunk has no such string field.
+     */
+    public @Nullable String getAttribute(String field) {
+        return attributes.get(field);
+    }
+
+    private static Map<String, String> stringAttributes(Map<?, ?> json) {
+        Map<String, String> attributes = new LinkedHashMap<>();
+
+        json.forEach((field, value) -> {
+            if (value instanceof String) {
+                attributes.put((String) field, (String) value);
+            }
+        });
+
+        return Collections.unmodifiableMap(attributes);
     }
 
     private static @Nullable String optionalString(String key, Map<?, ?> json, String field) {

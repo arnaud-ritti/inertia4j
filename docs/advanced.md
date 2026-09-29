@@ -73,6 +73,22 @@ rendered by the SSR server replacing both), to insert in the `<body>`, and `Rend
 rendered by the SSR server for the `<head>`, empty otherwise. Insert both as-is: the page object JSON is already escaped
 so it cannot close the script element early.
 
+In the default renderer, content placed between `@InertiaHead@` and `@EndInertiaHead@` is a fallback rendered when
+`RenderedPage.getHead()` is empty, i.e. when the page is not server-side rendered, as with the `<Head>` slot fallback
+of the [client adapters](https://inertiajs.com/docs/v3/the-basics/title-and-meta):
+
+```html
+<head>
+  @InertiaHead@
+    <title>My app</title>
+    <meta name="description" content="Default description">
+  @EndInertiaHead@
+</head>
+```
+
+Placeholders are located in the template before any substitution, so SSR or page object content containing
+placeholder text is never replaced.
+
 When implementing a new Template Renderer, just make sure that it complies with the
 [Inertia protocol specification](https://inertiajs.com/docs/v3/core-concepts/the-protocol).
 
@@ -132,7 +148,9 @@ public class MyCustomTemplateRenderer implements TemplateRenderer {
 }
 ```
 
-`vite.version()` returns the matching Inertia asset version.
+`vite.version()` returns the matching Inertia asset version, `vite.asset(path)` the URL of a file processed by Vite,
+and `vite.cspNonce()` the [CSP nonce](vite.md#content-security-policy-nonce) of the current request, which `tags()` and
+`reactRefreshTag()` already add to their tags.
 
 ## Server-side rendering
 

@@ -34,6 +34,29 @@ class ViteManifestTest {
     }
 
     @Test
+    void parse_whenChunkHasPluginFields_exposesStringFieldsAsAttributes() {
+        ManifestChunk chunk = ViteManifest.parse(
+            "{\"main.js\":{\"file\":\"assets/main.js\",\"integrity\":\"sha384-abc\",\"sri\":\"sha512-def\","
+                + "\"size\":12}}"
+        ).chunk("main.js").orElseThrow();
+
+        assertEquals("sha384-abc", chunk.getIntegrity());
+        assertEquals("sha512-def", chunk.getAttribute("sri"));
+        assertNull(chunk.getAttribute("size"));
+        assertNull(chunk.getAttribute("missing"));
+    }
+
+    @Test
+    void chunkByFile_returnsChunkWithThatOutput() {
+        ViteManifest manifest = ViteManifest.parse(
+            "{\"main.js\":{\"file\":\"assets/main.js\"},\"main.css\":{\"file\":\"assets/main.css\",\"src\":\"main.css\"}}"
+        );
+
+        assertEquals("main.css", manifest.chunkByFile("assets/main.css").orElseThrow().getSrc());
+        assertTrue(manifest.chunkByFile("assets/other.css").isEmpty());
+    }
+
+    @Test
     void parse_whenOptionalFieldsAreAbsent_usesDefaults() {
         ManifestChunk chunk = ViteManifest.parse("{\"_shared.js\":{\"file\":\"assets/shared.js\"}}")
             .chunk("_shared.js")
@@ -47,6 +70,7 @@ class ViteManifestTest {
         assertEquals(List.of(), chunk.getDynamicImports());
         assertEquals(List.of(), chunk.getCss());
         assertEquals(List.of(), chunk.getAssets());
+        assertNull(chunk.getIntegrity());
     }
 
     @Test

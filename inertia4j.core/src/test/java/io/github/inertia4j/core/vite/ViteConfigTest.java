@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 import java.nio.file.Path;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class ViteConfigTest {
@@ -16,6 +17,19 @@ class ViteConfigTest {
         assertEquals("static/build", config.getBuildDirectory());
         assertEquals("static/build/.vite/manifest.json", config.getManifestPath());
         assertEquals("/build/", config.getPublicPath());
+        assertEquals("integrity", config.getIntegrityKey());
+        assertNull(config.getNonceProvider().get());
+    }
+
+    @Test
+    void build_whenIntegrityKeyIsBlankOrNull_disablesIntegrity() {
+        assertNull(ViteConfig.builder().integrityKey(" ").build().getIntegrityKey());
+        assertNull(ViteConfig.builder().integrityKey(null).build().getIntegrityKey());
+    }
+
+    @Test
+    void build_whenIntegrityKeyIsSet_usesIt() {
+        assertEquals("sri", ViteConfig.builder().integrityKey("sri").build().getIntegrityKey());
     }
 
     @Test

@@ -1,0 +1,19 @@
+{
+  "src/main.tsx": {
+    "file": "assets/main-BRBmoGS9.js",
+    "name": "main",
+    "src": "src/main.tsx",
+    "isEntry": true,
+    "integrity": "sha384-main",
+    "css": ["assets/main-5UjPuW-k.css"]
+  },
+  "style.css": {
+    "file": "assets/main-5UjPuW-k.css",
+    "src": "style.css",
+    "integrity": "sha384-css"
+  },
+  "src/images/logo.png": {
+    "file": "assets/logo-Dx8Kp2Qa.png",
+    "src": "src/images/logo.png"
+  }
+}

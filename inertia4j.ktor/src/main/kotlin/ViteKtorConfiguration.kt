@@ -1,7 +1,9 @@
 package io.github.inertia4j.ktor
 
 import io.github.inertia4j.core.vite.ViteConfig
+import io.ktor.server.application.*
 import java.nio.file.Path
+import java.util.function.Supplier
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.days
 
@@ -40,10 +42,26 @@ class ViteKtorConfiguration {
      */
     var cacheMaxAge: Duration = 365.days
 
+    /**
+     * Manifest field holding the Subresource Integrity hash of chunks, written by `vite-plugin-manifest-sri`.
+     * Defaults to `integrity`; `null` renders tags without `integrity` attribute.
+     */
+    var integrityKey: String? = ViteConfig.DefaultIntegrityKey
+
+    /**
+     * Resolves the Content Security Policy nonce of a call, added to the Vite tags of its page. Defaults to `null`,
+     * rendering tags without nonce.
+     */
+    var nonce: ((ApplicationCall) -> String?)? = null
+
+    internal val currentNonce = ThreadLocal<String?>()
+
     internal fun toViteConfig(): ViteConfig = ViteConfig.builder()
         .hotFile(hotFile)
         .buildDirectory(buildDirectory)
         .manifestPath(manifestPath)
         .publicPath(publicPath)
+        .integrityKey(integrityKey)
+        .nonceProvider(Supplier { currentNonce.get() })
         .build()
 }

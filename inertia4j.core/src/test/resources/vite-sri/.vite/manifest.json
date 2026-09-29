@@ -1,0 +1,27 @@
+{
+  "_shared-B7PI925R.js": {
+    "file": "assets/shared-B7PI925R.js",
+    "name": "shared",
+    "integrity": "sha384-shared",
+    "sri": "sha512-shared"
+  },
+  "src/main.ts": {
+    "file": "assets/main-BRBmoGS9.js",
+    "name": "main",
+    "src": "src/main.ts",
+    "isEntry": true,
+    "integrity": "sha384-main\"<",
+    "sri": "sha512-main",
+    "imports": ["_shared-B7PI925R.js"],
+    "css": ["assets/main-5UjPuW-k.css"]
+  },
+  "main.css": {
+    "file": "assets/main-5UjPuW-k.css",
+    "src": "main.css",
+    "integrity": "sha384-css"
+  },
+  "src/images/logo.png": {
+    "file": "assets/logo-Dx8Kp2Qa.png",
+    "src": "src/images/logo.png"
+  }
+}

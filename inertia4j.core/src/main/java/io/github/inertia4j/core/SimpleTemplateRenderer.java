@@ -10,6 +10,7 @@ import org.jspecify.annotations.Nullable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -18,8 +19,14 @@ import java.util.regex.Pattern;
  * It loads a template file from the classpath and replaces the {@value #HeadPlaceholder} placeholder with the
  * server-side rendered head elements, and the {@value #AppPlaceholder} placeholder with the page object script
  * element and the application root element.
- * When given a {@link Vite} instance, it also replaces the <code>@Vite(entry, ...)@</code> and
- * <code>@ViteReactRefresh@</code> placeholders with the tags loading the frontend.
+ * <p>
+ * Content placed between {@value #HeadPlaceholder} and {@value #EndHeadPlaceholder}, such as a default
+ * {@code <title>}, is a fallback rendered only when the page has no server-side rendered head elements, and replaced
+ * by them otherwise.
+ * <p>
+ * When given a {@link Vite} instance, it also replaces the <code>@Vite(entry, ...)@</code>,
+ * <code>@ViteReactRefresh@</code> and <code>@ViteAsset(path)@</code> placeholders with the tags loading the frontend
+ * and the URL of a file processed by Vite.
  */
 @NullMarked
 public class SimpleTemplateRenderer implements TemplateRenderer {
@@ -33,8 +40,15 @@ public class SimpleTemplateRenderer implements TemplateRenderer {
      */
     public static final String AppPlaceholder = "@InertiaApp@";
 
+    /**
+     * Closes the fallback content opened by {@value #HeadPlaceholder}, rendered when the page has no server-side
+     * rendered head elements.
+     */
+    public static final String EndHeadPlaceholder = "@EndInertiaHead@";
+
     private static final String LegacyPlaceholder = "@PageObject@";
     private static final Pattern vitePattern = Pattern.compile("@Vite\\(([^)]*)\\)@");
+    private static final Pattern viteAssetPattern = Pattern.compile("@ViteAsset\\(([^)]*)\\)@");
     private static final String reactRefreshPlaceholder = "@ViteReactRefresh@";
 
     private final String template;
@@ -70,41 +84,78 @@ public class SimpleTemplateRenderer implements TemplateRenderer {
             );
         }
 
+        validateHeadFallback(templatePath, template);
+
         this.template = template;
         this.vite = vite;
+    }
+
+    private static void validateHeadFallback(String templatePath, String template) {
+        int endIndex = template.indexOf(EndHeadPlaceholder);
+
+        if (endIndex < 0) {
+            return;
+        }
+
+        int headIndex = template.indexOf(HeadPlaceholder);
+
+        if (headIndex < 0 || headIndex > endIndex) {
+            throw new TemplateRenderingException(
+                "Template " + templatePath + " uses " + EndHeadPlaceholder + " without a preceding " + HeadPlaceholder
+            );
+        }
+
+        int appIndex = template.indexOf(AppPlaceholder);
+
+        if (appIndex > headIndex && appIndex < endIndex) {
+            throw new TemplateRenderingException(
+                "Template " + templatePath + " has " + AppPlaceholder + " inside the " + HeadPlaceholder + " fallback"
+            );
+        }
     }
 
     /**
      * {@inheritDoc}
      * <p>
      * This implementation first replaces the Vite placeholders, then the first occurrence of each Inertia
-     * placeholder in the loaded template.
+     * placeholder in the loaded template. The head placeholder, with its fallback content when closed by
+     * {@value #EndHeadPlaceholder}, is replaced by the server-side rendered head elements, or by the fallback content
+     * when there are none.
      */
     @Override
     public String render(RenderedPage page) {
         String template = renderVitePlaceholders();
-        int headIndex = template.indexOf(HeadPlaceholder);
-        int appIndex = template.indexOf(AppPlaceholder);
+        Region head = headRegion(template);
+        Region app = Region.of(template, AppPlaceholder);
+        String headContent = page.getHead().isEmpty() ? head.fallback(template) : page.getHead();
 
         // Placeholders are located before substituting, and the later one is replaced first, so content inserted
         // for one placeholder is never scanned for the other.
-        if (headIndex > appIndex) {
-            String withHead = replaceAt(template, headIndex, HeadPlaceholder, page.getHead());
+        if (head.start > app.start) {
+            String withHead = head.replace(template, headContent);
 
-            return replaceAt(withHead, appIndex, AppPlaceholder, page.getBody());
+            return app.replace(withHead, page.getBody());
         }
 
-        String withBody = replaceAt(template, appIndex, AppPlaceholder, page.getBody());
+        String withBody = app.replace(template, page.getBody());
 
-        return replaceAt(withBody, headIndex, HeadPlaceholder, page.getHead());
+        return head.replace(withBody, headContent);
     }
 
-    private static String replaceAt(String template, int index, String placeholder, String replacement) {
-        if (index < 0) {
-            return template;
+    private static Region headRegion(String template) {
+        Region head = Region.of(template, HeadPlaceholder);
+
+        if (head.start < 0) {
+            return head;
         }
 
-        return template.substring(0, index) + replacement + template.substring(index + placeholder.length());
+        int endIndex = template.indexOf(EndHeadPlaceholder, head.end);
+
+        if (endIndex < 0) {
+            return head;
+        }
+
+        return new Region(head.start, endIndex + EndHeadPlaceholder.length(), head.end, endIndex);
     }
 
     private String renderVitePlaceholders() {
@@ -113,17 +164,40 @@ public class SimpleTemplateRenderer implements TemplateRenderer {
         }
 
         String withReactRefresh = template.replace(reactRefreshPlaceholder, vite.reactRefreshTag());
-        Matcher matcher = vitePattern.matcher(withReactRefresh);
+        String withAssets = replaceAll(
+            withReactRefresh,
+            viteAssetPattern,
+            matcher -> vite.asset(parseAsset(matcher.group(), matcher.group(1)))
+        );
+
+        return replaceAll(
+            withAssets,
+            vitePattern,
+            matcher -> vite.tags(parseEntries(matcher.group(), matcher.group(1)))
+        );
+    }
+
+    private static String replaceAll(String template, Pattern pattern, Function<Matcher, String> replacement) {
+        Matcher matcher = pattern.matcher(template);
         StringBuilder rendered = new StringBuilder();
 
         while (matcher.find()) {
-            String tags = vite.tags(parseEntries(matcher.group(), matcher.group(1)));
-            matcher.appendReplacement(rendered, Matcher.quoteReplacement(tags));
+            matcher.appendReplacement(rendered, Matcher.quoteReplacement(replacement.apply(matcher)));
         }
 
         matcher.appendTail(rendered);
 
         return rendered.toString();
+    }
+
+    private static String parseAsset(String placeholder, String path) {
+        String trimmed = path.trim();
+
+        if (trimmed.isEmpty()) {
+            throw new ViteException("Empty path in Vite asset placeholder " + placeholder);
+        }
+
+        return trimmed;
     }
 
     private static String[] parseEntries(String placeholder, String entryList) {
@@ -157,6 +231,51 @@ public class SimpleTemplateRenderer implements TemplateRenderer {
             return new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
         } catch (IOException e) {
             throw new TemplateRenderingException(path, e);
+        }
+    }
+
+    /**
+     * Location of a placeholder in a template, including its fallback content, if any.
+     */
+    private static class Region {
+        private final int start;
+        private final int end;
+        private final int fallbackStart;
+        private final int fallbackEnd;
+
+        private Region(int start, int end, int fallbackStart, int fallbackEnd) {
+            this.start = start;
+            this.end = end;
+            this.fallbackStart = fallbackStart;
+            this.fallbackEnd = fallbackEnd;
+        }
+
+        private static Region of(String template, String placeholder) {
+            int start = template.indexOf(placeholder);
+
+            if (start < 0) {
+                return new Region(-1, -1, -1, -1);
+            }
+
+            int end = start + placeholder.length();
+
+            return new Region(start, end, end, end);
+        }
+
+        private String fallback(String template) {
+            if (start < 0) {
+                return "";
+            }
+
+            return template.substring(fallbackStart, fallbackEnd);
+        }
+
+        private String replace(String template, String replacement) {
+            if (start < 0) {
+                return template;
+            }
+
+            return template.substring(0, start) + replacement + template.substring(end);
         }
     }
 }
