@@ -1,6 +1,8 @@
 package io.github.inertia4j.ktor
 
 import io.github.inertia4j.core.DefaultPageObjectSerializer
+import io.github.inertia4j.core.PropertyNaming
+import io.github.inertia4j.core.PropsExtractor
 import io.github.inertia4j.core.SimpleTemplateRenderer
 import io.github.inertia4j.spi.PageObjectSerializer
 import io.github.inertia4j.spi.TemplateRenderer
@@ -42,6 +44,12 @@ class InertiaKtorConfiguration {
      */
     var encryptHistory: Boolean = false
 
+    /**
+     * Naming strategy used when converting typed props objects. Defaults to [PropertyNaming.Camel].
+     * Must match the naming strategy of the configured [serializer].
+     */
+    var propertyNaming: PropertyNaming = PropertyNaming.Camel
+
     internal val sharedDataProviders = mutableListOf<suspend (ApplicationCall) -> Map<String, Any?>>()
 
     /**
@@ -54,6 +62,16 @@ class InertiaKtorConfiguration {
      */
     fun share(provider: suspend (ApplicationCall) -> Map<String, Any?>) {
         sharedDataProviders.add(provider)
+    }
+
+    /**
+     * Registers a provider of a typed object, typically a class annotated with
+     * [io.github.inertia4j.annotations.InertiaShared], whose properties are shared with every Inertia response.
+     *
+     * @param provider returns the shared props object for the given call.
+     */
+    fun shareTyped(provider: suspend (ApplicationCall) -> Any) {
+        sharedDataProviders.add { call -> PropsExtractor.toMap(provider(call), propertyNaming) }
     }
 
     internal val templateRendererOrDefault: TemplateRenderer get() {

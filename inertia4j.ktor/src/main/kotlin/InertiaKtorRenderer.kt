@@ -3,6 +3,7 @@ package io.github.inertia4j.ktor
 import io.github.inertia4j.core.HttpResponse
 import io.github.inertia4j.core.InertiaRenderer
 import io.github.inertia4j.core.InertiaRenderingOptions
+import io.github.inertia4j.core.PropsExtractor
 import io.ktor.http.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
@@ -55,6 +56,33 @@ class InertiaKtorRenderer internal constructor(
                 withSharedProps(mapOf(*props))
             )
             respond(coreRenderer.render(request, options))
+        }
+
+        /**
+         * Renders the page described by a props object annotated with [io.github.inertia4j.annotations.InertiaPage],
+         * using its component name and properties.
+         *
+         * @param pageProps page props object.
+         * @param url The URL to be included in the page object (defaults to the current request URI).
+         * @param encryptHistory Whether to encrypt the browser history state for this response (defaults to configuration setting).
+         * @param clearHistory Whether to clear the browser history state for this response (defaults to false).
+         * @throws IllegalArgumentException if the class is not annotated with `@InertiaPage`.
+         */
+        suspend fun render(
+            pageProps: Any,
+            url: String = request.url,
+            encryptHistory: Boolean = configuration.encryptHistory,
+            clearHistory: Boolean = false
+        ) {
+            val props = PropsExtractor.toMap(pageProps, configuration.propertyNaming)
+
+            render(
+                PropsExtractor.componentName(pageProps),
+                *props.toList().toTypedArray(),
+                url = url,
+                encryptHistory = encryptHistory,
+                clearHistory = clearHistory
+            )
         }
 
         /**
