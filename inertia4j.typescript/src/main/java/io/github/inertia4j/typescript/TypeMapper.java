@@ -7,6 +7,7 @@ import java.lang.reflect.TypeVariable;
 import java.lang.reflect.WildcardType;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -69,6 +70,8 @@ final class TypeMapper {
     private final References references;
     private final List<String> warnings;
     private String context = "";
+    private Class<?> owner;
+    private Map<TypeVariable<?>, Type> bindings = Map.of();
 
     TypeMapper(List<String> packages, References references, List<String> warnings) {
         this.packages = packages;
@@ -81,6 +84,34 @@ final class TypeMapper {
      */
     void setContext(String context) {
         this.context = context;
+    }
+
+    /**
+     * Sets the class whose properties are mapped next. Its own type parameters stay variables; the type
+     * parameters of its generic superclasses are resolved to the arguments given along the superclass chain.
+     */
+    void setOwner(Class<?> owner) {
+        this.owner = owner;
+        this.bindings = superclassBindings(owner);
+    }
+
+    private static Map<TypeVariable<?>, Type> superclassBindings(Class<?> owner) {
+        Map<TypeVariable<?>, Type> bindings = new HashMap<>();
+        Type current = owner.getGenericSuperclass();
+
+        while (current instanceof ParameterizedType parameterized) {
+            Class<?> raw = (Class<?>) parameterized.getRawType();
+            TypeVariable<?>[] parameters = raw.getTypeParameters();
+            Type[] arguments = parameterized.getActualTypeArguments();
+
+            for (int i = 0; i < parameters.length; i++) {
+                bindings.put(parameters[i], arguments[i]);
+            }
+
+            current = raw.getGenericSuperclass();
+        }
+
+        return bindings;
     }
 
     static boolean isDeferred(Type type) {
@@ -101,7 +132,7 @@ final class TypeMapper {
         }
 
         if (type instanceof TypeVariable<?> variable) {
-            return new TsType.Variable(variable.getName());
+            return mapVariable(variable);
         }
 
         if (type instanceof WildcardType wildcard) {
@@ -109,6 +140,19 @@ final class TypeMapper {
         }
 
         return unknown(type.getTypeName());
+    }
+
+    private TsType mapVariable(TypeVariable<?> variable) {
+        if (variable.getGenericDeclaration() == owner) {
+            return new TsType.Variable(variable.getName());
+        }
+
+        Type bound = bindings.get(variable);
+        if (bound != null) {
+            return map(bound);
+        }
+
+        return unknown(variable.getName());
     }
 
     private TsType mapClass(Class<?> type) {

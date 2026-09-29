@@ -188,6 +188,30 @@ class TypeMappingTest {
     }
 
     @Test
+    void genericSuperclass_resolvesInheritedTypeVariables() {
+        GenerationResult result = generate("genericinheritance");
+
+        assertContains(result.content(), """
+            export interface ConcreteChild {
+              value: string
+              name: string
+            }
+            """);
+    }
+
+    @Test
+    void rawGenericSuperclass_mapsInheritedTypeVariableToUnknown() {
+        GenerationResult result = generate("genericinheritance");
+
+        assertContains(result.content(), """
+            export interface RawChild {
+              value: unknown
+            }
+            """);
+        assertTrue(result.warnings().stream().anyMatch(warning -> warning.contains("RawChild.value")), result.warnings()::toString);
+    }
+
+    @Test
     void typeOutsidePackages_isUnknownWithWarning() {
         GenerationResult result = generate("external");
 

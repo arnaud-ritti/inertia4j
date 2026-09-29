@@ -109,6 +109,7 @@ final class TypeModelBuilder {
     }
 
     private TsDeclaration.Property declareProperty(Class<?> owner, Property property, Set<String> kotlinNullable) {
+        mapper.setOwner(owner);
         mapper.setContext(owner.getSimpleName() + "." + property.getName());
 
         Type type = property.getGenericType();
