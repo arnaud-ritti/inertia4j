@@ -1,6 +1,7 @@
 package io.github.inertia4j.springboot3;
 
 import io.github.inertia4j.core.HttpResponse;
+import io.github.inertia4j.core.InertiaRenderer;
 import io.github.inertia4j.spi.PageObjectSerializer;
 import io.github.inertia4j.spi.TemplateRenderer;
 import io.github.inertia4j.springshared.AbstractInertiaSpringRenderer;
@@ -12,6 +13,10 @@ import org.springframework.util.CollectionUtils;
  * Spring Boot 3 implementation of {@link AbstractInertiaSpringRenderer}.
  */
 class InertiaSpringRenderer extends AbstractInertiaSpringRenderer {
+    InertiaSpringRenderer(InertiaRenderer coreRenderer) {
+        super(coreRenderer);
+    }
+
     public InertiaSpringRenderer(
         PageObjectSerializer serializer,
         VersionProvider versionProvider,

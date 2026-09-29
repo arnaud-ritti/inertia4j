@@ -1,5 +1,6 @@
 package io.github.inertia4j.springboot4;
 
+import io.github.inertia4j.core.InertiaRenderer;
 import io.github.inertia4j.spi.PageObjectSerializer;
 import io.github.inertia4j.spi.TemplateRenderer;
 import io.github.inertia4j.springshared.AbstractInertia;
@@ -54,6 +55,25 @@ public class Inertia extends AbstractInertia {
             new InertiaSpringRenderer(pageObjectSerializer, versionProvider, templateRenderer),
             sharedDataProviders
         );
+    }
+
+    /**
+     * Constructs an Inertia bean around a configured core renderer, resolving the current request from the
+     * {@link org.springframework.web.context.request.RequestContextHolder}.
+     *
+     * @param coreRenderer        core renderer.
+     * @param sharedDataProviders providers of data shared with all responses.
+     */
+    public Inertia(InertiaRenderer coreRenderer, List<SharedDataProvider> sharedDataProviders) {
+        super(new InertiaSpringRenderer(coreRenderer), sharedDataProviders);
+    }
+
+    Inertia(
+        InertiaRenderer coreRenderer,
+        Supplier<HttpServletRequest> requestSupplier,
+        List<SharedDataProvider> sharedDataProviders
+    ) {
+        super(new InertiaSpringRenderer(coreRenderer), requestSupplier, sharedDataProviders);
     }
 
     public static class Options extends AbstractInertia.Options {}
