@@ -2,6 +2,7 @@ plugins {
     id("inertia4j.java-conventions")
     `java-gradle-plugin`
     `maven-publish`
+    signing
 }
 
 version = "1.0.0"
@@ -29,4 +30,28 @@ gradlePlugin {
             description = "Generates TypeScript types for Inertia4J props classes"
         }
     }
+}
+
+// java-gradle-plugin creates the `pluginMaven` publication and one marker publication per plugin.
+publishing {
+    publications.withType<MavenPublication>().configureEach {
+        pom {
+            name = "Inertia4J TypeScript Gradle plugin"
+            description = "Gradle plugin generating TypeScript types for Inertia4J props classes"
+            inceptionYear = "2026"
+            inertia4jMetadata()
+        }
+    }
+
+    publications.withType<MavenPublication>().matching { it.name == "pluginMaven" }.configureEach {
+        artifactId = project.name.replace('.', '-')
+    }
+
+    repositories {
+        inertia4jStagingDeploy(project) // used by JReleaser
+    }
+}
+
+signing {
+    useGpgCmd()
 }

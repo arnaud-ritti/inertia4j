@@ -52,6 +52,19 @@ install(Inertia) {
 
 ## 2. Generate the types with Gradle
 
+The plugin is published to Maven Central, so let Gradle resolve plugins from there in `settings.gradle.kts`:
+
+```kotlin
+pluginManagement {
+    repositories {
+        mavenCentral()
+        gradlePluginPortal()
+    }
+}
+```
+
+Then apply it in `build.gradle.kts`:
+
 ```kotlin
 plugins {
     id("io.github.inertia4j.typescript") version "1.0.0"
