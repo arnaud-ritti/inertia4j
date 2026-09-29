@@ -446,6 +446,49 @@ file exists), pages are rendered through it instead, at `hotUrl` when set. `exce
 leading slash. See the [Vite guide](../docs/vite.md#server-side-rendering) for the frontend setup and the
 [official docs](https://inertiajs.com/docs/v3/advanced/server-side-rendering).
 
+### Testing
+
+`assertInertia` asserts Inertia responses of the `testApplication` client, much like Inertia Laravel's
+`assertInertia`. It reads both full page visits (the page object in the HTML document) and Inertia requests (the page
+object JSON):
+
+```kotlin
+import io.github.inertia4j.ktor.testing.assertInertia
+import io.github.inertia4j.ktor.testing.inertiaPage
+
+@Test
+fun `lists users`() = testApplication {
+    application { module() }
+
+    client.get("/users").assertInertia {
+        component("Users/Index")
+        url("/users")
+        has("users", 3) { user -> user.where("id", 1).where("name", "Jane").missing("password") }
+        where("filters.search", "")
+        hasDeferredProp("permissions")
+        hasNoErrors()
+
+        missing("permissions")
+        loadDeferredProps { deferred -> deferred.has("permissions", 2) }
+        reloadOnly("users") { reloaded -> reloaded.missing("filters") }
+    }
+
+    val name = client.get("/users").inertiaPage().prop("users.0.name")
+}
+```
+
+Paths are dotted, with numeric segments indexing arrays. Besides `has`, `missing`, `where` and `count`, the page offers
+`hasAll`, `hasAny`, `missingAll`, `whereNot`, `whereAll`, `whereContains`, `whereMatches`, `first`, `each`,
+`hasFlash`/`missingFlash`, `hasError`/`missingError`, `encryptHistory`/`clearHistory` and `hasMergeProp`,
+`hasPrependProp`, `hasDeepMergeProp`, `hasOnceProp`, `hasScrollProp` and `hasSharedProp` for the page object
+metadata. Numbers are compared by value, so `where("total", 3L)` matches `3`. Failures throw an `AssertionError`.
+
+`reloadOnly` and `reloadExcept` send a partial reload with the same client and check the listed props are present or
+missing; `loadDeferredProps` loads the deferred props (of all groups, or of the given ones) as the client does after
+the first visit. Reload requests carry over the cookies of the original request and response, unless the client
+installs `HttpCookies`. Remember to send `X-Inertia-Version` along with `X-Inertia`, or the response is a `409`
+version conflict.
+
 ### Typed props
 
 Props can also be described by classes annotated with `@InertiaPage`, `@InertiaShared` and `@InertiaForm`, and turned
