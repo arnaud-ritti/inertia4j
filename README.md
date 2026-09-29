@@ -8,6 +8,9 @@ Server-side <a href="https://inertiajs.com/">Inertia.js</a> adapter for JVM back
 </p>
 <div>
 <a href="https://github.com/Inertia4j/inertia4j/releases"><img src="https://img.shields.io/github/release/Inertia4j/inertia4j.svg?style=flat&color=blue&include_prereleases" alt="latest version"/></a>
+<a href="https://central.sonatype.com/namespace/io.github.inertia4j"><img src="https://img.shields.io/maven-central/v/io.github.inertia4j/inertia4j-core?style=flat" alt="Maven Central"/></a>
+<a href="https://github.com/Inertia4J/inertia4j/actions/workflows/ci.yml"><img src="https://github.com/Inertia4J/inertia4j/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI"/></a>
+<a href="LICENSE"><img src="https://img.shields.io/github/license/Inertia4j/inertia4j.svg?style=flat" alt="license"/></a>
 </div>
 
 </div>
@@ -23,6 +26,7 @@ Inertia provides a protocol to render components written in modern frontend fram
 * [Advanced Usage and Extending Inertia4J](#advanced-usage-and-extending-inertia4j)
 * [Roadmap](/docs/roadmap.md)
 * [Contributing](#contributing)
+* [License](#license)
 
 ### Advanced Usage and Extending Inertia4J
 
@@ -32,4 +36,9 @@ can read the [advanced usage guide](https://github.com/Inertia4J/inertia4j/tree/
 ### Contributing
 
 Inertia4J is an Open Source project created by [@edrd-f](https://github.com/edrd-f) and [@pefcos](https://github.com/pefcos). If you'd like to contribute with any new features or bug fixes, please read the
-[contributing guide](https://github.com/Inertia4J/inertia4j/blob/main/CONTRIBUTING.md).
+[contributing guide](CONTRIBUTING.md) and the [code of conduct](CODE_OF_CONDUCT.md). Security issues should be reported
+privately as described in the [security policy](SECURITY.md).
+
+### License
+
+Inertia4J is released under the [Apache License 2.0](LICENSE).

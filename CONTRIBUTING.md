@@ -1,47 +1,90 @@
-Thank you for your interest in contributing to the project. There are several ways you can contribute, please read below
-for more information.
+# Contributing to Inertia4J
 
-## Reporting Bugs and Suggesting Features
+Thanks for your interest in Inertia4J. This guide explains how to report problems, propose changes and get a pull
+request merged.
 
-If you find a bug while using Inertia4J, or even if you feel some feature could be added to the project, check our
-[issues page](https://github.com/Inertia4J/inertia4j/issues) in the Inertia4J repository. If there is no issue
-(closed or open) that addresses your bug or feature request, we encourage you to open an Issue.
+By participating in this project you agree to abide by the [Code of Conduct](CODE_OF_CONDUCT.md).
 
-If you wish to open a new issue, click the "New Issue" button at our issues page and select the template that best fits
-the kind of issue you want to open. After selecting, please fill the fields as described in the issue template.
+## Reporting bugs and requesting features
 
-## Contributing
+Search the [issue tracker](https://github.com/Inertia4J/inertia4j/issues) first, including closed issues. If nothing
+covers your case, open a new issue and pick the template that fits: bug report, feature request or documentation
+improvement. A minimal reproduction makes a bug much easier to fix.
 
-If you'd like to contribute to Inertia4J with code, please signal you'd like to work on a feature by **commenting on an
-issue**. After that, you can fork the Inertia4J repository, develop your feature/fix and then open a Pull Request,
-**linking the issue** that it relates to. Avoid opening PRs without any related issue, and when selecting an issue to
-solve, try to always communicate that you are working on it, in order to avoid two people working on the same thing.
+Security vulnerabilities must **not** be reported in public issues. See [SECURITY.md](SECURITY.md).
 
-If you come across any doubts regarding the library's inner workings when developing, you can always ask for help in the
-issue you're working on.
+## Before writing code
 
-### New features
+Comment on the issue you want to work on so others know it is taken, and wait for a maintainer to confirm the approach
+for anything larger than a small fix. Pull requests should always reference an issue.
 
-We have a [roadmap](https://github.com/Inertia4J/inertia4j/tree/main/docs/roadmap.md) for the next version release. If
-you'd like to contribute with any of the features that are already listed for the next version of Inertia4J, please
-check if an issue related to the feature was already created. If not, you may open an issue as well and indicate that
-you are interested in developing a certain feature. This keeps the workflow organized for all contributors.
+Features listed in the [roadmap](docs/roadmap.md) for the next release take precedence over other proposals. If you
+are looking for something to work on, start there.
 
-It is also important to note that, regarding new features, the features planned for the next release will always take
-precedence over any other features. If possible, when choosing a new proposed feature to work on, please try to pick
-incomplete features from the next release.
+## Development setup
 
-## The Project Structure
+You need:
 
-The Inertia4J project is composed of several modules, and in order to keep your proposed changes organized, you should
-understand the role of each module in the library:
+- **JDK 17 or newer** to run Gradle. The build uses Gradle toolchains: library modules compile for Java 11 and the
+  Spring modules for Java 17. Missing JDKs are downloaded automatically through the Foojay resolver.
+- **Node.js 20 or newer**. The TypeScript generator tests run `tsc` against the generated files, and the example
+  application builds its frontend with Vite.
 
-- **core**: This is the most important Inertia4J module, as it contains universal, non-replaceable logic that is called
-by both the Spring and Ktor implementations, as well as other project modules. The Inertia4J core should only be
-modified in order to add universal features that will be used by both Ktor and Spring, as well as other future adapters. The core should also never have
-any dependency other than the SPI.
-- **spi**: This module contains Inertia4J SPIs, which can be extended by any user. These interfaces are integral to the
-library and the existing interfaces should be modified with caution, as this may break compatibility with applications
-implementing them.
-- **spring**: This module contains Spring-specific implementations.
-- **ktor**: This module contains Ktor-specific implementations.
+Clone your fork and run the full build:
+
+```shell
+git clone https://github.com/<your-user>/inertia4j.git
+cd inertia4j
+./gradlew build
+```
+
+Useful commands:
+
+| Command | What it does |
+|---|---|
+| `./gradlew build` | Compiles, tests and assembles every module |
+| `./gradlew test` | Runs the test suites only |
+| `./gradlew :inertia4j.core:test` | Runs the tests of a single module |
+| `./gradlew -p examples/spring-boot-react build` | Builds the Spring Boot + React example |
+| `./gradlew publishToMavenLocal` | Installs the artifacts in `~/.m2` for testing |
+
+## Project structure
+
+| Module | Role |
+|---|---|
+| `inertia4j.spi` | Service provider interfaces users can implement. Changing existing interfaces breaks applications, so treat them as public API. |
+| `inertia4j.core` | Framework-agnostic protocol logic shared by every adapter. It must only depend on the SPI and should only gain features that every adapter uses. |
+| `inertia4j.spring-shared` | Code shared by both Spring Boot adapters. |
+| `inertia4j.spring-boot-3` | Spring Boot 3 adapter and auto-configuration. |
+| `inertia4j.spring-boot-4` | Spring Boot 4 adapter and auto-configuration. |
+| `inertia4j.ktor` | Ktor plugin. |
+| `inertia4j.typescript-annotations` | Annotations that mark props classes for TypeScript generation. |
+| `inertia4j.typescript` | Generator that turns props classes into TypeScript declarations. |
+| `inertia4j.typescript-gradle-plugin` | Gradle plugin that runs the generator in user builds. |
+| `build-logic` | Convention plugins shared by the modules (toolchains, publishing). |
+| `examples/` | Sample applications, built in CI against the local modules. |
+
+## Coding guidelines
+
+- Follow the style of the surrounding code. The repository ships an [`.editorconfig`](.editorconfig) that most IDEs
+  pick up automatically.
+- Keep the public API small. Prefer package-private types and document every public type and method with Javadoc.
+- Every behavior change needs a test. Bug fixes should come with a test that fails without the fix.
+- Update the relevant documentation (module `README.md`, `docs/`) in the same pull request as the code.
+- Avoid new runtime dependencies in `inertia4j.core` and `inertia4j.spi`; users pull them into every application.
+
+## Commits and pull requests
+
+- Keep pull requests focused on a single issue. Unrelated refactorings belong in their own pull request.
+- Write commit messages in the imperative mood with a short subject line, for example
+  `Add partial reload support to Ktor adapter`.
+- Make sure `./gradlew build` passes locally. CI runs the same build on every pull request.
+- Fill in the pull request template and link the issue it closes.
+
+A maintainer will review your pull request. Expect questions and change requests; they are part of the process, not a
+rejection.
+
+## License
+
+Inertia4J is licensed under the [Apache License 2.0](LICENSE). By submitting a contribution you agree that it is
+licensed under the same terms, as described in section 5 of the license.
