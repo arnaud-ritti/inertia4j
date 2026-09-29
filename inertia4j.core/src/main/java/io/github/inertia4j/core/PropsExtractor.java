@@ -3,9 +3,13 @@ package io.github.inertia4j.core;
 import io.github.inertia4j.annotations.InertiaPage;
 import io.github.inertia4j.spi.InertiaException;
 
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import java.util.function.Supplier;
 
 /**
@@ -14,6 +18,7 @@ import java.util.function.Supplier;
  */
 public final class PropsExtractor {
     private static final String KotlinFunction0 = "kotlin.jvm.functions.Function0";
+    private static final Set<String> OmitNullInclusions = Set.of("NON_NULL", "NON_ABSENT", "NON_EMPTY");
 
     private PropsExtractor() {}
 
@@ -29,7 +34,8 @@ public final class PropsExtractor {
 
     /**
      * Converts a props object. {@link DeferredProp}, {@link MergeProp} and {@link Supplier} values are kept as-is;
-     * Kotlin {@code () -> T} values become lazy {@link Supplier}s.
+     * Kotlin {@code () -> T} values become lazy {@link Supplier}s. Null values are omitted when the property, or else
+     * the props class, is annotated with {@code @JsonInclude(NON_NULL | NON_ABSENT | NON_EMPTY)}.
      *
      * @param props  props object.
      * @param naming naming strategy for properties without explicit name.
@@ -39,7 +45,12 @@ public final class PropsExtractor {
         Map<String, Object> map = new LinkedHashMap<>();
 
         for (Property property : PropertyIntrospector.properties(props.getClass(), naming)) {
-            map.put(property.getName(), toLazyProp(property.read(props)));
+            Object value = property.read(props);
+            if (value == null && omitsNulls(props.getClass(), property)) {
+                continue;
+            }
+
+            map.put(property.getName(), toLazyProp(value));
         }
 
         return map;
@@ -61,6 +72,28 @@ public final class PropsExtractor {
         }
 
         return page.value();
+    }
+
+    private static boolean omitsNulls(Class<?> propsClass, Property property) {
+        Optional<Annotation> include = property.findAnnotation("JsonInclude");
+        if (include.isEmpty()) {
+            include = Arrays.stream(propsClass.getAnnotations())
+                .filter(annotation -> annotation.annotationType().getSimpleName().equals("JsonInclude"))
+                .findFirst();
+        }
+
+        return include
+            .map(PropsExtractor::inclusionName)
+            .filter(OmitNullInclusions::contains)
+            .isPresent();
+    }
+
+    private static String inclusionName(Annotation include) {
+        try {
+            return ((Enum<?>) include.annotationType().getMethod("value").invoke(include)).name();
+        } catch (ReflectiveOperationException e) {
+            throw new InertiaException("Could not read @JsonInclude value", e);
+        }
     }
 
     private static Object toLazyProp(Object value) {

@@ -1,3 +1,4 @@
+import com.fasterxml.jackson.annotation.JsonInclude;
 import io.github.inertia4j.annotations.InertiaPage;
 import io.github.inertia4j.core.DeferredProp;
 import io.github.inertia4j.core.InertiaProps;
@@ -9,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -20,6 +22,17 @@ public class PropsExtractorTest {
 
     private record NotAPage(String name) {}
 
+    private record PropertyInclusion(
+        @JsonInclude(JsonInclude.Include.NON_NULL) String nonNull,
+        @JsonInclude(JsonInclude.Include.NON_ABSENT) String nonAbsent,
+        @JsonInclude(JsonInclude.Include.NON_EMPTY) String nonEmpty,
+        @JsonInclude(JsonInclude.Include.ALWAYS) String always,
+        String plain
+    ) {}
+
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private record ClassInclusion(String omitted, @JsonInclude(JsonInclude.Include.ALWAYS) String kept, String present) {}
+
     @Test
     void toMap_keepsDeclarationOrderAndNullValues() {
         Map<String, Object> props = PropsExtractor.toMap(new AlbumsIndex(List.of("A"), "Miles", null, null));
@@ -28,6 +41,29 @@ public class PropsExtractorTest {
         assertEquals(List.of("A"), props.get("titles"));
         assertNull(props.get("note"));
         assertTrue(props.containsKey("note"));
+    }
+
+    @Test
+    void toMap_withPropertyJsonIncludeOmittingNulls_omitsNullValues() {
+        Map<String, Object> props = PropsExtractor.toMap(new PropertyInclusion(null, null, null, null, null));
+
+        assertEquals(List.of("always", "plain"), List.copyOf(props.keySet()));
+    }
+
+    @Test
+    void toMap_withPropertyJsonIncludeOmittingNulls_keepsNonNullValues() {
+        Map<String, Object> props = PropsExtractor.toMap(new PropertyInclusion("a", "b", "c", null, null));
+
+        assertEquals(List.of("nonNull", "nonAbsent", "nonEmpty", "always", "plain"), List.copyOf(props.keySet()));
+    }
+
+    @Test
+    void toMap_withClassJsonIncludeOmittingNulls_omitsNullValuesUnlessPropertyOverrides() {
+        Map<String, Object> props = PropsExtractor.toMap(new ClassInclusion(null, null, "x"));
+
+        assertFalse(props.containsKey("omitted"));
+        assertTrue(props.containsKey("kept"));
+        assertEquals("x", props.get("present"));
     }
 
     @Test
