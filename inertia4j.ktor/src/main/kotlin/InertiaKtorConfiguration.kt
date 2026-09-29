@@ -2,6 +2,7 @@ package io.github.inertia4j.ktor
 
 import io.github.inertia4j.core.DefaultPageObjectSerializer
 import io.github.inertia4j.core.SimpleTemplateRenderer
+import io.github.inertia4j.core.vite.Vite
 import io.github.inertia4j.spi.PageObjectSerializer
 import io.github.inertia4j.spi.TemplateRenderer
 import io.ktor.server.application.*
@@ -12,10 +13,11 @@ import io.ktor.server.application.*
  */
 class InertiaKtorConfiguration {
     /**
-     * Provides the current asset version. Defaults to returning "1".
-     * This is used to compare against the `X-Inertia-Version` header in requests.
+     * Provides the current asset version, compared against the `X-Inertia-Version` header of requests.
+     * Defaults to `null`, in which case the Vite asset version is used: a hash of the Vite manifest in production,
+     * `"dev"` while the Vite dev server runs, and `"1"` when neither is available.
      */
-    var versionProvider: () -> String = { "1" }
+    var versionProvider: (() -> String)? = null
     /**
      * The serializer used to convert the [io.github.inertia4j.spi.PageObject] into a JSON string.
      * Defaults to `null`. If left `null`, [DefaultPageObjectSerializer] will be used,
@@ -26,7 +28,7 @@ class InertiaKtorConfiguration {
     /**
      * The renderer used to render the base HTML template for full page loads.
      * Defaults to `null`. If left `null`, [SimpleTemplateRenderer] will be used,
-     * loading the template specified by [templatePath].
+     * loading the template specified by [templatePath] and replacing its Vite placeholders.
      * Provide a custom implementation for integration with other template engines.
      */
     var templateRenderer: TemplateRenderer? = null
@@ -41,6 +43,23 @@ class InertiaKtorConfiguration {
      * @see <a href="https://inertiajs.com/history-encryption">Inertia History Encryption</a>
      */
     var encryptHistory: Boolean = false
+
+    internal val viteConfiguration = ViteKtorConfiguration()
+
+    /**
+     * Configures the Vite integration.
+     *
+     * @param configure changes applied to the default [ViteKtorConfiguration].
+     */
+    fun vite(configure: ViteKtorConfiguration.() -> Unit) {
+        viteConfiguration.configure()
+    }
+
+    internal val viteInstance: Vite by lazy { Vite(viteConfiguration.toViteConfig()) }
+
+    internal val versionProviderOrDefault: () -> String get() {
+        return versionProvider ?: viteInstance::version
+    }
 
     internal val sharedDataProviders = mutableListOf<suspend (ApplicationCall) -> Map<String, Any?>>()
 
@@ -57,7 +76,7 @@ class InertiaKtorConfiguration {
     }
 
     internal val templateRendererOrDefault: TemplateRenderer get() {
-        return templateRenderer ?: SimpleTemplateRenderer(templatePath)
+        return templateRenderer ?: SimpleTemplateRenderer(templatePath, viteInstance)
     }
 
     internal val serializerOrDefault: PageObjectSerializer get() {

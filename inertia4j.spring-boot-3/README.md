@@ -68,6 +68,10 @@ The first time an Inertia request is made to the server, the server will respond
 will automatically load the `resources/templates/app.html` file in your project and will replace `@PageObject@` with the
 data you wish to send to the client. If you wish to customize this template, just make sure to keep a div with id "app" and an HTML attribute `data-page='@PageObject@'`. Remember to use **single quotes** (i.e. `'@PageObject'`), given the JSON object will use double quotes.
 
+To load your frontend, add `@Vite(src/main/frontend/main.tsx)@` to the template head (preceded by
+`@ViteReactRefresh@` for React). It renders the tags of the Vite dev server while it runs and of the production
+build otherwise. See the [Vite integration guide](../docs/vite.md).
+
 ### Options
 
 Inertia4J supports option passing on response. To enable option passing, first you need to import
@@ -112,7 +116,9 @@ to your assets, you will need to provide an implementation of the `VersionProvid
 a single method, called `get`, which returns your asset version number as a `String`. You can implement the `get`
 method to suit your project's needs, be it a value that manually changes, or a dynamic hash of your asset folder.
 
-The `VersionProvider` bean is optional, with the default implementation returning a fixed string. However, it's important to note that this prevents the client from performing automatic full-page reloads, and after a deployment, your client-side code will be stale until the user performs a browser refresh. **It's highly recommended to provide a custom implementation to prevent this issue**.
+The `VersionProvider` bean is optional. The default implementation returns the SHA-256 of the Vite manifest, so
+clients reload after each deployment of a new frontend build (see the [Vite integration guide](../docs/vite.md)).
+Provide your own implementation if you don't build your frontend with Vite.
 
 Below is an example of a simple `VersionProvider` implementation in Spring:
 

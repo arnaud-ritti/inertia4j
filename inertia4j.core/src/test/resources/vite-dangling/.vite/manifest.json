@@ -1,0 +1,1 @@
+{"views/foo.js": {"file": "assets/foo.js", "isEntry": true, "imports": ["_gone.js"]}}

@@ -2,6 +2,7 @@ package io.github.inertia4j.springshared;
 
 import io.github.inertia4j.core.SimpleTemplateRenderer;
 import io.github.inertia4j.core.TemplateRenderingException;
+import io.github.inertia4j.core.vite.Vite;
 import io.github.inertia4j.spi.PageObjectSerializer;
 import io.github.inertia4j.spi.TemplateRenderer;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,7 +12,7 @@ import org.springframework.context.annotation.Bean;
 /**
  * Spring Boot auto-configuration for Inertia4j.
  * Sets up default beans for {@link AbstractInertia}, {@link VersionProvider},
- * {@link PageObjectSerializer}, and {@link TemplateRenderer} if they are not
+ * {@link PageObjectSerializer}, {@link TemplateRenderer} and {@link Vite} if they are not
  * already present in the application context.
  */
 public abstract class AbstractInertiaSpringAutoconfiguration {
@@ -19,14 +20,31 @@ public abstract class AbstractInertiaSpringAutoconfiguration {
     protected InertiaConfigurationProperties properties;
 
     /**
-     * Creates a default {@link VersionProvider} bean that returns "1" if one doesn't already exist.
+     * Creates the {@link Vite} integration from the `inertia.vite.*` properties if one doesn't already exist.
      *
+     * @return A default Vite bean.
+     */
+    @Bean
+    @ConditionalOnMissingBean
+    public Vite vite() {
+        return new Vite(properties.vite.toViteConfig());
+    }
+
+    /**
+     * Creates a default {@link VersionProvider} bean if one doesn't already exist.
+     * It returns the Vite asset version, or "1" when the Vite integration is disabled.
+     *
+     * @param vite The Vite integration.
      * @return A default VersionProvider bean.
      */
     @Bean
     @ConditionalOnMissingBean
-    public VersionProvider versionProvider() {
-        return () -> "1";
+    public VersionProvider versionProvider(Vite vite) {
+        if (!properties.vite.enabled) {
+            return () -> "1";
+        }
+
+        return vite::version;
     }
 
     /**
@@ -41,13 +59,16 @@ public abstract class AbstractInertiaSpringAutoconfiguration {
     /**
      * Creates a default {@link TemplateRenderer} bean using {@link SimpleTemplateRenderer}
      * and the template path from {@link InertiaConfigurationProperties} if one doesn't already exist.
-     * 
+     *
+     * @param vite The Vite integration, used unless disabled.
      * @return A default TemplateRenderer bean.
      * @throws TemplateRenderingException if the template file cannot be loaded.
      */
     @Bean
     @ConditionalOnMissingBean
-    public TemplateRenderer templateRenderer() throws TemplateRenderingException {
-        return new SimpleTemplateRenderer(properties.templatePath);
+    public TemplateRenderer templateRenderer(Vite vite) throws TemplateRenderingException {
+        Vite enabledVite = properties.vite.enabled ? vite : null;
+
+        return new SimpleTemplateRenderer(properties.templatePath, enabledVite);
     }
 }

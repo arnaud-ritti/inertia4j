@@ -79,6 +79,10 @@ The first time an Inertia request is made to the server, the server will respond
 will automatically load the `resources/templates/app.html` file in your project and replace `@PageObject@` with the
 data you wish to send to the client. If you wish to customize this template, just make sure to keep a div with id "app" and an HTML attribute `data-page='@PageObject@'`. Remember to use **single quotes** (i.e. `'@PageObject'`), given the JSON object will use double quotes.
 
+To load your frontend, add `@Vite(src/main/frontend/main.tsx)@` to the template head (preceded by
+`@ViteReactRefresh@` for React). It renders the tags of the Vite dev server while it runs and of the production
+build otherwise. See the [Vite integration guide](../docs/vite.md).
+
 ### Options
 
 The `render` function also supports the `encryptHistory` and `clearHistory` parameters. If you need more information about their functionality, you can read the
@@ -113,7 +117,9 @@ It is important to note that it's not possible to change the default value of `c
 The Inertia4J adapter fully supports asset versioning and responds accordingly to requests with outdated assets.
 When installing the Inertia plugin, the `versionProvider` property can be set to an implementation of the `VersionProvider` interface, which will be called on every request to compare the client's version with the provider's version. When the version changes, the server will return a response instructing the client to perform a full-page reload.
 The version returned by the provider can be any string, and a common strategy is to generate a hash of the asset folder.
-The `versionProvider` property is optional, with the default implementation returning a fixed string. However, it's important to note that this prevents the client from performing automatic full-page reloads, and after a deployment, your client-side code will be stale until the user performs a browser refresh. **It's highly recommended to provide a custom implementation to prevent this issue**.
+The `versionProvider` property is optional. By default, the version is the SHA-256 of the Vite manifest, so clients
+reload after each deployment of a new frontend build (see the [Vite integration guide](../docs/vite.md)). Set it if
+you don't build your frontend with Vite.
 
 Below is an example of how to use a custom `versionProvider`:
 
