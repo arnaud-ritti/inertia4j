@@ -100,10 +100,25 @@ public final class InertiaRedirects {
                 return false;
             }
 
-            return firstUri.getHost().equalsIgnoreCase(secondUri.getHost()) && firstUri.getPort() == secondUri.getPort();
+            return firstUri.getHost().equalsIgnoreCase(secondUri.getHost()) && explicitPort(firstUri) == explicitPort(secondUri);
         } catch (URISyntaxException e) {
             return false;
         }
+    }
+
+
+    private static int explicitPort(URI uri) {
+        int port = uri.getPort();
+
+        if (port == 80 && "http".equalsIgnoreCase(uri.getScheme())) {
+            return -1;
+        }
+
+        if (port == 443 && "https".equalsIgnoreCase(uri.getScheme())) {
+            return -1;
+        }
+
+        return port;
     }
 
 }

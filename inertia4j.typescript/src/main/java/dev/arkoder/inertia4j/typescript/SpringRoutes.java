@@ -31,7 +31,7 @@ final class SpringRoutes {
         AnnotationPackage + "DeleteMapping", "delete"
     );
     private static final List<String> AnyMethod = List.of("get", "post", "put", "patch", "delete");
-    private static final Pattern PatternVariable = Pattern.compile("\\{(\\*?)(\\w+)(?::[^}]*)?}");
+    private static final Pattern Parameter = Pattern.compile("\\{\\*?\\w+\\??}");
     private static final Pattern Unsupported = Pattern.compile("[*?]|\\$\\{");
 
     private SpringRoutes() {}
@@ -77,7 +77,7 @@ final class SpringRoutes {
             String template = join(prefix, firstPath(mapping));
             String location = controller.getSimpleName() + "." + handler.getName() + " (" + template + ")";
 
-            if (Unsupported.matcher(PatternVariable.matcher(template).replaceAll("")).find()) {
+            if (Unsupported.matcher(Parameter.matcher(RouteEntry.normalizeTemplate(template)).replaceAll("")).find()) {
                 warnings.add("Skipped route " + location + ": wildcards and placeholders can't be turned into URLs");
                 continue;
             }
@@ -89,7 +89,7 @@ final class SpringRoutes {
                 warnings.add("Route " + location + " is named '" + action + "' since " + handler.getName() + " is overloaded");
             }
 
-            routes.add(new RouteEntry(List.of(controllerName, action), methods(mapping), normalize(template)));
+            routes.add(new RouteEntry(List.of(controllerName, action), methods(mapping), RouteEntry.normalizeTemplate(template)));
         }
 
         return routes;
@@ -149,10 +149,6 @@ final class SpringRoutes {
 
     private static String trimSlashes(String path) {
         return path.replaceAll("^/+|/+$", "");
-    }
-
-    static String normalize(String template) {
-        return PatternVariable.matcher(template).replaceAll("{$1$2}");
     }
 
     private static String controllerName(Class<?> controller) {

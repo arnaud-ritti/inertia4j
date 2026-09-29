@@ -54,7 +54,7 @@ final class RouteManifests {
         List<RouteEntry> routes = new ArrayList<>();
 
         for (JsonNode route : root.path("routes")) {
-            String path = route.path("path").asText();
+            String path = RouteEntry.normalizeTemplate(route.path("path").asText());
             List<String> methods = new ArrayList<>();
             route.path("methods").forEach(method -> methods.add(method.asText().toLowerCase(Locale.ROOT)));
             String name = route.path("name").isTextual() ? route.path("name").asText() : null;

@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 
 import static dev.arkoder.inertia4j.typescript.GeneratorTestSupport.assertContains;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -66,4 +67,11 @@ class RoutesWriterTest {
 
         assertTrue(exception.getMessage().contains("'delete'"), exception.getMessage());
     }
+
+    @Test
+    void normalizeTemplate_dropsParameterConstraints() {
+        assertEquals("/orders/{id}/{*path}", RouteEntry.normalizeTemplate("/orders/{id:\\d{3}}/{*path}"));
+        assertEquals("/users/{id}", RouteEntry.normalizeTemplate("/users/{id:[0-9]+}"));
+    }
+
 }

@@ -29,6 +29,8 @@ public class InertiaRenderer {
      */
     public static final String DefaultRootId = "app";
 
+    private static final Pattern SafeRootId = Pattern.compile("[A-Za-z][A-Za-z0-9_-]*");
+
     private final PageObjectSerializer pageObjectSerializer;
     private final TemplateRenderer templateRenderer;
     private final Supplier<String> versionProvider;
@@ -316,10 +318,17 @@ public class InertiaRenderer {
         /**
          * Sets the id of the element the client-side application is mounted on. Defaults to {@value #DefaultRootId}.
          *
-         * @param rootId root element id.
+         * @param rootId root element id: a letter followed by letters, digits, {@code -} or {@code _}.
          * @return this builder.
+         * @throws IllegalArgumentException if the id could break the HTML it is written to.
          */
         public Builder rootId(String rootId) {
+            if (rootId == null || !SafeRootId.matcher(rootId).matches()) {
+                throw new IllegalArgumentException(
+                    "Invalid rootId '" + rootId + "': use a letter followed by letters, digits, '-' or '_'"
+                );
+            }
+
             this.rootId = rootId;
             return this;
         }

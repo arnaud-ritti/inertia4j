@@ -32,7 +32,9 @@ class InertiaSession(val json: String) {
  * Without the plugin or the session registration, nothing is ever stored and writing fails.
  */
 class SessionsFlashStore : InertiaFlashStore {
-    private val objectMapper = ObjectMapper()
+    private companion object {
+        val objectMapper = ObjectMapper()
+    }
 
     override suspend fun read(call: ApplicationCall): Map<String, Any?> {
         val session = try {

@@ -14,7 +14,7 @@ formats (`10s`, `365d`, `PT2S`).
 | Property                          | Default              | Description                                                                                    |
 |-----------------------------------|----------------------|------------------------------------------------------------------------------------------------|
 | `inertia.template-path`           | `templates/app.html` | Classpath location of the [root template](../guides/responses.md#the-root-template)            |
-| `inertia.root-id`                 | `app`                | Id of the element the client mounts on                                                         |
+| `inertia.root-id`                 | `app`                | Id of the element the client mounts on: a letter, then letters, digits, `-` or `_` |
 | `inertia.encrypt-history`         | `false`              | Default value of the [`encryptHistory`](../guides/responses.md#history-encryption) flag        |
 | `inertia.expose-shared-prop-keys` | `true`               | List the keys of shared props in the page object's `sharedProps`                               |
 | `inertia.property-naming`         | `camel`              | Naming of typed props and of objects inside props: `camel` or `snake`                          |
@@ -93,7 +93,7 @@ install(Inertia) {
 | Setting                | Type                              | Default                 | Description                                                                          |
 |------------------------|-----------------------------------|-------------------------|--------------------------------------------------------------------------------------|
 | `templatePath`         | `String`                          | `templates/app.html`    | Classpath location of the root template                                              |
-| `rootId`               | `String`                          | `app`                   | Id of the element the client mounts on                                               |
+| `rootId`               | `String`                          | `app`                   | Id of the element the client mounts on: a letter, then letters, digits, `-` or `_` |
 | `encryptHistory`       | `Boolean`                         | `false`                 | Default value of the `encryptHistory` flag                                           |
 | `exposeSharedPropKeys` | `Boolean`                         | `true`                  | List the keys of shared props in `sharedProps`                                       |
 | `propertyNaming`       | `PropertyNaming`                  | `Camel`                 | Naming of typed props and of objects inside props                                    |

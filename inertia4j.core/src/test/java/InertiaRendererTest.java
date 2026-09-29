@@ -115,6 +115,15 @@ public class InertiaRendererTest {
     }
 
     @Test
+    void rootId_thatIsNotASafeHtmlId_isRejected() {
+        InertiaRenderer.Builder builder = InertiaRenderer.builder(pageObjectSerializer, versionProvider, page -> page.getBody());
+
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> builder.rootId("app\" onload=\"x"));
+
+        assertTrue(exception.getMessage().contains("rootId"), exception.getMessage());
+    }
+
+    @Test
     void render_withCustomRootId_usesItForScriptAndRootElement() {
         InertiaRenderer renderer = InertiaRenderer
             .builder(pageObjectSerializer, versionProvider, page -> page.getBody())

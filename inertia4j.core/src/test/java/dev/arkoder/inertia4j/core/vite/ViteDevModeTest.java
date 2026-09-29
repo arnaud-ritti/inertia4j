@@ -51,6 +51,20 @@ class ViteDevModeTest {
     }
 
     @Test
+    void isDevMode_whenHotFileIsNotAnHttpUrl_isFalse() throws IOException {
+        startDevServer("http://localhost:5173'/><script>alert(1)</script>");
+
+        assertFalse(vite.isDevMode());
+    }
+
+    @Test
+    void isDevMode_whenHotFileHasAnIpv6Url_isTrue() throws IOException {
+        startDevServer("http://[::1]:5173");
+
+        assertTrue(vite.isDevMode());
+    }
+
+    @Test
     void devServerUrl_trimsWhitespaceAndTrailingSlash() throws IOException {
         startDevServer("http://localhost:5173/\n");
 

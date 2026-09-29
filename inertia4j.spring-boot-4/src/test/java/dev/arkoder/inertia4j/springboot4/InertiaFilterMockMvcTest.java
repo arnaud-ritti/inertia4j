@@ -1,5 +1,6 @@
 package dev.arkoder.inertia4j.springboot4;
 
+import jakarta.servlet.http.HttpServletResponse;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -14,6 +15,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 
+import java.io.IOException;
 import java.net.URI;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -96,6 +98,11 @@ class InertiaFilterMockMvcTest {
         @GetMapping("/empty")
         ResponseEntity<Void> showNothing() {
             return ResponseEntity.ok().build();
+        }
+
+        @GetMapping("/empty-writer")
+        void openWriterWithoutWriting(HttpServletResponse response) throws IOException {
+            response.getWriter();
         }
 
         @GetMapping("/no-content")
@@ -184,6 +191,13 @@ class InertiaFilterMockMvcTest {
     @Test
     void filter_whenInertiaResponseIsEmptyWithoutReferer_redirectsToTheRoot() throws Exception {
         mvc.perform(get("/empty").header("X-Inertia", "true").header("X-Inertia-Version", "1"))
+            .andExpect(status().isFound())
+            .andExpect(header().string("Location", "/"));
+    }
+
+    @Test
+    void filter_whenHandlerOpensTheWriterWithoutWriting_redirectsBack() throws Exception {
+        mvc.perform(get("/empty-writer").header("X-Inertia", "true").header("X-Inertia-Version", "1"))
             .andExpect(status().isFound())
             .andExpect(header().string("Location", "/"));
     }

@@ -15,6 +15,7 @@ import java.util.regex.Pattern;
  */
 record RouteEntry(List<String> name, List<String> methods, String template) {
     private static final Pattern Parameter = Pattern.compile("\\{(\\*?)(\\w+)(\\??)}");
+    private static final Pattern ConstrainedParameter = Pattern.compile("\\{(\\*?)(\\w+)(\\??)(?::(?:[^{}]|\\{[^{}]*})*)?}");
 
     record RouteParameter(String name, boolean optional) {}
 
@@ -27,6 +28,16 @@ record RouteEntry(List<String> name, List<String> methods, String template) {
         }
 
         return parameters;
+    }
+
+    /**
+     * Drops the regular expression constraints of parameters: {@code {id:\\d+}} becomes {@code {id}}.
+     *
+     * @param template URL template.
+     * @return the template without constraints.
+     */
+    static String normalizeTemplate(String template) {
+        return ConstrainedParameter.matcher(template).replaceAll("{$1$2$3}");
     }
 
     String qualifiedName() {

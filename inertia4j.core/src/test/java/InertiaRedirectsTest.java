@@ -60,4 +60,12 @@ class InertiaRedirectsTest {
         assertEquals("/", InertiaRedirects.backLocation(request));
     }
 
+
+    @Test
+    void backLocation_treatsAnExplicitDefaultPortLikeNoPort() {
+        FakeHttpRequest request = new FakeHttpRequest("POST", Map.of("Referer", "https://example.com:443/users"));
+
+        assertEquals("https://example.com:443/users", InertiaRedirects.backLocation(request));
+    }
+
 }

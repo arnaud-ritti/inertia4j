@@ -234,10 +234,6 @@ public class InertiaFilter extends OncePerRequestFilter {
         }
 
         private boolean hasBody() {
-            if (writer != null) {
-                writer.flush();
-            }
-
             return hasBody;
         }
 
@@ -261,6 +257,7 @@ public class InertiaFilter extends OncePerRequestFilter {
         }
 
         private void sendFragmentVisit(String location) {
+            fragmentLocation = null;
             super.setStatus(409);
             super.setHeader(InertiaHeaders.Redirect, location);
         }

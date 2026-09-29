@@ -20,6 +20,14 @@ public interface TypedSharedDataProvider extends SharedDataProvider {
      */
     Object shareTyped(HttpServletRequest request);
 
+    /**
+     * Converts {@link #shareTyped} with camelCase keys. The {@code Inertia} bean doesn't call it: it converts
+     * {@link #shareTyped} itself with the configured {@code inertia.property-naming}, so this default only serves
+     * callers using the provider as a plain {@link SharedDataProvider}.
+     *
+     * @param request the current request.
+     * @return shared props, with camelCase keys.
+     */
     @Override
     default Map<String, Object> share(HttpServletRequest request) {
         return PropsExtractor.toMap(shareTyped(request));

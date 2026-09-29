@@ -15,6 +15,8 @@ repositories {
 }
 
 dependencies {
+    // Resolved from the included build ("../.."), which matches projects by name: keep the dot. Outside this
+    // repository, depend on the published artifact dev.arkoder:inertia4j-spring-boot-3 instead.
     implementation("dev.arkoder:inertia4j.spring-boot-3:3.0.0")
     implementation("org.springframework.boot:spring-boot-starter-web")
 

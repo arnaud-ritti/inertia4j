@@ -5,6 +5,8 @@ import org.jspecify.annotations.Nullable;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
@@ -27,6 +29,8 @@ import java.util.regex.Pattern;
  */
 @NullMarked
 public class Vite {
+    private static final Pattern UnsafeUrlCharacters = Pattern.compile("[\\s'\"<>`\\\\]");
+
     private static final String defaultVersion = "1";
     private static final Pattern stylesheetPattern =
         Pattern.compile("\\.(css|less|sass|scss|styl|stylus|pcss|postcss)(\\?.*)?$");
@@ -430,6 +434,12 @@ public class Vite {
             }
 
             String url = stripTrailingSlash(Files.readString(path).trim());
+
+            if (!url.isEmpty() && !isDevServerUrl(url)) {
+                logger.log(System.Logger.Level.WARNING, "Ignoring Vite hot file " + path + ": '" + url + "' is not an http(s) URL");
+                url = "";
+            }
+
             HotFile current = new HotFile(modified, size, url.isEmpty() ? null : url);
             hotFile = current;
 
@@ -439,6 +449,22 @@ public class Vite {
         } catch (IOException e) {
             logger.log(System.Logger.Level.WARNING, "Unable to read Vite hot file " + path, e);
             return null;
+        }
+    }
+
+    // The URL ends up in script src attributes and in a JavaScript string literal, so it must be a plain http(s) URL.
+    private static boolean isDevServerUrl(String url) {
+        if (UnsafeUrlCharacters.matcher(url).find()) {
+            return false;
+        }
+
+        try {
+            URI uri = new URI(url);
+
+            return ("http".equalsIgnoreCase(uri.getScheme()) || "https".equalsIgnoreCase(uri.getScheme()))
+                && uri.getHost() != null;
+        } catch (URISyntaxException e) {
+            return false;
         }
     }
 

@@ -81,4 +81,17 @@ class RouteManifestsTest {
         assertEquals(List.of("apiV2", "orderItems", "id", "delete"), RouteManifests.derivedName("/api-v2/order_items/{id}", "delete"));
         assertEquals(List.of("reports", "year", "month", "get"), RouteManifests.derivedName("/reports/{year}/{month?}", "get"));
     }
+
+    @Test
+    void regexConstraintsInManifestPathsAreStripped(@TempDir Path directory) throws Exception {
+        Path manifest = directory.resolve("routes.json");
+        Files.writeString(manifest, """
+            { "version": 1, "routes": [ { "name": "orders.show", "methods": ["get"], "path": "/orders/{id:\\\\d+}" } ] }
+            """);
+
+        String content = TypeScriptGenerator.generateRoutes(new RouteGeneratorOptions(List.of(), List.of(manifest)), List.of()).content();
+
+        assertContains(content, "show: route<{ id: RouteParameter }, 'get'>('/orders/{id}', ['get'], true),");
+    }
+
 }
