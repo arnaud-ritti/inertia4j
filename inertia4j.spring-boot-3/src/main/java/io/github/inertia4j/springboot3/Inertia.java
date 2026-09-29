@@ -3,8 +3,10 @@ package io.github.inertia4j.springboot3;
 import io.github.inertia4j.spi.PageObjectSerializer;
 import io.github.inertia4j.spi.TemplateRenderer;
 import io.github.inertia4j.springshared.AbstractInertia;
+import io.github.inertia4j.springshared.SharedDataProvider;
 import jakarta.servlet.http.HttpServletRequest;
 
+import java.util.List;
 import java.util.function.Supplier;
 
 /**
@@ -17,7 +19,21 @@ public class Inertia extends AbstractInertia {
         TemplateRenderer templateRenderer,
         Supplier<HttpServletRequest> requestSupplier
     ) {
-        super(new InertiaSpringRenderer(pageObjectSerializer, versionProvider, templateRenderer), requestSupplier);
+        this(versionProvider, pageObjectSerializer, templateRenderer, requestSupplier, List.of());
+    }
+
+    Inertia(
+        VersionProvider versionProvider,
+        PageObjectSerializer pageObjectSerializer,
+        TemplateRenderer templateRenderer,
+        Supplier<HttpServletRequest> requestSupplier,
+        List<SharedDataProvider> sharedDataProviders
+    ) {
+        super(
+            new InertiaSpringRenderer(pageObjectSerializer, versionProvider, templateRenderer),
+            requestSupplier,
+            sharedDataProviders
+        );
     }
 
     public Inertia(
@@ -25,7 +41,19 @@ public class Inertia extends AbstractInertia {
         PageObjectSerializer pageObjectSerializer,
         TemplateRenderer templateRenderer
     ) {
-        super(new InertiaSpringRenderer(pageObjectSerializer, versionProvider, templateRenderer));
+        this(versionProvider, pageObjectSerializer, templateRenderer, List.of());
+    }
+
+    public Inertia(
+        VersionProvider versionProvider,
+        PageObjectSerializer pageObjectSerializer,
+        TemplateRenderer templateRenderer,
+        List<SharedDataProvider> sharedDataProviders
+    ) {
+        super(
+            new InertiaSpringRenderer(pageObjectSerializer, versionProvider, templateRenderer),
+            sharedDataProviders
+        );
     }
 
     public static class Options extends io.github.inertia4j.springshared.AbstractInertia.Options {}

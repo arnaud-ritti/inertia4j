@@ -7,6 +7,7 @@ import io.ktor.http.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import io.ktor.util.*
+import java.util.function.Supplier
 
 /**
  * Ktor-specific renderer that integrates with the core [InertiaRenderer].
@@ -34,6 +35,7 @@ class InertiaKtorRenderer internal constructor(
          *
          * @param name The name of the client-side component to render.
          * @param props Key-value pairs representing the properties (data) to pass to the component.
+         * Function values (`() -> T`) are lazy: they are only evaluated when the prop is sent to the client.
          * @param url The URL to be included in the page object (defaults to the current request URI).
          * @param encryptHistory Whether to encrypt the browser history state for this response (defaults to configuration setting).
          * @param clearHistory Whether to clear the browser history state for this response (defaults to false).
@@ -50,10 +52,32 @@ class InertiaKtorRenderer internal constructor(
                 clearHistory,
                 url,
                 name,
-                mapOf(*props)
+                withSharedProps(mapOf(*props))
             )
             respond(coreRenderer.render(request, options))
         }
+
+        /**
+         * Shares a prop with the Inertia response to the current call.
+         * Props given to `render` take precedence on key collisions.
+         *
+         * @param key prop key.
+         * @param value prop value. Function values (`() -> T`) are only evaluated when the prop is sent.
+         */
+        fun share(key: String, value: Any?) {
+            call.attributes.computeIfAbsent(sharedPropsKey) { mutableMapOf() }[key] = value
+        }
+
+        private suspend fun withSharedProps(props: Map<String, Any?>): Map<String, Any?> {
+            val allProps = mutableMapOf<String, Any?>()
+            configuration.sharedDataProviders.forEach { allProps.putAll(it(call)) }
+            call.attributes.getOrNull(sharedPropsKey)?.let { allProps.putAll(it) }
+            allProps.putAll(props)
+            return allProps.mapValues { (_, value) -> toLazyProp(value) }
+        }
+
+        private fun toLazyProp(value: Any?): Any? =
+            if (value is Function0<*>) Supplier { value() } else value
 
         /**
          * Performs an Inertia redirect. Uses a 303 status code for PUT/PATCH/DELETE requests and 302 otherwise.
@@ -87,5 +111,7 @@ class InertiaKtorRenderer internal constructor(
          * The attribute key used to store and retrieve the [InertiaKtorRenderer] instance within Ktor attributes.
          */
         val key = AttributeKey<InertiaKtorRenderer>("inertiaKtor")
+
+        private val sharedPropsKey = AttributeKey<MutableMap<String, Any?>>("inertiaSharedProps")
     }
 }

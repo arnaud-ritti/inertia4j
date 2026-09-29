@@ -9,7 +9,7 @@ repositories {
 }
 
 dependencies {
-    implementation(project(":inertia4j.core"))
+    api(project(":inertia4j.core"))
     api(project(":inertia4j.spi"))
 
     val ktorVersion = "3.0.0"

@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import io.github.inertia4j.core.DefaultPageObjectSerializer;
 import io.github.inertia4j.spi.PageObjectSerializer;
 import io.github.inertia4j.spi.TemplateRenderer;
+import io.github.inertia4j.springshared.SharedDataProvider;
 import io.github.inertia4j.springboot3.Inertia.Options;
 import org.jspecify.annotations.NullMarked;
 import org.junit.jupiter.api.BeforeEach;
@@ -17,7 +18,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.mock.web.MockHttpServletRequest;
 
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -152,6 +155,43 @@ public class InertiaTest {
         assertEquals(MediaType.APPLICATION_JSON, response.getHeaders().getContentType());
         assertEquals("true", response.getHeaders().getFirst("X-Inertia"));
         assertEquals(getExpectedJsonBody(true, false), response.getBody());
+    }
+
+    @Test
+    void render_withSharedData_mergesSharedPropsWithPageProps() {
+        SharedDataProvider appNameProvider = request -> Map.of("appName", "Inertia4J", "prop1", "shared");
+        inertia = new Inertia(
+            versionProvider,
+            pageObjectSerializer,
+            templateRenderer,
+            () -> request,
+            List.of(appNameProvider)
+        );
+        request.addHeader("X-Inertia", "true");
+        inertia.share("user", (Supplier<String>) () -> "john");
+
+        ResponseEntity<String> response = inertia.render(testComponent, testProps);
+
+        assertEquals(
+            getExpectedJsonBody(false, false, Map.of("appName", "Inertia4J", "user", "john", "prop1", "value1", "prop2", 123)),
+            response.getBody()
+        );
+    }
+
+    @Test
+    void render_withDeferredMergeProp_listsDeferredAndMergeMetadata() {
+        request.addHeader("X-Inertia", "true");
+
+        ResponseEntity<String> response = inertia.render(
+            testComponent,
+            Map.of("posts", Inertia.defer(() -> List.of(1), "posts").merge().matchOn("id"))
+        );
+
+        assertEquals(
+            "{\"component\":\"" + testComponent + "\",\"props\":{},\"url\":\"" + testUrl + "\",\"version\":\"1\",\"encryptHistory\":false,\"clearHistory\":false,"
+                + "\"mergeProps\":[\"posts\"],\"matchPropsOn\":[\"posts.id\"],\"deferredProps\":{\"posts\":[\"posts\"]}}",
+            response.getBody()
+        );
     }
 
     private static String getExpectedJsonBody(boolean encryptHistory, boolean clearHistory) {

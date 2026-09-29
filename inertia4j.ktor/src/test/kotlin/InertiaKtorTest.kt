@@ -1,5 +1,6 @@
 package io.github.inertia4j.ktor
 
+import io.github.inertia4j.core.InertiaProps
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
@@ -151,6 +152,51 @@ class InertiaKtorTest {
         assert("X-Inertia" !in response.headers)
         assertEquals("https://external.example.com", response.headers["X-Inertia-Location"])
         assert(response.bodyAsText().isEmpty())
+    }
+
+    @Test
+    fun `render with shared data merges shared props with page props`() = testApplication {
+        application {
+            install(Inertia) {
+                versionProvider = { "1" }
+                share { mapOf("appName" to "Inertia4J", "id" to 0) }
+            }
+        }
+        routing {
+            get("/") {
+                inertia.share("user") { "john" }
+                inertia.render("SampleComponent", "id" to 1)
+            }
+        }
+
+        val response = client.get("/") {
+            header("X-Inertia", "true")
+        }
+
+        val expectedBody = """{"component":"SampleComponent","props":{"appName":"Inertia4J","id":1,"user":"john"},"url":"/","version":"1","encryptHistory":false,"clearHistory":false}"""
+        assertEquals(expectedBody, response.bodyAsText())
+    }
+
+    @Test
+    fun `render with deferred merge props lists deferred and merge metadata`() = testApp {
+        routing {
+            get("/") {
+                inertia.render(
+                    "SampleComponent",
+                    "posts" to InertiaProps.defer({ listOf(1) }, "posts").merge().matchOn("id"),
+                    "expensive" to { error("must not be resolved") }
+                )
+            }
+        }
+
+        val response = client.get("/") {
+            header("X-Inertia", "true")
+            header("X-Inertia-Partial-Component", "SampleComponent")
+            header("X-Inertia-Partial-Data", "posts")
+        }
+
+        val expectedBody = """{"component":"SampleComponent","props":{"posts":[1]},"url":"/","version":"1","encryptHistory":true,"clearHistory":false,"mergeProps":["posts"],"matchPropsOn":["posts.id"]}"""
+        assertEquals(expectedBody, response.bodyAsText())
     }
 
     private fun normalizeHtml(html: String): String {

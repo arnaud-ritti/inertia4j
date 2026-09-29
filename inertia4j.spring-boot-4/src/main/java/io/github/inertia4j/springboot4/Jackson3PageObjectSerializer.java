@@ -6,6 +6,7 @@ import io.github.inertia4j.spi.SerializationException;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 import tools.jackson.core.JacksonException;
+import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.MapperFeature;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.SerializationFeature;
@@ -19,6 +20,14 @@ import java.util.List;
  */
 @NullMarked
 class Jackson3PageObjectSerializer implements PageObjectSerializer {
+    private static final List<String> OptionalFields = List.of(
+        "mergeProps",
+        "prependProps",
+        "deepMergeProps",
+        "matchPropsOn",
+        "deferredProps"
+    );
+
     private final ObjectMapper objectMapper = JsonMapper.builder()
         .configure(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS, true)
         .configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, false)
@@ -37,6 +46,7 @@ class Jackson3PageObjectSerializer implements PageObjectSerializer {
     ) throws SerializationException {
         try {
             ObjectNode tree = objectMapper.valueToTree(pageObject);
+            removeNullOptionalFields(tree);
             if (partialDataProps != null) {
                 ObjectNode propsNode = (ObjectNode) tree.get("props");
                 propsNode.retain(partialDataProps);
@@ -44,6 +54,15 @@ class Jackson3PageObjectSerializer implements PageObjectSerializer {
             return objectMapper.writeValueAsString(tree);
         } catch (JacksonException e) {
             throw new SerializationException(e);
+        }
+    }
+
+    private static void removeNullOptionalFields(ObjectNode tree) {
+        for (String field : OptionalFields) {
+            JsonNode node = tree.get(field);
+            if (node != null && node.isNull()) {
+                tree.remove(field);
+            }
         }
     }
 }

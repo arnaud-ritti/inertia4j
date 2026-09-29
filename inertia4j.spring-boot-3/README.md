@@ -169,3 +169,64 @@ the [official docs](https://inertiajs.com/redirects).
 ### Partial Reloads
 
 Inertia4J also supports partial reloads, in case you don't need to return all the data to your client-side when the component loads, or in case you just need to reload a specific component in your page.
+
+### Shared Data
+
+Data needed by every page (the authenticated user, flash messages, the app name...) can be shared with all Inertia
+responses. Every `SharedDataProvider` bean is picked up automatically:
+
+```java
+@Component
+public class AppSharedData implements SharedDataProvider {
+    @Override
+    public Map<String, Object> share(HttpServletRequest request) {
+        return Map.of(
+            "appName", "My App",
+            "user", (Supplier<Object>) () -> currentUser(request) // lazy, evaluated only when sent
+        );
+    }
+}
+```
+
+Props can also be shared with the current request only, e.g. from a filter or interceptor:
+
+```java
+inertia.share("flash", "Record saved!");
+```
+
+Props given to `render` take precedence over shared props when keys collide. Any `Supplier` prop value is lazy: it is only
+evaluated when the prop is included in the response. See the [official docs](https://inertiajs.com/shared-data).
+
+### Deferred Props
+
+Deferred props are left out of the initial page load, and fetched by the client right after the page renders. Props of
+the same group are fetched in the same request:
+
+```java
+return inertia.render("records/Index", Map.of(
+    "records", recordRepository.findAll(),
+    "permissions", Inertia.defer(() -> permissionRepository.findAll()),
+    "teams", Inertia.defer(() -> teamRepository.findAll(), "attributes"),
+    "projects", Inertia.defer(() -> projectRepository.findAll(), "attributes")
+));
+```
+
+See the [official docs](https://inertiajs.com/deferred-props).
+
+### Merging Props
+
+By default, props returned by a partial reload replace the ones held by the client. Merge props are merged instead:
+
+```java
+return inertia.render("records/Index", Map.of(
+    "records", Inertia.merge(recordPage.getContent()),                  // append items
+    "notifications", Inertia.merge(notifications).prepend(),            // prepend items
+    "feed", Inertia.merge(feed).append("data").prepend("messages"),     // merge nested arrays
+    "posts", Inertia.merge(posts).matchOn("id"),                        // update existing items in place
+    "conversations", Inertia.deepMerge(conversations).matchOn("data.id") // merge nested objects recursively
+));
+```
+
+Merging also works with deferred props: `Inertia.defer(() -> ...).merge()` or `Inertia.defer(() -> ...).deepMerge()`.
+Props reset by the client (`router.reload({ reset: ['records'] })`) are sent without merge instructions. See the
+[official docs](https://inertiajs.com/merging-props).

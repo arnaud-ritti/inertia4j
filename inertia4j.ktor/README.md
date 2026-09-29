@@ -174,3 +174,66 @@ the [official docs](https://inertiajs.com/redirects).
 
 Inertia4J also supports partial reloads, in case you don't need to return all the data to your client-side on component
 load, or in case you just need to reload a specific component in your page.
+
+### Shared Data
+
+Data needed by every page (the authenticated user, flash messages, the app name...) can be shared with all Inertia
+responses through the plugin configuration:
+
+```kotlin
+install(Inertia) {
+    share { call ->
+        mapOf(
+            "appName" to "My App",
+            "user" to { currentUser(call) } // lazy, evaluated only when sent
+        )
+    }
+}
+```
+
+Props can also be shared with the current call only:
+
+```kotlin
+inertia.share("flash", "Record saved!")
+```
+
+Props given to `render` take precedence over shared props when keys collide. Function prop values (`() -> T`) are lazy:
+they are only evaluated when the prop is included in the response. See the
+[official docs](https://inertiajs.com/shared-data).
+
+### Deferred Props
+
+Deferred props are left out of the initial page load, and fetched by the client right after the page renders. Props of
+the same group are fetched in the same request:
+
+```kotlin
+inertia.render(
+    "records/Index",
+    "records" to recordRepository.findAll(),
+    "permissions" to InertiaProps.defer { permissionRepository.findAll() },
+    "teams" to InertiaProps.defer({ teamRepository.findAll() }, "attributes"),
+    "projects" to InertiaProps.defer({ projectRepository.findAll() }, "attributes"),
+)
+```
+
+See the [official docs](https://inertiajs.com/deferred-props).
+
+### Merging Props
+
+By default, props returned by a partial reload replace the ones held by the client. Merge props are merged instead:
+
+```kotlin
+inertia.render(
+    "records/Index",
+    "records" to InertiaProps.merge(recordPage.items),                         // append items
+    "notifications" to InertiaProps.merge(notifications).prepend(),            // prepend items
+    "feed" to InertiaProps.merge(feed).append("data").prepend("messages"),     // merge nested arrays
+    "posts" to InertiaProps.merge(posts).matchOn("id"),                        // update existing items in place
+    "conversations" to InertiaProps.deepMerge(conversations).matchOn("data.id"), // merge nested objects recursively
+)
+```
+
+Merging also works with deferred props: `InertiaProps.defer { ... }.merge()` or `InertiaProps.defer { ... }.deepMerge()`.
+To make the value of a merge prop lazy, wrap it in a `Supplier { ... }`. Props reset by the client
+(`router.reload({ reset: ['records'] })`) are sent without merge instructions. See the
+[official docs](https://inertiajs.com/merging-props).

@@ -4,9 +4,13 @@ import io.github.inertia4j.core.DefaultPageObjectSerializer;
 import io.github.inertia4j.spi.PageObjectSerializer;
 import io.github.inertia4j.spi.TemplateRenderer;
 import io.github.inertia4j.springshared.AbstractInertiaSpringAutoconfiguration;
+import io.github.inertia4j.springshared.SharedDataProvider;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+
+import java.util.stream.Collectors;
 
 /**
  * Spring Boot 3 auto-configuration for Inertia4j.
@@ -25,9 +29,15 @@ public class InertiaSpringAutoconfiguration extends AbstractInertiaSpringAutocon
     public Inertia inertia(
         VersionProvider versionProvider,
         PageObjectSerializer pageObjectSerializer,
-        TemplateRenderer templateRenderer
+        TemplateRenderer templateRenderer,
+        ObjectProvider<SharedDataProvider> sharedDataProviders
     ) {
-        return new Inertia(versionProvider, pageObjectSerializer, templateRenderer);
+        return new Inertia(
+            versionProvider,
+            pageObjectSerializer,
+            templateRenderer,
+            sharedDataProviders.orderedStream().collect(Collectors.toList())
+        );
     }
 
     @Override

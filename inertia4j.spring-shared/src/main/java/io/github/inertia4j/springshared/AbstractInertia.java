@@ -1,5 +1,8 @@
 package io.github.inertia4j.springshared;
 
+import io.github.inertia4j.core.DeferredProp;
+import io.github.inertia4j.core.InertiaProps;
+import io.github.inertia4j.core.MergeProp;
 import io.github.inertia4j.spi.PageObjectSerializer;
 import io.github.inertia4j.spi.TemplateRenderer;
 import jakarta.servlet.http.HttpServletRequest;
@@ -10,6 +13,9 @@ import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 import org.springframework.web.context.request.WebRequest;
 
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
 
@@ -19,12 +25,29 @@ import java.util.function.Supplier;
  * to be managed by the Spring container, allowing for easier configuration and testing.
  * <p>
  * It requires {@link VersionProvider}, {@link PageObjectSerializer}, and {@link TemplateRenderer}
- * beans to be available in the application context for its construction.
+ * beans to be available in the application context for its construction, and picks up every
+ * {@link SharedDataProvider} bean to share data with all responses.
  */
 public abstract class AbstractInertia {
-    private final AbstractInertiaSpringRenderer renderer;
+    private static final String SharedPropsAttribute = AbstractInertia.class.getName() + ".sharedProps";
     private static final InertiaSpringRendererOptions defaultOptions = new InertiaSpringRendererOptions();
+
+    private final AbstractInertiaSpringRenderer renderer;
     private final Supplier<HttpServletRequest> requestSupplier;
+    private final List<SharedDataProvider> sharedDataProviders;
+
+    /**
+     * Internal constructor used in tests.
+     */
+    protected AbstractInertia(
+        AbstractInertiaSpringRenderer renderer,
+        Supplier<HttpServletRequest> requestSupplier,
+        List<SharedDataProvider> sharedDataProviders
+    ) {
+        this.renderer = renderer;
+        this.requestSupplier = requestSupplier;
+        this.sharedDataProviders = sharedDataProviders;
+    }
 
     /**
      * Internal constructor used in tests.
@@ -33,8 +56,17 @@ public abstract class AbstractInertia {
         AbstractInertiaSpringRenderer renderer,
         Supplier<HttpServletRequest> requestSupplier
     ) {
-        this.renderer = renderer;
-        this.requestSupplier = requestSupplier;
+        this(renderer, requestSupplier, List.of());
+    }
+
+    /**
+     * Constructs the Inertia bean with required dependencies.
+     *
+     * @param renderer            The Spring-specific renderer to use.
+     * @param sharedDataProviders Providers of the data shared with every response.
+     */
+    protected AbstractInertia(AbstractInertiaSpringRenderer renderer, List<SharedDataProvider> sharedDataProviders) {
+        this(renderer, AbstractInertia::getCurrentRequest, sharedDataProviders);
     }
 
     /**
@@ -43,7 +75,75 @@ public abstract class AbstractInertia {
      * @param renderer The Spring-specific renderer to use.
      */
     protected AbstractInertia(AbstractInertiaSpringRenderer renderer) {
-        this(renderer, AbstractInertia::getCurrentRequest);
+        this(renderer, List.of());
+    }
+
+    /**
+     * Creates a deferred prop in the default group.
+     *
+     * @param supplier provides the prop value when the client requests it.
+     * @return the deferred prop.
+     * @see InertiaProps#defer(Supplier)
+     */
+    public static DeferredProp defer(Supplier<?> supplier) {
+        return InertiaProps.defer(supplier);
+    }
+
+    /**
+     * Creates a deferred prop in the given group.
+     *
+     * @param supplier provides the prop value when the client requests it.
+     * @param group    name of the group.
+     * @return the deferred prop.
+     * @see InertiaProps#defer(Supplier, String)
+     */
+    public static DeferredProp defer(Supplier<?> supplier, String group) {
+        return InertiaProps.defer(supplier, group);
+    }
+
+    /**
+     * Creates a prop whose arrays are appended to the existing client-side value on partial reloads.
+     *
+     * @param value prop value, or a {@link Supplier} evaluated only when the prop is sent.
+     * @return the merge prop.
+     * @see InertiaProps#merge(Object)
+     */
+    public static MergeProp merge(Object value) {
+        return InertiaProps.merge(value);
+    }
+
+    /**
+     * Creates a prop that is deep merged with the existing client-side value on partial reloads.
+     *
+     * @param value prop value, or a {@link Supplier} evaluated only when the prop is sent.
+     * @return the merge prop.
+     * @see InertiaProps#deepMerge(Object)
+     */
+    public static MergeProp deepMerge(Object value) {
+        return InertiaProps.deepMerge(value);
+    }
+
+    /**
+     * Shares a prop with the Inertia response to the current request, e.g. from a filter or interceptor.
+     * Props given to {@code render} take precedence on key collisions.
+     *
+     * @param key   prop key.
+     * @param value prop value, or a {@link Supplier} evaluated only when the prop is sent.
+     */
+    public void share(String key, Object value) {
+        share(requestSupplier.get(), key, value);
+    }
+
+    /**
+     * Shares a prop with the Inertia response to the given request.
+     * Props given to {@code render} take precedence on key collisions.
+     *
+     * @param request the request whose response receives the prop.
+     * @param key     prop key.
+     * @param value   prop value, or a {@link Supplier} evaluated only when the prop is sent.
+     */
+    public void share(HttpServletRequest request, String key, Object value) {
+        requestSharedProps(request).put(key, value);
     }
 
     /**
@@ -159,7 +259,7 @@ public abstract class AbstractInertia {
     ) {
         return renderer.render(
             new InertiaHttpServletRequest(request),
-            options.toCoreRenderingOptions(url, component, props)
+            options.toCoreRenderingOptions(url, component, withSharedProps(request, props))
         );
     }
 
@@ -183,6 +283,32 @@ public abstract class AbstractInertia {
      */
     public ResponseEntity<String> location(String url) {
         return renderer.location(url);
+    }
+
+    private Map<String, Object> withSharedProps(HttpServletRequest request, Map<String, Object> props) {
+        Map<String, Object> allProps = new LinkedHashMap<>();
+
+        sharedDataProviders.forEach(provider -> allProps.putAll(provider.share(request)));
+        allProps.putAll(requestSharedProps(request));
+
+        if (props != null) {
+            allProps.putAll(props);
+        }
+
+        return allProps;
+    }
+
+    @SuppressWarnings("unchecked")
+    private static Map<String, Object> requestSharedProps(HttpServletRequest request) {
+        Object sharedProps = request.getAttribute(SharedPropsAttribute);
+        if (sharedProps != null) {
+            return (Map<String, Object>) sharedProps;
+        }
+
+        Map<String, Object> newSharedProps = new HashMap<>();
+        request.setAttribute(SharedPropsAttribute, newSharedProps);
+
+        return newSharedProps;
     }
 
     /**
