@@ -74,7 +74,7 @@ public class InertiaFilter extends OncePerRequestFilter {
         filterChain.doFilter(request, inertiaResponse);
 
         if (isEmptyResponse(request, inertiaResponse)) {
-            redirectBack(request, inertiaRequest, varyResponse);
+            redirectBack(inertiaRequest, varyResponse);
         }
     }
 
@@ -94,7 +94,7 @@ public class InertiaFilter extends OncePerRequestFilter {
         return !response.hasBody() && !response.isCommitted();
     }
 
-    private static void redirectBack(HttpServletRequest request, HttpRequest inertiaRequest, HttpServletResponse response) {
+    private static void redirectBack(HttpRequest inertiaRequest, HttpServletResponse response) {
         response.setStatus(InertiaRedirects.status(inertiaRequest, HttpServletResponse.SC_FOUND));
         response.setHeader("Location", InertiaRedirects.backLocation(inertiaRequest));
     }
