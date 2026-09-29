@@ -120,3 +120,12 @@ public-hoist-pattern[]=@inertiajs/core
 | anything else | `unknown` (with a build warning) |
 
 `@JsonProperty` and `@JsonIgnore` are honored. Global Jackson naming strategies are not detected: use `propertyNaming`.
+
+### Kotlin classes
+
+- Use `@get:JsonProperty` to rename a property: `@get:JsonProperty("user_name") val userName: String`. A bare
+  `@JsonProperty` on a constructor property lands on the constructor parameter, which is not read, so the property
+  keeps its default name. The same applies to `@JsonInclude`: write `@get:JsonInclude(...)`.
+- A Boolean property named `isX` is generated like plain Jackson does, as `x` (`val isActive: Boolean` gives
+  `active`). jackson-module-kotlin keeps `isActive`, so an `@InertiaForm` request body read by it would not match the
+  generated type. Avoid `is`-prefixed names, or name them explicitly with `@get:JsonProperty`.
