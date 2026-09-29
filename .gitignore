@@ -38,3 +38,4 @@ out/
 
 ### JS ###
 node_modules/
+vite.hot
