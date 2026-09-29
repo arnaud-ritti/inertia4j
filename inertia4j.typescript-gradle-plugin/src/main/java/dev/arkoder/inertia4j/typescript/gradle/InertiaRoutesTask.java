@@ -1,9 +1,13 @@
 package dev.arkoder.inertia4j.typescript.gradle;
 
+
 import dev.arkoder.inertia4j.typescript.GenerationException;
 import dev.arkoder.inertia4j.typescript.GenerationResult;
 import dev.arkoder.inertia4j.typescript.RouteGeneratorOptions;
 import dev.arkoder.inertia4j.typescript.TypeScriptGenerator;
+import java.io.File;
+import java.nio.file.Path;
+import java.util.List;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.GradleException;
 import org.gradle.api.file.ConfigurableFileCollection;
@@ -13,14 +17,12 @@ import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.PathSensitive;
 import org.gradle.api.tasks.PathSensitivity;
-
-import java.io.File;
-import java.nio.file.Path;
-import java.util.List;
+import org.gradle.work.DisableCachingByDefault;
 
 /**
  * Base of the tasks generating and checking the route helpers file.
  */
+@DisableCachingByDefault(because = "Base class; the generating subclass is cacheable")
 public abstract class InertiaRoutesTask extends DefaultTask {
     /**
      * @return runtime classpath of the application, holding the controllers.

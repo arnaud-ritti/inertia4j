@@ -1,3 +1,5 @@
+import org.jetbrains.kotlin.gradle.dsl.KotlinVersion
+
 plugins {
     alias(libs.plugins.kotlin.jvm)
     id("inertia4j.publishing-conventions")
@@ -6,6 +8,15 @@ plugins {
 java {
     toolchain {
         languageVersion = JavaLanguageVersion.of(17)
+    }
+}
+
+kotlin {
+    // Compiled with a recent Kotlin, but readable by projects on Kotlin 2.0 and linked against its standard library.
+    coreLibrariesVersion = "2.0.21"
+    compilerOptions {
+        apiVersion = KotlinVersion.KOTLIN_2_0
+        languageVersion = KotlinVersion.KOTLIN_2_0
     }
 }
 

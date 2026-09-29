@@ -1,18 +1,20 @@
 package dev.arkoder.inertia4j.typescript.gradle;
 
-import org.gradle.api.GradleException;
-import org.gradle.api.file.RegularFileProperty;
-import org.gradle.api.tasks.Internal;
-import org.gradle.api.tasks.TaskAction;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import org.gradle.api.GradleException;
+import org.gradle.api.file.RegularFileProperty;
+import org.gradle.api.tasks.Internal;
+import org.gradle.api.tasks.TaskAction;
+import org.gradle.work.DisableCachingByDefault;
 
 /**
  * Fails when the committed TypeScript declaration file differs from freshly generated types.
  * Line endings are ignored, so checkouts with CRLF line endings pass.
  */
+@DisableCachingByDefault(because = "Verification task without outputs: it compares the committed file with freshly generated content")
 public abstract class CheckInertiaTypesTask extends InertiaTypesTask {
     /**
      * Creates the task, which is never up to date.

@@ -24,13 +24,13 @@ dependencies {
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
-val npmInstall by tasks.registering(Exec::class) {
+val npmInstall = tasks.register<Exec>("npmInstall") {
     commandLine("npm", "ci")
     inputs.file("package-lock.json")
     outputs.dir("node_modules")
 }
 
-val npmBuild by tasks.registering(Exec::class) {
+val npmBuild = tasks.register<Exec>("npmBuild") {
     dependsOn(npmInstall)
     commandLine("npm", "run", "build")
     inputs.dir("src/main/frontend")
