@@ -83,6 +83,10 @@ public class HttpSsrGateway implements SsrGateway {
             return fail(pageObject, readFailurePayload(response.body()));
         }
 
+        if (isEmptyPayload(response.body())) {
+            return null;
+        }
+
         Map<String, Object> payload;
         try {
             payload = jsonReader.readObject(response.body());
@@ -179,6 +183,13 @@ public class HttpSsrGateway implements SsrGateway {
         return ((List<?>) head).stream()
             .map(String::valueOf)
             .collect(Collectors.joining("\n"));
+    }
+
+    // The Vite dev server answers null while it warms up, which is a fallback rather than a failure.
+    private static boolean isEmptyPayload(String body) {
+        String trimmed = body != null ? body.trim() : "";
+
+        return trimmed.isEmpty() || trimmed.equals("null");
     }
 
     private static String stringOrNull(Object value) {

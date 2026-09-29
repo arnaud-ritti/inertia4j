@@ -507,6 +507,7 @@ public abstract class AbstractInertia {
         InertiaSpringRendererOptions options
     ) {
         InertiaRenderingOptions.Builder coreOptions = options
+            .withDefaults(defaultOptions)
             .applyTo(InertiaRenderingOptions.builder(component, url))
             .sharedProps(sharedProps(request))
             .props(props)

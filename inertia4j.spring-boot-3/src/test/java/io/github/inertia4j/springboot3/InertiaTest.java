@@ -3,6 +3,7 @@ package io.github.inertia4j.springboot3;
 import io.github.inertia4j.core.InertiaRenderer;
 import io.github.inertia4j.core.ScrollMetadata;
 import io.github.inertia4j.spi.PageObjectSerializer;
+import io.github.inertia4j.spi.RenderedPage;
 import io.github.inertia4j.springboot3.Inertia.Options;
 import io.github.inertia4j.springshared.SharedDataProvider;
 import org.junit.jupiter.api.BeforeEach;
@@ -96,6 +97,18 @@ public class InertiaTest {
         assertEquals("1", response.getHeaders().getFirst("X-Inertia-Version"));
         assertNull(response.getHeaders().get("X-Inertia"));
         assertNull(response.getBody());
+    }
+
+    @Test
+    void render_withOptionsNotSettingEncryption_keepsDefaultEncryption() {
+        inertiaRequest();
+        inertia.setDefaultOptions(Options.encryptHistory());
+
+        ResponseEntity<String> withStatus = inertia.render(testComponent, Map.of(), Options.status(422));
+        ResponseEntity<String> optedOut = inertia.render(testComponent, Map.of(), Options.encryptHistory(false));
+
+        assertEquals(true, withStatus.getBody().contains("\"encryptHistory\":true"));
+        assertEquals(false, optedOut.getBody().contains("encryptHistory"));
     }
 
     @Test
@@ -295,6 +308,21 @@ public class InertiaTest {
 
         assertEquals(422, response.getStatusCode().value());
         assertEquals("{\"message\":\"Invalid user.\",\"errors\":{\"user\":[\"Invalid user.\"]}}", response.getBody());
+    }
+
+    @Test
+    void render_withContextPath_matchesSsrExclusionsWithinTheApplication() {
+        request = newRequest("GET", "/app/admin/users");
+        request.setContextPath("/app");
+        InertiaRenderer renderer = InertiaRenderer
+            .builder(pageObjectSerializer, () -> "1", page -> page.getBody())
+            .ssrGateway((pageObject, json) -> new RenderedPage("", "ssr"))
+            .withoutSsr("admin/*")
+            .build();
+
+        ResponseEntity<String> response = new Inertia(renderer, () -> request, List.of()).render(testComponent);
+
+        assertEquals(true, response.getBody().contains("data-page"));
     }
 
     private Inertia inertia(List<SharedDataProvider> sharedDataProviders) {

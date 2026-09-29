@@ -402,6 +402,12 @@ route("/users") {
 
 See the [official docs](https://inertiajs.com/docs/v3/the-basics/forms#precognition).
 
+### CSRF Protection
+
+The Inertia client reads the `XSRF-TOKEN` cookie and sends it back in the `X-XSRF-TOKEN` header. Ktor has no built-in
+token of this kind: set the cookie yourself and check the header on state-changing requests, or rely on the `CSRF`
+plugin's origin checks. See the [official docs](https://inertiajs.com/docs/v3/security/csrf-protection).
+
 ### Server-Side Rendering
 
 Full page loads can be pre-rendered by the Inertia Node.js SSR server:
@@ -413,7 +419,7 @@ install(Inertia) {
         url = "http://127.0.0.1:13714"
         // Optional
         timeout = Duration.ofSeconds(2)
-        except = listOf("/admin/*")
+        except = listOf("admin/*")
         hotUrl = "http://localhost:5173"
         onFailure { failure -> log.warn(failure.toString()) }
     }
@@ -422,8 +428,8 @@ install(Inertia) {
 
 When rendering fails, the page falls back to client-side rendering after notifying `onFailure`, unless `throwOnError`
 is set. Render requests time out after 10 seconds unless `timeout` is set. While the Vite dev server runs (its hot
-file exists), pages are rendered through it instead; `hotUrl` sets a fixed Vite dev server URL, which then always
-applies, so leave it unset outside development. See the
+file exists), pages are rendered through it instead, at `hotUrl` when set. `except` paths are matched with or without
+leading slash. See the [Vite guide](../docs/vite.md#server-side-rendering) for the frontend setup and the
 [official docs](https://inertiajs.com/docs/v3/advanced/server-side-rendering).
 
 ### Typed props

@@ -1,6 +1,7 @@
 package io.github.inertia4j.springshared;
 
 import io.github.inertia4j.core.InertiaRenderingOptions;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Represents rendering options specific to the Spring integration: history state flags
@@ -10,12 +11,9 @@ import io.github.inertia4j.core.InertiaRenderingOptions;
  * and provide an instance-based way to configure options, often used with the {@link AbstractInertia} bean.
  */
 public class InertiaSpringRendererOptions {
-    private final boolean encryptHistory;
+    private final @Nullable Boolean encryptHistory;
     private final boolean clearHistory;
     private final int status;
-
-    /** Default value for encryptHistory, used by constructors and potentially autoconfiguration. */
-    static final boolean defaultEncryptHistory = false;
 
     /** Default value for clearHistory, used by constructors. */
     static final boolean defaultClearHistory = false;
@@ -41,16 +39,21 @@ public class InertiaSpringRendererOptions {
      * @param status         HTTP status code of the response.
      */
     public InertiaSpringRendererOptions(boolean encryptHistory, boolean clearHistory, int status) {
-        this.encryptHistory = encryptHistory;
-        this.clearHistory = clearHistory;
-        this.status = status;
+        this((Boolean) encryptHistory, clearHistory, status);
     }
 
     /**
-     * Constructs rendering options with default values.
+     * Constructs rendering options with default values. {@code encryptHistory} is left unset, so the default
+     * options of the {@link AbstractInertia} bean, set from {@code inertia.encrypt-history}, apply.
      */
     public InertiaSpringRendererOptions() {
-        this(defaultEncryptHistory, defaultClearHistory);
+        this(null, defaultClearHistory, defaultStatus);
+    }
+
+    private InertiaSpringRendererOptions(@Nullable Boolean encryptHistory, boolean clearHistory, int status) {
+        this.encryptHistory = encryptHistory;
+        this.clearHistory = clearHistory;
+        this.status = status;
     }
 
     /**
@@ -88,7 +91,7 @@ public class InertiaSpringRendererOptions {
      * @return a new {@code InertiaSpringRendererOptions} instance.
      */
     public InertiaSpringRendererOptions encryptHistory(boolean encryptHistory) {
-        return new InertiaSpringRendererOptions(encryptHistory, clearHistory, status);
+        return new InertiaSpringRendererOptions((Boolean) encryptHistory, clearHistory, status);
     }
 
     /**
@@ -101,9 +104,17 @@ public class InertiaSpringRendererOptions {
         return new InertiaSpringRendererOptions(encryptHistory, clearHistory, status);
     }
 
+    InertiaSpringRendererOptions withDefaults(InertiaSpringRendererOptions defaults) {
+        if (encryptHistory != null) {
+            return this;
+        }
+
+        return new InertiaSpringRendererOptions(defaults.encryptHistory, clearHistory, status);
+    }
+
     InertiaRenderingOptions.Builder applyTo(InertiaRenderingOptions.Builder builder) {
         return builder
-            .encryptHistory(encryptHistory)
+            .encryptHistory(Boolean.TRUE.equals(encryptHistory))
             .clearHistory(clearHistory)
             .status(status);
     }

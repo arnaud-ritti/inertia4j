@@ -51,8 +51,9 @@ New prop types: `optional`, `always`, `once`, `scroll`, and `rescue()` for defer
 - The Spring filter and the Ktor plugin apply these rules to every Inertia request, not only to `inertia.*` responses:
   outdated asset versions are answered with `409` before the handler runs, and a `302` answering a `PUT`, `PATCH` or
   `DELETE` request becomes a `303`.
-- Server-side render requests time out after 10 seconds by default, and use the Vite dev server while it runs unless
-  a fixed hot URL is set.
+- Server-side render requests time out after 10 seconds by default, and use the Vite dev server while it runs; a
+  configured hot URL only applies while it runs. SSR exclusion paths match with or without leading slash, relative to
+  the servlet context path.
 - Once prop `expiresAt` timestamps keep their milliseconds.
 
 ## Extension points

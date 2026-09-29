@@ -140,6 +140,37 @@ install(Inertia) {
 
 Setting `versionProvider` replaces the Vite asset version.
 
+## Server-side rendering
+
+Enable SSR in Inertia4J (`inertia.ssr.enabled=true` in Spring, `ssr { enabled = true }` in Ktor), then add the
+official `@inertiajs/vite` plugin with your SSR entry next to `inertia4jHotFile`:
+
+```ts
+import inertia from '@inertiajs/vite'
+
+export default defineConfig(({ command }) => ({
+  plugins: [
+    react(),
+    inertia({ ssr: { entry: 'src/main/frontend/ssr.tsx' } }),
+    inertia4jHotFile(),
+  ],
+  // ...
+}))
+```
+
+The entry calls `createServer` from your framework adapter (`@inertiajs/react/server`, `@inertiajs/vue3/server`, ...),
+as described in the [official guide](https://inertiajs.com/docs/v3/advanced/server-side-rendering).
+
+- **Development:** while `vite.hot` exists, pages are rendered by the dev server through its `/__inertia_ssr` endpoint;
+  no SSR build nor separate Node.js process is needed. The endpoint only exists when the plugin finds the SSR entry,
+  otherwise every render falls back to client-side rendering and reports a failure. While the dev server warms up it
+  answers without markup, and pages are rendered on the client without reporting a failure.
+- **Production:** build the SSR bundle with `vite build --ssr` after `vite build`, and run it with `node` next to your
+  application. Inertia4J posts pages to `http://127.0.0.1:13714/render` by default (`inertia.ssr.url` / `url`).
+
+Setting `inertia.ssr.hot-url` (Spring) or `hotUrl` (Ktor) replaces the URL read from `vite.hot`; it only applies
+while the hot file exists.
+
 ## Custom template renderers
 
 See [Advanced usage](advanced.md#vite-tags-in-a-custom-renderer).

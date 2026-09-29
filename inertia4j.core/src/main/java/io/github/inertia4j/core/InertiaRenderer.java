@@ -280,9 +280,13 @@ public class InertiaRenderer {
     }
 
     private boolean isExcludedFromSsr(HttpRequest request) {
-        String path = request.getUrl().split("\\?", 2)[0];
+        String path = stripLeadingSlashes(request.getPathWithinApplication());
 
         return ssrExcludedPaths.stream().anyMatch(pattern -> pattern.matcher(path).matches());
+    }
+
+    private static String stripLeadingSlashes(String path) {
+        return path.replaceFirst("^/+", "");
     }
 
     /**
@@ -332,9 +336,10 @@ public class InertiaRenderer {
         }
 
         /**
-         * Sets request paths that are never server-side rendered. A {@code *} matches any sequence of characters.
+         * Sets request paths that are never server-side rendered, relative to the application and with or without
+         * leading slash. A {@code *} matches any sequence of characters.
          *
-         * @param paths path patterns, e.g. {@code /admin/*}.
+         * @param paths path patterns, e.g. {@code admin/*} or {@code /admin/*}.
          * @return this builder.
          */
         public Builder withoutSsr(String... paths) {
@@ -388,7 +393,7 @@ public class InertiaRenderer {
         }
 
         private static Pattern globToPattern(String glob) {
-            String regex = Arrays.stream(glob.split("\\*", -1))
+            String regex = Arrays.stream(stripLeadingSlashes(glob).split("\\*", -1))
                 .map(Pattern::quote)
                 .collect(Collectors.joining(".*"));
 

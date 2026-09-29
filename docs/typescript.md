@@ -108,6 +108,17 @@ export default function Index({ users, stats }: UsersIndexProps) {
 }
 ```
 
+Flash data is an untyped map on the server, so no `flashDataType` is generated. Declare it in your own file; it merges
+with the generated `InertiaConfig`:
+
+```ts
+declare module '@inertiajs/core' {
+  interface InertiaConfig {
+    flashDataType: { message?: string }
+  }
+}
+```
+
 With pnpm, hoist `@inertiajs/core` so the module augmentation resolves:
 
 ```ini

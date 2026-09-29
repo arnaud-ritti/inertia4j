@@ -39,6 +39,11 @@ class InertiaHttpServletRequest implements HttpRequest {
         return withQueryString(request.getRequestURL().toString());
     }
 
+    @Override
+    public String getPathWithinApplication() {
+        return request.getRequestURI().substring(request.getContextPath().length());
+    }
+
     private String withQueryString(String url) {
         String queryString = request.getQueryString();
 

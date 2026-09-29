@@ -168,8 +168,8 @@ class InertiaKtorConfiguration {
         var url: String = HttpSsrGateway.DefaultUrl
 
         /**
-         * URL of the Vite development server, used instead of the server-side rendering server when set.
-         * Leave it `null` to follow the Vite hot file: pages are rendered by the Vite dev server while it runs.
+         * URL of the Vite development server rendering pages while it runs, i.e. while its hot file exists.
+         * Defaults to the URL written in the hot file.
          */
         var hotUrl: String? = null
 
@@ -218,7 +218,7 @@ class InertiaKtorConfiguration {
             val fixedHotUrl = hotUrl
 
             if (fixedHotUrl != null) {
-                builder.hotUrl(fixedHotUrl)
+                builder.hotUrl(Supplier { if (vite.isDevMode) fixedHotUrl else null })
             } else {
                 builder.hotUrl(Supplier { vite.devServerUrlIfRunning() })
             }

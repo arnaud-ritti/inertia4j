@@ -23,8 +23,7 @@ import java.util.Optional;
  *     <li>a {@code GET} request sent with an outdated asset version receives a 409 Conflict with
  *     {@code X-Inertia-Location} before reaching its handler, keeping the flash data of the session;</li>
  *     <li>a 302 Found answering a PUT, PATCH or DELETE request becomes a 303 See Other;</li>
- *     <li>a redirect sent with {@code sendRedirect} to a location with a URL fragment becomes a 409 Conflict with
- *     {@code X-Inertia-Redirect}.</li>
+ *     <li>a redirect to a location with a URL fragment becomes a 409 Conflict with {@code X-Inertia-Redirect}.</li>
  * </ul>
  *
  * @see <a href="https://inertiajs.com/docs/v3/core-concepts/the-protocol">Inertia protocol</a>
@@ -72,6 +71,7 @@ public class InertiaFilter extends OncePerRequestFilter {
 
     private static class InertiaResponse extends HttpServletResponseWrapper {
         private final HttpRequest request;
+        private String fragmentLocation;
 
         private InertiaResponse(HttpServletResponse response, HttpRequest request) {
             super(response);
@@ -80,26 +80,74 @@ public class InertiaFilter extends OncePerRequestFilter {
 
         @Override
         public void setStatus(int status) {
-            super.setStatus(InertiaRedirects.status(request, status));
+            int redirectStatus = InertiaRedirects.status(request, status);
+
+            if (isRedirect(redirectStatus) && fragmentLocation != null) {
+                sendFragmentVisit(fragmentLocation);
+                return;
+            }
+
+            super.setStatus(redirectStatus);
+        }
+
+        @Override
+        public void setHeader(String name, String value) {
+            if (!interceptLocation(name, value)) {
+                super.setHeader(name, value);
+            }
+        }
+
+        @Override
+        public void addHeader(String name, String value) {
+            if (!interceptLocation(name, value)) {
+                super.addHeader(name, value);
+            }
         }
 
         @Override
         public void sendRedirect(String location) throws IOException {
             if (InertiaRedirects.needsFragmentVisit(request, location)) {
                 resetBuffer();
-                super.setStatus(409);
-                setHeader(InertiaHeaders.Redirect, location);
+                sendFragmentVisit(location);
                 return;
             }
 
             if (InertiaRedirects.status(request, 302) != 302) {
                 resetBuffer();
                 super.setStatus(InertiaRedirects.status(request, 302));
-                setHeader("Location", location);
+                super.setHeader("Location", location);
                 return;
             }
 
             super.sendRedirect(location);
+        }
+
+        private boolean interceptLocation(String name, String value) {
+            if (!"Location".equalsIgnoreCase(name) || value == null) {
+                return false;
+            }
+
+            if (!InertiaRedirects.needsFragmentVisit(request, value)) {
+                return false;
+            }
+
+            fragmentLocation = value;
+
+            if (!isRedirect(getStatus())) {
+                return false;
+            }
+
+            sendFragmentVisit(value);
+            return true;
+        }
+
+        private void sendFragmentVisit(String location) {
+            super.setStatus(409);
+            super.setHeader(InertiaHeaders.Redirect, location);
+        }
+
+        private static boolean isRedirect(int status) {
+            return status >= 300 && status < 400;
         }
     }
 }

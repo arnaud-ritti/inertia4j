@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 
+import java.net.URI;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -57,6 +58,16 @@ class InertiaFilterMockMvcTest {
         @PutMapping("/records/fragment")
         String updateWithFragment() {
             return "redirect:/target#comments";
+        }
+
+        @PutMapping("/records/entity-fragment")
+        ResponseEntity<Void> updateWithEntityFragment() {
+            return ResponseEntity.status(302).location(URI.create("/target#comments")).build();
+        }
+
+        @PostMapping("/created")
+        ResponseEntity<Void> created() {
+            return ResponseEntity.status(201).location(URI.create("/records/1#comments")).build();
         }
 
         @PostMapping("/flash")
@@ -106,6 +117,20 @@ class InertiaFilterMockMvcTest {
         mvc.perform(put("/records/fragment").header("X-Inertia", "true").header("X-Inertia-Version", "1"))
             .andExpect(status().isConflict())
             .andExpect(header().string("X-Inertia-Redirect", "/target#comments"));
+    }
+
+    @Test
+    void filter_whenResponseEntityRedirectHasFragment_returns409WithRedirectHeader() throws Exception {
+        mvc.perform(put("/records/entity-fragment").header("X-Inertia", "true").header("X-Inertia-Version", "1"))
+            .andExpect(status().isConflict())
+            .andExpect(header().string("X-Inertia-Redirect", "/target#comments"));
+    }
+
+    @Test
+    void filter_whenNonRedirectHasFragmentLocation_keepsIt() throws Exception {
+        mvc.perform(post("/created").header("X-Inertia", "true").header("X-Inertia-Version", "1"))
+            .andExpect(status().isCreated())
+            .andExpect(header().string("Location", "/records/1#comments"));
     }
 
     @Test

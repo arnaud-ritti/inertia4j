@@ -100,7 +100,8 @@ public abstract class AbstractInertiaSpringAutoconfiguration {
      * Provides the {@link SsrGateway} bean when server-side rendering is enabled. Failed renders are published as
      * {@link SsrRenderFailed} events.
      *
-     * Unless {@code inertia.ssr.hot-url} is set, pages are rendered by the Vite dev server while its hot file exists.
+     * Pages are rendered by the Vite dev server while its hot file exists, at {@code inertia.ssr.hot-url} when set,
+     * or at the URL of the hot file otherwise.
      *
      * @param jsonReader     reader of the server responses.
      * @param eventPublisher publisher of failure events.
@@ -114,9 +115,13 @@ public abstract class AbstractInertiaSpringAutoconfiguration {
         InertiaConfigurationProperties.Ssr ssr = properties.getSsr();
         HttpSsrGateway.Builder builder = HttpSsrGateway.builder();
 
-        if (ssr.getHotUrl() != null) {
-            builder.hotUrl(ssr.getHotUrl());
-        } else if (properties.getVite().isEnabled()) {
+        String hotUrl = ssr.getHotUrl();
+
+        if (!properties.getVite().isEnabled()) {
+            builder.hotUrl(hotUrl);
+        } else if (hotUrl != null) {
+            builder.hotUrl(() -> vite.isDevMode() ? hotUrl : null);
+        } else {
             builder.hotUrl(vite::devServerUrlIfRunning);
         }
 

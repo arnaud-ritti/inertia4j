@@ -275,7 +275,7 @@ class PropsResolver {
     private void collectIgnoredPropMetadata(InertiaProp<?> prop, String path) {
         if (prop.isDeferred() && !wasAlreadyLoadedByClient(prop, path)) {
             deferredProps.computeIfAbsent(prop.group(), group -> new ArrayList<>()).add(path);
-            collectMergeMetadata(prop, path, false);
+            collectMergeMetadata(prop, path, prop.isScroll());
         }
 
         if (prop.isOnce()) {

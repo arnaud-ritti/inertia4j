@@ -396,6 +396,21 @@ public ResponseEntity<String> store(@Valid @RequestBody UserForm form, BindingRe
 Register the `PrecognitionFilter` for these routes so their responses carry `Vary: Precognition`. See the
 [official docs](https://inertiajs.com/docs/v3/the-basics/forms#precognition).
 
+### CSRF Protection
+
+The Inertia client reads the `XSRF-TOKEN` cookie and sends it back in the `X-XSRF-TOKEN` header. With Spring
+Security, store the token in that cookie so the client can read it:
+
+```java
+http.csrf(csrf -> csrf
+    .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
+    .csrfTokenRequestHandler(new CsrfTokenRequestAttributeHandler()));
+```
+
+Spring Security 6 writes the cookie only once the token is used; follow its
+[single-page application guide](https://docs.spring.io/spring-security/reference/servlet/exploits/csrf.html#csrf-integration-javascript-spa)
+to load it on every request. See the [official docs](https://inertiajs.com/docs/v3/security/csrf-protection).
+
 ### Server-Side Rendering
 
 Full page loads can be pre-rendered by the Inertia Node.js SSR server. Enable it in `application.properties`:
@@ -405,15 +420,16 @@ inertia.ssr.enabled=true
 inertia.ssr.url=http://127.0.0.1:13714
 # Optional
 inertia.ssr.timeout=2s
-inertia.ssr.except=/admin/*
+inertia.ssr.except=admin/*
 inertia.ssr.hot-url=http://localhost:5173
 inertia.ssr.throw-on-error=false
 ```
 
 When rendering fails, the page falls back to client-side rendering and an `SsrRenderFailed` application event is
 published. Render requests time out after 10 seconds unless `timeout` is set. While the Vite dev server runs (its hot
-file exists), pages are rendered through it instead; `hot-url` sets a fixed Vite dev server URL, which then always
-applies, so leave it unset outside development. See the
+file exists), pages are rendered through it instead, at `hot-url` when set. `except` paths are relative to the
+application, with or without leading slash. See the [Vite guide](../docs/vite.md#server-side-rendering) for the
+frontend setup and the
 [official docs](https://inertiajs.com/docs/v3/advanced/server-side-rendering).
 
 ### Typed props

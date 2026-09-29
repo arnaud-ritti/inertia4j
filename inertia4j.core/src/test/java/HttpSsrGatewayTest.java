@@ -88,14 +88,17 @@ public class HttpSsrGatewayTest {
     }
 
     @Test
-    void render_whenResponseIsJsonNull_reportsFailureAndFallsBack() {
-        responseBody = "null";
+    void render_whenViteDevServerWarmsUp_fallsBackSilently() {
         List<SsrRenderFailure> failures = new ArrayList<>();
+        HttpSsrGateway gateway = gateway().hotUrl(serverUrl()).throwOnError(true).onFailure(failures::add).build();
 
-        RenderedPage page = gateway().onFailure(failures::add).build().render(pageObject, "{}");
+        for (String warmUpBody : List.of("null", "", " null\n")) {
+            responseBody = warmUpBody;
 
-        assertNull(page);
-        assertEquals(1, failures.size());
+            assertNull(gateway.render(pageObject, "{}"));
+        }
+
+        assertTrue(failures.isEmpty());
     }
 
     @Test

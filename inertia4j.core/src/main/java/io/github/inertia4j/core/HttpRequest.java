@@ -34,4 +34,14 @@ public interface HttpRequest {
      * @return absolute URL of the request.
      */
     String getFullUrl();
+
+    /**
+     * Returns the path of the request within the application, without query string nor context path,
+     * e.g. {@code /events}. It is matched against the paths excluded from server-side rendering.
+     *
+     * @return path of the request within the application.
+     */
+    default String getPathWithinApplication() {
+        return getUrl().split("\\?", 2)[0];
+    }
 }

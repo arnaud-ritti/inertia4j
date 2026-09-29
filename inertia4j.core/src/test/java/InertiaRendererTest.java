@@ -532,7 +532,7 @@ public class InertiaRendererTest {
     }
 
     @Test
-    void render_withDeferredScrollProp_onFullVisit_announcesItWithoutPaginationState() {
+    void render_withDeferredScrollProp_onFullVisit_labelsItsItemsWithoutPaginationState() {
         HttpResponse response = render(
             new FakeHttpRequest("GET", inertiaHeaders),
             options().props(props(
@@ -542,7 +542,7 @@ public class InertiaRendererTest {
 
         assertJson(
             "{\"component\":\"Component\",\"props\":{\"errors\":{}},\"url\":\"/page\",\"version\":\"1\","
-                + "\"mergeProps\":[\"posts\"],\"deferredProps\":{\"default\":[\"posts\"]},\"sharedProps\":[\"errors\"]}",
+                + "\"mergeProps\":[\"posts.data\"],\"deferredProps\":{\"default\":[\"posts\"]},\"sharedProps\":[\"errors\"]}",
             response
         );
     }
@@ -639,6 +639,21 @@ public class InertiaRendererTest {
 
         assertEquals(200, htmlResponse.getCode());
         assertEquals(200, jsonResponse.getCode());
+    }
+
+    @Test
+    void render_withSsrGateway_matchesExcludedPathsWithOrWithoutLeadingSlash() {
+        InertiaRenderer renderer = InertiaRenderer
+            .builder(pageObjectSerializer, versionProvider, page -> page.getBody())
+            .ssrGateway((pageObject, json) -> new RenderedPage("", "ssr"))
+            .withoutSsr("admin/*")
+            .build();
+
+        HttpResponse excludedResponse = renderer.render(new FakeHttpRequest("GET", "/admin/users", Map.of()), options().build());
+        HttpResponse renderedResponse = renderer.render(new FakeHttpRequest("GET", "/users", Map.of()), options().build());
+
+        assertTrue(excludedResponse.getBody().contains("data-page"));
+        assertEquals("ssr", renderedResponse.getBody());
     }
 
     @Test

@@ -148,8 +148,8 @@ public class InertiaConfigurationProperties {
         private String url = HttpSsrGateway.DefaultUrl;
 
         /**
-         * URL of the Vite development server, used instead of the server-side rendering server when set.
-         * Leave it unset to follow the Vite hot file: pages are rendered by the Vite dev server while it runs.
+         * URL of the Vite development server rendering pages while it runs, i.e. while its hot file exists.
+         * Defaults to the URL written in the hot file. Always used when the Vite integration is disabled.
          */
         private String hotUrl;
 
