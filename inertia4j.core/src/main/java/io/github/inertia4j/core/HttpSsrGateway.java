@@ -15,6 +15,7 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 /**
@@ -31,8 +32,13 @@ public class HttpSsrGateway implements SsrGateway {
      */
     public static final String DefaultUrl = "http://127.0.0.1:13714";
 
+    /**
+     * Timeout of render requests when none is specified.
+     */
+    public static final Duration DefaultTimeout = Duration.ofSeconds(10);
+
     private final String url;
-    private final String hotUrl;
+    private final Supplier<String> hotUrl;
     private final Duration timeout;
     private final boolean throwOnError;
     private final Consumer<SsrRenderFailure> failureListener;
@@ -41,7 +47,7 @@ public class HttpSsrGateway implements SsrGateway {
 
     private HttpSsrGateway(Builder builder) {
         this.url = stripTrailingSlash(builder.url);
-        this.hotUrl = builder.hotUrl != null ? stripTrailingSlash(builder.hotUrl) : null;
+        this.hotUrl = builder.hotUrl;
         this.timeout = builder.timeout;
         this.throwOnError = builder.throwOnError;
         this.failureListener = builder.failureListener;
@@ -66,7 +72,7 @@ public class HttpSsrGateway implements SsrGateway {
         HttpResponse<String> response;
         try {
             response = httpClient.send(renderRequest(pageObjectJson), HttpResponse.BodyHandlers.ofString());
-        } catch (IOException exception) {
+        } catch (IOException | IllegalArgumentException exception) {
             return fail(pageObject, Map.of("error", String.valueOf(exception.getMessage()), "type", SsrErrorType.CONNECTION.getValue()));
         } catch (InterruptedException exception) {
             Thread.currentThread().interrupt();
@@ -88,7 +94,13 @@ public class HttpSsrGateway implements SsrGateway {
             return null;
         }
 
-        return new RenderedPage(head(payload.get("head")), String.valueOf(payload.get("body")));
+        Object body = payload.get("body");
+
+        if (!(body instanceof String)) {
+            return fail(pageObject, Map.of("error", "Invalid SSR response: missing body"));
+        }
+
+        return new RenderedPage(head(payload.get("head")), (String) body);
     }
 
     /**
@@ -97,11 +109,11 @@ public class HttpSsrGateway implements SsrGateway {
      * @return {@code true} if the health endpoint responds successfully.
      */
     public boolean isHealthy() {
-        HttpRequest request = requestBuilder(url + "/health").GET().build();
-
         try {
+            HttpRequest request = requestBuilder(url + "/health").GET().build();
+
             return isSuccessful(httpClient.send(request, HttpResponse.BodyHandlers.discarding()).statusCode());
-        } catch (IOException exception) {
+        } catch (IOException | IllegalArgumentException exception) {
             return false;
         } catch (InterruptedException exception) {
             Thread.currentThread().interrupt();
@@ -110,7 +122,8 @@ public class HttpSsrGateway implements SsrGateway {
     }
 
     private HttpRequest renderRequest(String pageObjectJson) {
-        String endpoint = hotUrl != null ? hotUrl + "/__inertia_ssr" : url + "/render";
+        String currentHotUrl = hotUrl.get();
+        String endpoint = currentHotUrl != null ? stripTrailingSlash(currentHotUrl) + "/__inertia_ssr" : url + "/render";
 
         return requestBuilder(endpoint)
             .header("Content-Type", "application/json")
@@ -185,8 +198,8 @@ public class HttpSsrGateway implements SsrGateway {
      */
     public static class Builder {
         private String url = DefaultUrl;
-        private String hotUrl = null;
-        private Duration timeout = null;
+        private Supplier<String> hotUrl = () -> null;
+        private Duration timeout = DefaultTimeout;
         private boolean throwOnError = false;
         private Consumer<SsrRenderFailure> failureListener = failure -> {};
         private JsonReader jsonReader = null;
@@ -213,14 +226,27 @@ public class HttpSsrGateway implements SsrGateway {
          * @return this builder.
          */
         public Builder hotUrl(String hotUrl) {
+            return hotUrl(() -> hotUrl);
+        }
+
+        /**
+         * Sets the provider of the URL of the Vite development server, called on every render. Pages are rendered
+         * through its {@code /__inertia_ssr} endpoint while it returns a URL, and by the server-side rendering server
+         * when it returns {@code null}. Pass {@link io.github.inertia4j.core.vite.Vite#devServerUrlIfRunning()} to
+         * follow the Vite hot file.
+         *
+         * @param hotUrl provider of the Vite development server URL.
+         * @return this builder.
+         */
+        public Builder hotUrl(Supplier<String> hotUrl) {
             this.hotUrl = hotUrl;
             return this;
         }
 
         /**
-         * Sets the timeout of render requests. No timeout is applied by default.
+         * Sets the timeout of render requests. Defaults to {@link #DefaultTimeout}.
          *
-         * @param timeout request timeout.
+         * @param timeout request timeout, or {@code null} for no timeout.
          * @return this builder.
          */
         public Builder timeout(Duration timeout) {

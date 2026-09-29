@@ -23,7 +23,13 @@ class Jackson3JsonReader implements JsonReader {
     @Override
     public Map<String, @Nullable Object> readObject(String json) throws SerializationException {
         try {
-            return objectMapper.readValue(json, MapType);
+            Map<String, @Nullable Object> object = objectMapper.readValue(json, MapType);
+
+            if (object == null) {
+                throw new SerializationException("Expected a JSON object, got null");
+            }
+
+            return object;
         } catch (JacksonException e) {
             throw new SerializationException(e);
         }

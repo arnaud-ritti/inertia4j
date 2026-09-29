@@ -48,6 +48,12 @@ New prop types: `optional`, `always`, `once`, `scroll`, and `rescue()` for defer
   took the component name from the request header.
 - `location(url)` returns a plain `302` redirect for non-Inertia requests.
 - Redirects to a URL with a fragment return `409` with `X-Inertia-Redirect` for Inertia requests.
+- The Spring filter and the Ktor plugin apply these rules to every Inertia request, not only to `inertia.*` responses:
+  outdated asset versions are answered with `409` before the handler runs, and a `302` answering a `PUT`, `PATCH` or
+  `DELETE` request becomes a `303`.
+- Server-side render requests time out after 10 seconds by default, and use the Vite dev server while it runs unless
+  a fixed hot URL is set.
+- Once prop `expiresAt` timestamps keep their milliseconds.
 
 ## Extension points
 
@@ -67,8 +73,10 @@ New prop types: `optional`, `always`, `once`, `scroll`, and `rescue()` for defer
 - `InertiaConfigurationProperties` exposes getters and setters instead of package-private fields.
 - The default `encryptHistory` value is now read from `inertia.encrypt-history`.
 - The `Inertia` bean is built from an `InertiaRenderer` bean, which can be replaced.
+- An `InertiaFilter` bean is registered in servlet applications; disable it with `inertia.filter.enabled=false`.
 
 ## Ktor
 
 - Flash data, errors and redirect flags need the `Sessions` plugin with an `InertiaSession` registered, or a custom
   `InertiaFlashStore`.
+- The plugin checks asset versions and rewrites redirects of every call; disable it with `middleware = false`.

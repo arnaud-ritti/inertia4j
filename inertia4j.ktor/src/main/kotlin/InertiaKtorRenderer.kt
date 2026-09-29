@@ -11,6 +11,8 @@ import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import io.ktor.util.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import java.util.function.Supplier
 
 /**
@@ -69,9 +71,10 @@ class InertiaKtorRenderer internal constructor(
                 .status(status.value)
                 .build()
 
-            val response = coreRenderer.render(request, options)
+            // Server-side rendering and lazy props block, so they must not run on an engine event-loop thread.
+            val response = withContext(Dispatchers.IO) { coreRenderer.render(request, options) }
 
-            if (response.code != HttpStatusCode.Conflict.value && stored.isNotEmpty()) {
+            if (!InertiaRenderer.isVersionConflict(response) && stored.isNotEmpty()) {
                 flashStore.write(call, emptyMap())
             }
 

@@ -67,3 +67,36 @@ class SessionsFlashStore : InertiaFlashStore {
         cause
     )
 }
+
+/**
+ * [InertiaFlashStore] used when Ktor Sessions or Jackson Databind is missing from the classpath:
+ * nothing is ever stored, and writing fails with an explanation.
+ */
+internal object UnavailableFlashStore : InertiaFlashStore {
+    override suspend fun read(call: ApplicationCall): Map<String, Any?> = emptyMap()
+
+    override suspend fun write(call: ApplicationCall, data: Map<String, Any?>) {
+        if (data.isEmpty()) return
+
+        throw InertiaException(
+            "Flash data, errors and redirect flags need io.ktor:ktor-server-sessions and " +
+                "com.fasterxml.jackson.core:jackson-databind on the classpath, or a custom InertiaFlashStore"
+        )
+    }
+}
+
+internal fun defaultFlashStore(): InertiaFlashStore {
+    val dependenciesPresent = listOf(
+        "io.ktor.server.sessions.SessionsConfig",
+        "com.fasterxml.jackson.databind.ObjectMapper"
+    ).all(::isClassPresent)
+
+    return if (dependenciesPresent) SessionsFlashStore() else UnavailableFlashStore
+}
+
+private fun isClassPresent(className: String): Boolean = try {
+    Class.forName(className, false, InertiaFlashStore::class.java.classLoader)
+    true
+} catch (exception: ClassNotFoundException) {
+    false
+}

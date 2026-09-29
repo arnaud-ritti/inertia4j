@@ -11,6 +11,7 @@ import java.time.Clock;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
@@ -113,11 +114,7 @@ public class InertiaRenderer {
         String version = currentVersion();
 
         if (isVersionConflict(request, version)) {
-            return new HttpResponse()
-                .setCode(409)
-                .setHeader("Vary", InertiaHeaders.Inertia)
-                .setHeader(InertiaHeaders.Location, request.getFullUrl())
-                .setHeader(InertiaHeaders.Version, version);
+            return versionConflictResponse(request, version);
         }
 
         PageObject pageObject = pageObject(request, options, version);
@@ -155,14 +152,14 @@ public class InertiaRenderer {
     ) {
         HttpResponse response = new HttpResponse().setHeader("Vary", InertiaHeaders.Inertia);
 
-        if (InertiaHeaders.isInertia(request) && location.contains("#") && !InertiaHeaders.isPrefetch(request)) {
+        if (InertiaRedirects.needsFragmentVisit(request, location)) {
             return response
                 .setCode(409)
                 .setHeader(InertiaHeaders.Redirect, location);
         }
 
         return response
-            .setCode(isPutPatchDelete(request) ? 303 : 302)
+            .setCode(InertiaRedirects.isPutPatchDelete(request) ? 303 : 302)
             .setHeader("Location", location);
     }
 
@@ -187,6 +184,43 @@ public class InertiaRenderer {
         return response
             .setCode(409)
             .setHeader(InertiaHeaders.Location, url);
+    }
+
+    /**
+     * Checks the asset version of an Inertia {@code GET} request before it is handled, as a middleware does, so that
+     * requests answered without rendering a page, such as redirects, also reload the client when assets changed.
+     *
+     * @param request The incoming HTTP request wrapper.
+     * @return a 409 Conflict response with the {@code X-Inertia-Location} header when the version sent by the client
+     * differs from the current one, empty otherwise.
+     */
+    public Optional<HttpResponse> checkVersion(HttpRequest request) {
+        String version = currentVersion();
+
+        if (!isVersionConflict(request, version)) {
+            return Optional.empty();
+        }
+
+        return Optional.of(versionConflictResponse(request, version));
+    }
+
+    /**
+     * Checks whether a response is the 409 Conflict answering an asset version mismatch, which the client follows
+     * with a full page visit that should still receive the flash data and validation errors of the request.
+     *
+     * @param response response returned by this renderer.
+     * @return {@code true} for asset version mismatch responses.
+     */
+    public static boolean isVersionConflict(HttpResponse response) {
+        return response.getCode() == 409 && response.getHeaders().containsKey(InertiaHeaders.Location);
+    }
+
+    private HttpResponse versionConflictResponse(HttpRequest request, String version) {
+        return new HttpResponse()
+            .setCode(409)
+            .setHeader("Vary", InertiaHeaders.Inertia)
+            .setHeader(InertiaHeaders.Location, request.getFullUrl())
+            .setHeader(InertiaHeaders.Version, version);
     }
 
     private String currentVersion() {
@@ -249,13 +283,6 @@ public class InertiaRenderer {
         String path = request.getUrl().split("\\?", 2)[0];
 
         return ssrExcludedPaths.stream().anyMatch(pattern -> pattern.matcher(path).matches());
-    }
-
-    private boolean isPutPatchDelete(HttpRequest request) {
-        String requestMethod = request.getMethod();
-        return (requestMethod.equalsIgnoreCase("PUT")
-            || requestMethod.equalsIgnoreCase("PATCH")
-            || requestMethod.equalsIgnoreCase("DELETE"));
     }
 
     /**

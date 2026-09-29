@@ -82,9 +82,29 @@ public class SimpleTemplateRenderer implements TemplateRenderer {
      */
     @Override
     public String render(RenderedPage page) {
-        return renderVitePlaceholders()
-            .replaceFirst(HeadPlaceholder, Matcher.quoteReplacement(page.getHead()))
-            .replaceFirst(AppPlaceholder, Matcher.quoteReplacement(page.getBody()));
+        String template = renderVitePlaceholders();
+        int headIndex = template.indexOf(HeadPlaceholder);
+        int appIndex = template.indexOf(AppPlaceholder);
+
+        // Placeholders are located before substituting, and the later one is replaced first, so content inserted
+        // for one placeholder is never scanned for the other.
+        if (headIndex > appIndex) {
+            String withHead = replaceAt(template, headIndex, HeadPlaceholder, page.getHead());
+
+            return replaceAt(withHead, appIndex, AppPlaceholder, page.getBody());
+        }
+
+        String withBody = replaceAt(template, appIndex, AppPlaceholder, page.getBody());
+
+        return replaceAt(withBody, headIndex, HeadPlaceholder, page.getHead());
+    }
+
+    private static String replaceAt(String template, int index, String placeholder, String replacement) {
+        if (index < 0) {
+            return template;
+        }
+
+        return template.substring(0, index) + replacement + template.substring(index + placeholder.length());
     }
 
     private String renderVitePlaceholders() {

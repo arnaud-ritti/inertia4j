@@ -23,6 +23,7 @@ function inertia4jHotFile(): Plugin {
 export default defineConfig(({ command }) => ({
   plugins: [react(), inertia4jHotFile()],
   base: command === 'build' ? '/build/' : '/',
+  publicDir: false,
   build: {
     manifest: true,
     outDir: 'src/main/resources/static/build',

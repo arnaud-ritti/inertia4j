@@ -64,6 +64,16 @@ class SimpleTemplateRendererTest {
     }
 
     @Test
+    void render_whenHeadContainsAppPlaceholder_insertsBodyAtTemplatePlaceholder() {
+        RenderedPage page = new RenderedPage("<title>@InertiaApp@</title>", "<div id=\"app\"></div>");
+
+        String html = new SimpleTemplateRenderer("templates/vite.html").render(page);
+
+        assertTrue(html.contains("<title>@InertiaApp@</title>"));
+        assertTrue(html.endsWith("</head>\n<div id=\"app\"></div>\n"));
+    }
+
+    @Test
     void render_inDevMode_keepsDollarSignsOfReactPreamble() throws Exception {
         Files.writeString(tempDir.resolve("vite.hot"), "http://localhost:5173");
 

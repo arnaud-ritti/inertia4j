@@ -316,11 +316,11 @@ class PropsResolver {
 
     private Long expiresAt(InertiaProp<?> prop) {
         if (prop.expiresAt() != null) {
-            return prop.expiresAt().getEpochSecond() * 1000;
+            return prop.expiresAt().toEpochMilli();
         }
 
         if (prop.expiresIn() != null) {
-            return (clock.instant().getEpochSecond() + prop.expiresIn().getSeconds()) * 1000;
+            return clock.instant().plus(prop.expiresIn()).toEpochMilli();
         }
 
         return null;

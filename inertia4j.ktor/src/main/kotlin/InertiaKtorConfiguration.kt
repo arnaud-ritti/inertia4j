@@ -15,6 +15,7 @@ import io.github.inertia4j.spi.SsrGateway
 import io.github.inertia4j.spi.TemplateRenderer
 import io.ktor.server.application.*
 import java.time.Duration
+import java.util.function.Supplier
 
 /**
  * Configuration class for the Inertia Ktor plugin.
@@ -71,7 +72,8 @@ class InertiaKtorConfiguration {
 
     /**
      * Keeps flash data, validation errors and redirect flags until the next rendered page.
-     * Defaults to [SessionsFlashStore], which needs the Ktor `Sessions` plugin.
+     * Defaults to [SessionsFlashStore], which needs the Ktor `Sessions` plugin, when `ktor-server-sessions` and
+     * Jackson Databind are on the classpath; otherwise flash data cannot be stored.
      */
     var flashStore: InertiaFlashStore? = null
 
@@ -81,6 +83,14 @@ class InertiaKtorConfiguration {
      * naming strategy.
      */
     var propertyNaming: PropertyNaming = PropertyNaming.Camel
+
+    /**
+     * Whether the plugin applies the Inertia protocol to every call, including those answered without rendering a
+     * page: a `GET` Inertia request sent with an outdated asset version receives a 409 Conflict before reaching its
+     * route, a 302 Found answering a PUT, PATCH or DELETE Inertia request becomes a 303 See Other, and a redirect to
+     * a location with a URL fragment becomes a 409 Conflict with `X-Inertia-Redirect`. Defaults to `true`.
+     */
+    var middleware: Boolean = true
 
     internal val ssr = SsrConfiguration()
 
@@ -140,7 +150,7 @@ class InertiaKtorConfiguration {
     }
 
     internal val flashStoreOrDefault: InertiaFlashStore get() {
-        return flashStore ?: SessionsFlashStore()
+        return flashStore ?: defaultFlashStore()
     }
 
     /**
@@ -159,13 +169,14 @@ class InertiaKtorConfiguration {
 
         /**
          * URL of the Vite development server, used instead of the server-side rendering server when set.
+         * Leave it `null` to follow the Vite hot file: pages are rendered by the Vite dev server while it runs.
          */
         var hotUrl: String? = null
 
         /**
          * Timeout of render requests. No timeout is applied when `null`.
          */
-        var timeout: Duration? = null
+        var timeout: Duration? = HttpSsrGateway.DefaultTimeout
 
         /**
          * Whether failed renders throw instead of falling back to client-side rendering.
@@ -187,10 +198,10 @@ class InertiaKtorConfiguration {
          */
         var gateway: SsrGateway? = null
 
-        internal var failureListener: (SsrRenderFailure) -> Unit = {}
+        internal var failureListener: ((SsrRenderFailure) -> Unit)? = null
 
         /**
-         * Registers a listener notified of failed renders.
+         * Registers a listener notified of failed renders, replacing the default one logging them as warnings.
          *
          * @param listener failure listener.
          */
@@ -198,16 +209,26 @@ class InertiaKtorConfiguration {
             failureListener = listener
         }
 
-        internal fun gatewayOrDefault(): SsrGateway? {
+        internal fun gatewayOrDefault(vite: Vite, defaultFailureListener: (SsrRenderFailure) -> Unit): SsrGateway? {
             if (!enabled) return null
 
-            return gateway ?: HttpSsrGateway.builder()
+            if (gateway != null) return gateway
+
+            val builder = HttpSsrGateway.builder()
+            val fixedHotUrl = hotUrl
+
+            if (fixedHotUrl != null) {
+                builder.hotUrl(fixedHotUrl)
+            } else {
+                builder.hotUrl(Supplier { vite.devServerUrlIfRunning() })
+            }
+
+            return builder
                 .url(url)
-                .hotUrl(hotUrl)
                 .timeout(timeout)
                 .throwOnError(throwOnError)
                 .jsonReader(jsonReader ?: DefaultJsonReader())
-                .onFailure(failureListener)
+                .onFailure(failureListener ?: defaultFailureListener)
                 .build()
         }
     }

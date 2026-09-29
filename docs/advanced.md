@@ -158,3 +158,7 @@ Adapters delegate to the framework-agnostic `InertiaRenderer`, configured with `
 element id, SSR gateway and excluded paths, reporter of rescued deferred prop exceptions, clock of once prop expirations,
 and exposure of shared prop keys. In Spring, define an `InertiaRenderer` bean to replace the one built from the
 `inertia.*` properties.
+
+Adapters for other frameworks should also run `InertiaRenderer.checkVersion(request)` before handling each request, and
+pass the status and location of every redirect through `InertiaRedirects`, as the Spring `InertiaFilter` and the Ktor
+plugin do.

@@ -74,6 +74,31 @@ public class HttpSsrGatewayTest {
     }
 
     @Test
+    void render_withHotUrlProvider_followsViteDevServerOnEveryRender() {
+        responseBody = "{\"head\":[],\"body\":\"<div></div>\"}";
+        AtomicReference<String> hotUrl = new AtomicReference<>(serverUrl());
+        HttpSsrGateway gateway = gateway().hotUrl(hotUrl::get).build();
+
+        gateway.render(pageObject, "{}");
+        assertEquals("/__inertia_ssr", receivedPath.get());
+
+        hotUrl.set(null);
+        gateway.render(pageObject, "{}");
+        assertEquals("/render", receivedPath.get());
+    }
+
+    @Test
+    void render_whenResponseIsJsonNull_reportsFailureAndFallsBack() {
+        responseBody = "null";
+        List<SsrRenderFailure> failures = new ArrayList<>();
+
+        RenderedPage page = gateway().onFailure(failures::add).build().render(pageObject, "{}");
+
+        assertNull(page);
+        assertEquals(1, failures.size());
+    }
+
+    @Test
     void render_whenRenderFails_reportsFailureAndFallsBack() {
         status = 500;
         responseBody = "{\"error\":\"window is not defined\",\"type\":\"browser-api\",\"browserApi\":\"The global window object\",\"hint\":\"Wrap it\",\"sourceLocation\":\"Show.vue:14:3\"}";
@@ -125,6 +150,28 @@ public class HttpSsrGatewayTest {
     }
 
     @Test
+    void render_whenResponseHasNoBody_reportsFailureAndFallsBack() {
+        responseBody = "{\"head\":[\"<title>t</title>\"]}";
+        List<SsrRenderFailure> failures = new ArrayList<>();
+
+        RenderedPage page = gateway().onFailure(failures::add).build().render(pageObject, "{}");
+
+        assertNull(page);
+        assertEquals("Invalid SSR response: missing body", failures.get(0).getError());
+    }
+
+    @Test
+    void render_whenUrlIsMalformed_reportsConnectionFailure() {
+        List<SsrRenderFailure> failures = new ArrayList<>();
+
+        RenderedPage page = HttpSsrGateway.builder().url("http://bad host").onFailure(failures::add).build()
+            .render(pageObject, "{}");
+
+        assertNull(page);
+        assertEquals(SsrErrorType.CONNECTION, failures.get(0).getType());
+    }
+
+    @Test
     void isHealthy_checksHealthEndpoint() {
         responseBody = "{\"status\":\"OK\"}";
 
@@ -133,6 +180,11 @@ public class HttpSsrGatewayTest {
 
         server.stop(0);
         assertFalse(gateway().build().isHealthy());
+    }
+
+    @Test
+    void isHealthy_whenUrlIsMalformed_returnsFalse() {
+        assertFalse(HttpSsrGateway.builder().url("http://bad host").build().isHealthy());
     }
 
     private HttpSsrGateway.Builder gateway() {

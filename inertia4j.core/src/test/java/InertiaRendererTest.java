@@ -460,8 +460,8 @@ public class InertiaRendererTest {
     }
 
     @Test
-    void render_withOncePropHavingCustomKeyAndExpiration_listsThem() {
-        Clock clock = Clock.fixed(Instant.ofEpochSecond(1_000), ZoneOffset.UTC);
+    void render_withOncePropHavingCustomKeyAndExpiration_listsThemInMilliseconds() {
+        Clock clock = Clock.fixed(Instant.ofEpochMilli(1_000_250), ZoneOffset.UTC);
         InertiaRenderer renderer = InertiaRenderer
             .builder(pageObjectSerializer, versionProvider, page -> page.getBody())
             .clock(clock)
@@ -471,14 +471,14 @@ public class InertiaRendererTest {
             new FakeHttpRequest("GET", inertiaHeaders),
             options().props(props(
                 "plans", InertiaProps.once(() -> List.of()).key("billing-plans").expiresIn(Duration.ofMinutes(1)),
-                "countries", InertiaProps.once(() -> List.of()).until(Instant.ofEpochSecond(5_000))
+                "countries", InertiaProps.once(() -> List.of()).until(Instant.ofEpochMilli(5_000_500))
             )).build()
         );
 
         assertEquals(
             Map.of(
-                "billing-plans", Map.of("prop", "plans", "expiresAt", 1_060_000),
-                "countries", Map.of("prop", "countries", "expiresAt", 5_000_000)
+                "billing-plans", Map.of("prop", "plans", "expiresAt", 1_060_250),
+                "countries", Map.of("prop", "countries", "expiresAt", 5_000_500)
             ),
             readMap(response).get("onceProps")
         );
@@ -679,6 +679,44 @@ public class InertiaRendererTest {
 
         assertEquals(302, prefetchResponse.getCode());
         assertEquals(302, fullPageResponse.getCode());
+    }
+
+    @Test
+    void checkVersion_whenInertiaGetHasOutdatedVersion_returns409() {
+        HttpResponse response = renderer()
+            .checkVersion(new FakeHttpRequest("GET", withInertiaHeaders(Map.of("X-Inertia-Version", "old"))))
+            .orElseThrow();
+
+        assertEquals(409, response.getCode());
+        assertEquals(List.of("https://example.com/page"), response.getHeaders().get("X-Inertia-Location"));
+        assertTrue(InertiaRenderer.isVersionConflict(response));
+    }
+
+    @Test
+    void checkVersion_whenVersionMatchesOrRequestIsNotAnInertiaGet_returnsEmpty() {
+        assertTrue(renderer().checkVersion(new FakeHttpRequest("GET", inertiaHeaders)).isEmpty());
+        assertTrue(renderer().checkVersion(new FakeHttpRequest("GET", Map.of("X-Inertia-Version", "old"))).isEmpty());
+        assertTrue(renderer().checkVersion(
+            new FakeHttpRequest("POST", withInertiaHeaders(Map.of("X-Inertia-Version", "old")))
+        ).isEmpty());
+    }
+
+    @Test
+    void isVersionConflict_whenRendered409Page_returnsFalse() {
+        HttpResponse response = render(new FakeHttpRequest("GET", inertiaHeaders), options().status(409).build());
+
+        assertFalse(InertiaRenderer.isVersionConflict(response));
+    }
+
+    @Test
+    void redirectsStatus_convertsFoundTo303OnlyAfterInertiaPutPatchDelete() {
+        for (String method : List.of("PUT", "PATCH", "DELETE")) {
+            assertEquals(303, InertiaRedirects.status(new FakeHttpRequest(method, inertiaHeaders), 302));
+        }
+
+        assertEquals(302, InertiaRedirects.status(new FakeHttpRequest("POST", inertiaHeaders), 302));
+        assertEquals(302, InertiaRedirects.status(new FakeHttpRequest("PUT", Map.of()), 302));
+        assertEquals(301, InertiaRedirects.status(new FakeHttpRequest("PUT", inertiaHeaders), 301));
     }
 
     @Test

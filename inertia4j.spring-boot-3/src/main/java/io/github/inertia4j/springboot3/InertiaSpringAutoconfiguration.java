@@ -7,6 +7,7 @@ import io.github.inertia4j.core.vite.Vite;
 import io.github.inertia4j.spi.JsonReader;
 import io.github.inertia4j.spi.PageObjectSerializer;
 import io.github.inertia4j.springshared.AbstractInertiaSpringAutoconfiguration;
+import io.github.inertia4j.springshared.InertiaFilterConfiguration;
 import io.github.inertia4j.springshared.SharedDataProvider;
 import io.github.inertia4j.springshared.ViteAssetsConfiguration;
 import org.springframework.beans.factory.ObjectProvider;
@@ -21,7 +22,7 @@ import java.util.stream.Collectors;
  * Spring Boot 3 autoconfiguration for Inertia4j.
  */
 @Configuration
-@Import(ViteAssetsConfiguration.class)
+@Import({ViteAssetsConfiguration.class, InertiaFilterConfiguration.class})
 public class InertiaSpringAutoconfiguration extends AbstractInertiaSpringAutoconfiguration {
     @Override
     @Bean

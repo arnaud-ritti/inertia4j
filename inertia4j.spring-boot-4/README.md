@@ -2,7 +2,7 @@
 
 This document describes how to install and use Inertia4J with Spring Boot 4.
 
-For a complete example, please refer to the [inertia4j-spring-example](https://github.com/Inertia4J/inertia4j-spring-example) repository.
+For a complete example, see the [Spring Boot and React example](../examples/spring-boot-react), which targets Spring Boot 3: replace its `inertia4j.spring-boot-3` dependency with `inertia4j.spring-boot-4` and the Spring Boot plugin version with a 4.x release.
 
 ## Installation
 
@@ -32,7 +32,7 @@ dependencies {
 
 Follow Inertia's [Client-side setup](https://inertiajs.com/docs/v3/installation/client-side-setup) guide for the client-side
 configuration steps. Inertia4J 2.x implements the [Inertia.js v3 protocol](https://inertiajs.com/docs/v3/core-concepts/the-protocol);
-use Inertia4J 1.x with older clients. Upgrading from 1.x? Read the [migration guide](/docs/migration-2.0.md).
+use Inertia4J 1.x with older clients. Upgrading from 1.x? Read the [migration guide](../docs/migration-2.0.md).
 
 ## Usage
 
@@ -208,6 +208,12 @@ Note that in the example provided, we've defined a `POST` route as well. This is
 redirecting in a simple application, and the redirect methods (both `inertia.redirect` and `inertia.location`) work on
 routes that receive requests of any HTTP methods. If you need more information about redirects in Inertia, please read
 the [official docs](https://inertiajs.com/docs/v3/the-basics/redirects).
+
+The same rules apply to redirects that don't go through `inertia.redirect`, such as `redirect:` view names: the
+`InertiaFilter`, registered automatically, turns a `302 Found` answering a `PUT`, `PATCH` or `DELETE` Inertia request
+into a `303 See Other`, and a `sendRedirect` to a location with a URL fragment into a `409 Conflict` with
+`X-Inertia-Redirect`. It also answers `GET` Inertia requests sent with an outdated asset version before they reach
+your controller, keeping flash data in the session. Disable it with `inertia.filter.enabled=false`.
 
 ### Partial Reloads
 
@@ -405,7 +411,9 @@ inertia.ssr.throw-on-error=false
 ```
 
 When rendering fails, the page falls back to client-side rendering and an `SsrRenderFailed` application event is
-published. `hot-url` renders pages through the Vite development server instead. See the
+published. Render requests time out after 10 seconds unless `timeout` is set. While the Vite dev server runs (its hot
+file exists), pages are rendered through it instead; `hot-url` sets a fixed Vite dev server URL, which then always
+applies, so leave it unset outside development. See the
 [official docs](https://inertiajs.com/docs/v3/advanced/server-side-rendering).
 
 ### Typed props

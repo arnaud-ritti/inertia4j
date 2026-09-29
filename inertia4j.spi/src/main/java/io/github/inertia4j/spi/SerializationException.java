@@ -12,4 +12,13 @@ public class SerializationException extends InertiaException {
     public SerializationException(Throwable cause) {
         super(cause);
     }
+
+    /**
+     * Constructs a new serialization exception with the specified message.
+     *
+     * @param message the detail message.
+     */
+    public SerializationException(String message) {
+        super(message);
+    }
 }

@@ -73,6 +73,13 @@ public class Vite {
     }
 
     /**
+     * @return URL of the running Vite dev server, without trailing slash, or {@code null} when it is not running.
+     */
+    public @Nullable String devServerUrlIfRunning() {
+        return readDevServerUrl();
+    }
+
+    /**
      * @return the React Fast Refresh preamble in dev mode, an empty string otherwise.
      */
     public String reactRefreshTag() {

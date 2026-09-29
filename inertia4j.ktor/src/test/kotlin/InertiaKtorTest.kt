@@ -6,11 +6,13 @@ import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
 import io.ktor.server.application.*
+import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import io.ktor.server.sessions.*
 import io.ktor.server.testing.*
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class InertiaKtorTest {
@@ -261,5 +263,111 @@ class InertiaKtorTest {
         assertTrue(failingResponse.headers.getAll(HttpHeaders.Vary)!!.joinToString().contains("Precognition"))
         assertEquals(HttpStatusCode.NoContent, passingResponse.status)
         assertEquals("true", passingResponse.headers["Precognition-Success"])
+    }
+
+    @Test
+    fun `middleware answers outdated versions before the route runs`() = testApp {
+        var handled = false
+        routing {
+            get("/redirect") {
+                handled = true
+                call.respondRedirect("/target")
+            }
+        }
+
+        val response = client.get("/redirect") {
+            header("X-Inertia", "true")
+            header("X-Inertia-Version", "old")
+        }
+
+        assertEquals(HttpStatusCode.Conflict, response.status)
+        assertEquals("http://localhost/redirect", response.headers["X-Inertia-Location"])
+        assertEquals("1", response.headers["X-Inertia-Version"])
+        assertFalse(handled)
+    }
+
+    @Test
+    fun `middleware turns found after put into see other`() = testApp {
+        val client = createClient { followRedirects = false }
+        routing {
+            put("/records") {
+                call.respondRedirect("/target")
+            }
+        }
+
+        val inertiaResponse = client.put("/records") { inertia() }
+        val plainResponse = client.put("/records")
+
+        assertEquals(HttpStatusCode.SeeOther, inertiaResponse.status)
+        assertEquals("/target", inertiaResponse.headers[HttpHeaders.Location])
+        assertEquals(HttpStatusCode.Found, plainResponse.status)
+    }
+
+    @Test
+    fun `middleware turns redirects to a fragment into conflicts`() = testApp {
+        val client = createClient { followRedirects = false }
+        routing {
+            post("/records") {
+                call.respondRedirect("/target#comments")
+            }
+        }
+
+        val response = client.post("/records") { inertia() }
+
+        assertEquals(HttpStatusCode.Conflict, response.status)
+        assertEquals("/target#comments", response.headers["X-Inertia-Redirect"])
+    }
+
+    @Test
+    fun `middleware can be disabled`() = testApplication {
+        application {
+            install(Inertia) {
+                versionProvider = { "1" }
+                middleware = false
+            }
+            routing {
+                put("/records") {
+                    call.respondRedirect("/target")
+                }
+            }
+        }
+        val client = createClient { followRedirects = false }
+
+        val response = client.put("/records") { inertia() }
+
+        assertEquals(HttpStatusCode.Found, response.status)
+    }
+
+    @Test
+    fun `rendering an intentional conflict page consumes flash data`() = testApp {
+        val client = createClient {
+            install(HttpCookies)
+            followRedirects = false
+        }
+        routing {
+            post("/records") {
+                inertia.flash("message", "Created")
+                inertia.redirect("/conflict")
+            }
+            get("/conflict") {
+                inertia.render("Conflict", status = HttpStatusCode.Conflict)
+            }
+            get("/records") {
+                inertia.render("Records")
+            }
+        }
+
+        client.post("/records") { inertia() }
+        val conflictResponse = client.get("/conflict") { inertia() }
+        val nextResponse = client.get("/records") { inertia() }
+
+        assertEquals(HttpStatusCode.Conflict, conflictResponse.status)
+        assertTrue(conflictResponse.bodyAsText().contains("Created"))
+        assertFalse(nextResponse.bodyAsText().contains("Created"))
+    }
+
+    @Test
+    fun `default flash store uses sessions when they are on the classpath`() {
+        assertTrue(defaultFlashStore() is SessionsFlashStore)
     }
 }

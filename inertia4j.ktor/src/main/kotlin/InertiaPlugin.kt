@@ -1,8 +1,12 @@
 package io.github.inertia4j.ktor
 
+import io.github.inertia4j.core.InertiaHeaders
+import io.github.inertia4j.core.InertiaRedirects
 import io.github.inertia4j.core.InertiaRenderer
 import io.ktor.http.*
+import io.ktor.http.content.*
 import io.ktor.server.application.*
+import io.ktor.server.application.hooks.*
 import io.ktor.server.http.content.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
@@ -29,12 +33,54 @@ val Inertia = createApplicationPlugin(
                 ?: { exception -> application.log.error("Rescued deferred prop failed to resolve", exception) }
         )
 
-    pluginConfig.ssr.gatewayOrDefault()?.let { builder.ssrGateway(it) }
+    pluginConfig.ssr
+        .gatewayOrDefault(pluginConfig.viteInstance) { failure -> application.log.warn(failure.toString()) }
+        ?.let { builder.ssrGateway(it) }
+
+    val coreRenderer = builder.build()
 
     application.attributes.put(
         InertiaKtorRenderer.key,
-        InertiaKtorRenderer(builder.build(), pluginConfig)
+        InertiaKtorRenderer(coreRenderer, pluginConfig)
     )
+
+    if (pluginConfig.middleware) {
+        application.intercept(ApplicationCallPipeline.Plugins) {
+            val versionConflict = coreRenderer.checkVersion(InertiaKtorHttpRequest(call)).orElse(null)
+                ?: return@intercept
+
+            versionConflict.headers.forEach { (name, values) -> values.forEach { call.response.header(name, it) } }
+            call.respond(HttpStatusCode.fromValue(versionConflict.code))
+            finish()
+        }
+
+        on(ResponseBodyReadyForSend) { call, content ->
+            val request = InertiaKtorHttpRequest(call)
+            if (!InertiaHeaders.isInertia(request)) return@on
+
+            val status = content.status ?: call.response.status() ?: return@on
+            if (status.value !in 300..399) return@on
+
+            val location = call.response.headers[HttpHeaders.Location]
+            val redirectStatus = if (location != null && InertiaRedirects.needsFragmentVisit(request, location)) {
+                call.response.header(InertiaHeaders.Redirect, location)
+                HttpStatusCode.Conflict
+            } else {
+                HttpStatusCode.fromValue(InertiaRedirects.status(request, status.value))
+            }
+
+            if (redirectStatus == status) return@on
+
+            call.response.status(redirectStatus)
+
+            if (content is OutgoingContent.NoContent && content.status != null) {
+                transformBodyTo(object : OutgoingContent.NoContent() {
+                    override val status: HttpStatusCode = redirectStatus
+                    override val headers: Headers = content.headers
+                })
+            }
+        }
+    }
 
     val viteConfiguration = pluginConfig.viteConfiguration
 

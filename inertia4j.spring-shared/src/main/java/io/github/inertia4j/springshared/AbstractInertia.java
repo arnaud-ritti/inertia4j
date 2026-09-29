@@ -2,6 +2,7 @@ package io.github.inertia4j.springshared;
 
 import io.github.inertia4j.core.InertiaProp;
 import io.github.inertia4j.core.InertiaProps;
+import io.github.inertia4j.core.InertiaHeaders;
 import io.github.inertia4j.core.InertiaRenderingOptions;
 import io.github.inertia4j.core.Precognition;
 import io.github.inertia4j.core.PropertyNaming;
@@ -519,11 +520,15 @@ public abstract class AbstractInertia {
 
         ResponseEntity<String> response = renderer.render(new InertiaHttpServletRequest(request), coreOptions.build());
 
-        if (response.getStatusCode().value() != 409) {
+        if (!isVersionConflict(response)) {
             InertiaSession.clear(request);
         }
 
         return response;
+    }
+
+    private static boolean isVersionConflict(ResponseEntity<String> response) {
+        return response.getStatusCode().value() == 409 && response.getHeaders().getFirst(InertiaHeaders.Location) != null;
     }
 
     /**

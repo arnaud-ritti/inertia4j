@@ -64,6 +64,11 @@ public class InertiaConfigurationProperties {
      */
     private final ViteProperties vite = new ViteProperties();
 
+    /**
+     * Inertia filter settings.
+     */
+    private final FilterProperties filter = new FilterProperties();
+
     public String getTemplatePath() {
         return templatePath;
     }
@@ -115,6 +120,13 @@ public class InertiaConfigurationProperties {
     }
 
     /**
+     * @return Inertia filter settings, prefixed with `inertia.filter`.
+     */
+    public FilterProperties getFilter() {
+        return filter;
+    }
+
+    /**
      * @return Vite integration settings, prefixed with `inertia.vite`.
      */
     public ViteProperties getVite() {
@@ -137,13 +149,14 @@ public class InertiaConfigurationProperties {
 
         /**
          * URL of the Vite development server, used instead of the server-side rendering server when set.
+         * Leave it unset to follow the Vite hot file: pages are rendered by the Vite dev server while it runs.
          */
         private String hotUrl;
 
         /**
-         * Timeout of render requests. No timeout is applied when unset.
+         * Timeout of render requests.
          */
-        private Duration timeout;
+        private Duration timeout = HttpSsrGateway.DefaultTimeout;
 
         /**
          * Whether failed renders throw instead of falling back to client-side rendering.
@@ -201,6 +214,25 @@ public class InertiaConfigurationProperties {
 
         public void setExcept(List<String> except) {
             this.except = except;
+        }
+    }
+
+    /**
+     * Inertia filter settings, prefixed with `inertia.filter`.
+     */
+    public static class FilterProperties {
+        /**
+         * Whether the {@link InertiaFilter} is registered: asset version check before handlers, 303 See Other after
+         * PUT, PATCH and DELETE requests, and URL fragment redirects.
+         */
+        private boolean enabled = true;
+
+        public boolean isEnabled() {
+            return enabled;
+        }
+
+        public void setEnabled(boolean enabled) {
+            this.enabled = enabled;
         }
     }
 

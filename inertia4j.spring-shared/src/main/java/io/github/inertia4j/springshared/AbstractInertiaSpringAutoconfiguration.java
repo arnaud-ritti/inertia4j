@@ -100,19 +100,28 @@ public abstract class AbstractInertiaSpringAutoconfiguration {
      * Provides the {@link SsrGateway} bean when server-side rendering is enabled. Failed renders are published as
      * {@link SsrRenderFailed} events.
      *
+     * Unless {@code inertia.ssr.hot-url} is set, pages are rendered by the Vite dev server while its hot file exists.
+     *
      * @param jsonReader     reader of the server responses.
      * @param eventPublisher publisher of failure events.
+     * @param vite           The Vite integration, followed unless disabled.
      * @return an HttpSsrGateway instance.
      */
     @Bean
     @ConditionalOnMissingBean
     @ConditionalOnProperty(prefix = "inertia.ssr", name = "enabled", havingValue = "true")
-    public SsrGateway ssrGateway(JsonReader jsonReader, ApplicationEventPublisher eventPublisher) {
+    public SsrGateway ssrGateway(JsonReader jsonReader, ApplicationEventPublisher eventPublisher, Vite vite) {
         InertiaConfigurationProperties.Ssr ssr = properties.getSsr();
+        HttpSsrGateway.Builder builder = HttpSsrGateway.builder();
 
-        return HttpSsrGateway.builder()
+        if (ssr.getHotUrl() != null) {
+            builder.hotUrl(ssr.getHotUrl());
+        } else if (properties.getVite().isEnabled()) {
+            builder.hotUrl(vite::devServerUrlIfRunning);
+        }
+
+        return builder
             .url(ssr.getUrl())
-            .hotUrl(ssr.getHotUrl())
             .timeout(ssr.getTimeout())
             .throwOnError(ssr.isThrowOnError())
             .jsonReader(jsonReader)
