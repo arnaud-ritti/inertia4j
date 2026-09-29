@@ -130,7 +130,9 @@ public class Vite {
         }
 
         try {
-            return manifest().hash;
+            LoadedManifest loaded = manifestIfPresent();
+
+            return loaded == null ? defaultVersion : loaded.hash;
         } catch (ViteException e) {
             return defaultVersion;
         }
@@ -212,6 +214,19 @@ public class Vite {
     }
 
     private LoadedManifest manifest() {
+        LoadedManifest loaded = manifestIfPresent();
+
+        if (loaded == null) {
+            throw new ViteException(
+                "Vite manifest not found at classpath:" + config.getManifestPath()
+                    + ". Start the Vite dev server or run the frontend build."
+            );
+        }
+
+        return loaded;
+    }
+
+    private @Nullable LoadedManifest manifestIfPresent() {
         LoadedManifest current = loadedManifest;
 
         if (current != null) {
@@ -227,15 +242,12 @@ public class Vite {
         }
     }
 
-    private LoadedManifest loadManifest() {
+    private @Nullable LoadedManifest loadManifest() {
         String path = config.getManifestPath();
 
         try (InputStream inputStream = classLoader().getResourceAsStream(path)) {
             if (inputStream == null) {
-                throw new ViteException(
-                    "Vite manifest not found at classpath:" + path
-                        + ". Start the Vite dev server or run the frontend build."
-                );
+                return null;
             }
 
             byte[] bytes = inputStream.readAllBytes();
