@@ -41,10 +41,12 @@ export default defineConfig(({ command, isSsrBuild }) => ({
         emptyOutDir: true,
         rollupOptions: { input: 'src/main/frontend/main.tsx' },
       },
+  // Bound to IPv4 so the hot file URL is reachable from the JVM, which resolves localhost to 127.0.0.1.
   server: {
+    host: '127.0.0.1',
     port: 5173,
     strictPort: true,
-    origin: 'http://localhost:5173',
-    cors: { origin: 'http://localhost:8080' },
+    origin: 'http://127.0.0.1:5173',
+    cors: { origin: ['http://localhost:8080', 'http://127.0.0.1:8080'] },
   },
 }))

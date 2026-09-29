@@ -19,6 +19,7 @@ npm run dev
 Open http://localhost:8080. While `npm run dev` runs, it writes `vite.hot`, so pages load scripts from the dev server
 with hot module replacement. Stop it and the application falls back to the production build.
 The dev server must run on port 5173 (`strictPort`); if that port is taken, change `server.port` and `server.origin` together in `vite.config.ts`.
+The dev server listens on `127.0.0.1` so that the URL written to `vite.hot` is reachable from the JVM.
 
 ## Production
 
