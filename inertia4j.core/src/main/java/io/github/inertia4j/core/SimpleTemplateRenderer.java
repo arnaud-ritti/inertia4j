@@ -2,24 +2,38 @@ package io.github.inertia4j.core;
 
 import io.github.inertia4j.core.vite.Vite;
 import io.github.inertia4j.core.vite.ViteException;
+import io.github.inertia4j.spi.RenderedPage;
 import io.github.inertia4j.spi.TemplateRenderer;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
  * A simple {@link TemplateRenderer} implementation used by default if no specific renderer is provided.
- * It loads a template file from the classpath and replaces a placeholder with the page object JSON.
+ * It loads a template file from the classpath and replaces the {@value #HeadPlaceholder} placeholder with the
+ * server-side rendered head elements, and the {@value #AppPlaceholder} placeholder with the page object script
+ * element and the application root element.
  * When given a {@link Vite} instance, it also replaces the <code>@Vite(entry, ...)@</code> and
  * <code>@ViteReactRefresh@</code> placeholders with the tags loading the frontend.
  */
 @NullMarked
 public class SimpleTemplateRenderer implements TemplateRenderer {
-    private static final Pattern pageObjectPattern = Pattern.compile("@PageObject@");
+    /**
+     * Placeholder replaced by the elements belonging to the document head, empty unless server-side rendered.
+     */
+    public static final String HeadPlaceholder = "@InertiaHead@";
+
+    /**
+     * Placeholder replaced by the page object script element and the application root element.
+     */
+    public static final String AppPlaceholder = "@InertiaApp@";
+
+    private static final String LegacyPlaceholder = "@PageObject@";
     private static final Pattern vitePattern = Pattern.compile("@Vite\\(([^)]*)\\)@");
     private static final String reactRefreshPlaceholder = "@ViteReactRefresh@";
 
@@ -30,7 +44,8 @@ public class SimpleTemplateRenderer implements TemplateRenderer {
      * Constructs a SimpleTemplateRenderer without Vite support.
      *
      * @param templatePath Classpath path to the HTML template file (e.g., "/templates/app.html").
-     * @throws TemplateRenderingException if the template file cannot be loaded or read.
+     * @throws TemplateRenderingException if the template file cannot be loaded or read, or uses the placeholder
+     *                                    of Inertia4J 1.x.
      */
     public SimpleTemplateRenderer(String templatePath) throws TemplateRenderingException {
         this(templatePath, null);
@@ -42,28 +57,34 @@ public class SimpleTemplateRenderer implements TemplateRenderer {
      *
      * @param templatePath Classpath path to the HTML template file (e.g., "/templates/app.html").
      * @param vite Vite integration replacing the Vite placeholders, or {@code null} to leave them untouched.
-     * @throws TemplateRenderingException if the template file cannot be loaded or read.
+     * @throws TemplateRenderingException if the template file cannot be loaded or read, or uses the placeholder
+     *                                    of Inertia4J 1.x.
      */
     public SimpleTemplateRenderer(String templatePath, @Nullable Vite vite) throws TemplateRenderingException {
-        this.template = loadTemplate(templatePath);
+        String template = loadTemplate(templatePath);
+
+        if (template.contains(LegacyPlaceholder)) {
+            throw new TemplateRenderingException(
+                "Template " + templatePath + " uses the " + LegacyPlaceholder + " placeholder, which Inertia.js v3 no longer supports. "
+                    + "Replace the element holding it with " + AppPlaceholder + " and add " + HeadPlaceholder + " to the <head> element."
+            );
+        }
+
+        this.template = template;
         this.vite = vite;
     }
 
     /**
      * {@inheritDoc}
      * <p>
-     * This implementation first replaces the Vite placeholders, then the first occurrence of the
-     * <code>@PageObject@</code> placeholder with the provided {@code pageObjectJson}, escaping HTML characters.
+     * This implementation first replaces the Vite placeholders, then the first occurrence of each Inertia
+     * placeholder in the loaded template.
      */
     @Override
-    public String render(String pageObjectJson) {
-        String escapedPageObjectJson = pageObjectJson
-            .replace("\\", "\\\\")
-            .replace("$", "\\$")
-            .replace("\"", "&quot;")
-            .replace("'", "&apos;");
-
-        return pageObjectPattern.matcher(renderVitePlaceholders()).replaceFirst(escapedPageObjectJson);
+    public String render(RenderedPage page) {
+        return renderVitePlaceholders()
+            .replaceFirst(HeadPlaceholder, Matcher.quoteReplacement(page.getHead()))
+            .replaceFirst(AppPlaceholder, Matcher.quoteReplacement(page.getBody()));
     }
 
     private String renderVitePlaceholders() {
@@ -111,9 +132,9 @@ public class SimpleTemplateRenderer implements TemplateRenderer {
 
         try (InputStream inputStream = classLoader.getResourceAsStream(path)) {
             if (inputStream == null) {
-                throw new TemplateRenderingException(path);
+                throw TemplateRenderingException.notFound(path);
             }
-            return new String(inputStream.readAllBytes());
+            return new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
         } catch (IOException e) {
             throw new TemplateRenderingException(path, e);
         }

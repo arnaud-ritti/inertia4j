@@ -86,6 +86,7 @@ class ViteKtorTest {
     fun `explicit version provider overrides Vite version`() = viteApp(configure = { versionProvider = { "custom" } }) {
         val response = client.get("/") {
             header("X-Inertia", "true")
+            header("X-Inertia-Version", "custom")
         }
 
         assertContains(response.bodyAsText(), "\"version\":\"custom\"")

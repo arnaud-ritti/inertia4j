@@ -1,23 +1,21 @@
 package io.github.inertia4j.springboot3;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import io.github.inertia4j.core.DefaultPageObjectSerializer;
+import io.github.inertia4j.core.InertiaRenderer;
+import io.github.inertia4j.core.ScrollMetadata;
 import io.github.inertia4j.spi.PageObjectSerializer;
-import io.github.inertia4j.spi.TemplateRenderer;
-import io.github.inertia4j.springshared.SharedDataProvider;
 import io.github.inertia4j.springboot3.Inertia.Options;
-import org.jspecify.annotations.NullMarked;
+import io.github.inertia4j.springshared.SharedDataProvider;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.mock.web.MockHttpSession;
+import org.springframework.validation.BeanPropertyBindingResult;
+import org.springframework.validation.Errors;
 
-import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
@@ -26,40 +24,18 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 public class InertiaTest {
-
     private static final String testComponent = "TestComponent";
-    private static final String testUrl = "/test-url";
     private static final Map<String, Object> testProps = Map.of("prop1", "value1", "prop2", 123);
-    private MockHttpServletRequest request;
 
-    private final VersionProvider versionProvider = () -> "1";
-    private final PageObjectSerializer pageObjectSerializer = new DefaultPageObjectSerializer();
-    private final TemplateRenderer templateRenderer = new FakeTemplateRenderer();
+    private final PageObjectSerializer pageObjectSerializer = new io.github.inertia4j.core.DefaultPageObjectSerializer();
+    private final MockHttpSession session = new MockHttpSession();
+    private MockHttpServletRequest request;
     private Inertia inertia;
 
     @BeforeEach
     void setUp() {
-        request = new MockHttpServletRequest("GET", testUrl);
-
-        inertia = new Inertia(
-            versionProvider,
-            pageObjectSerializer,
-            templateRenderer,
-            () -> request
-        );
-    }
-
-    @NullMarked
-    private static class FakeTemplateRenderer implements TemplateRenderer {
-        @Override
-        public String render(String pageObjectJson) {
-            return "<!doctype html>\n" +
-                   "<html lang=\"en\">\n" +
-                   "  <body>\n" +
-                   "    <div id=\"app\" data-page='" + pageObjectJson + "'></div>\n" +
-                   "  </body>\n" +
-                   "</html>";
-        }
+        request = newRequest("GET", "/test-url");
+        inertia = inertia(List.of());
     }
 
     @Test
@@ -67,64 +43,218 @@ public class InertiaTest {
         ResponseEntity<String> response = inertia.render(testComponent, testProps);
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertEquals(MediaType.TEXT_HTML, response.getHeaders().getContentType());
+        assertEquals("text/html; charset=utf-8", response.getHeaders().getFirst(HttpHeaders.CONTENT_TYPE));
+        assertEquals("X-Inertia", response.getHeaders().getFirst(HttpHeaders.VARY));
         assertNull(response.getHeaders().get("X-Inertia"));
-        assertEquals(getExpectedHtmlBody(false, false), response.getBody());
+        assertEquals(
+            "<script data-page=\"app\" type=\"application/json\">"
+                + "{\"component\":\"TestComponent\",\"props\":{\"errors\":{},\"prop1\":\"value1\",\"prop2\":123},\"url\":\"\\/test-url\",\"version\":\"1\",\"sharedProps\":[\"errors\"]}"
+                + "</script><div id=\"app\"></div>",
+            response.getBody()
+        );
+    }
+
+    @Test
+    void render_whenInertiaRequest_usesPathAndQueryStringAsUrl() {
+        request.setQueryString("page=2&sort=name");
+        inertiaRequest();
+
+        ResponseEntity<String> response = inertia.render(testComponent, testProps);
+
+        assertEquals("application/json", response.getHeaders().getFirst(HttpHeaders.CONTENT_TYPE));
+        assertEquals("true", response.getHeaders().getFirst("X-Inertia"));
+        assertEquals(
+            "{\"component\":\"TestComponent\",\"props\":{\"errors\":{},\"prop1\":\"value1\",\"prop2\":123},\"url\":\"/test-url?page=2&sort=name\",\"version\":\"1\",\"sharedProps\":[\"errors\"]}",
+            response.getBody()
+        );
     }
 
     @Test
     void render_whenPartialRequest_returnsPartialJsonResponse() {
-        request.addHeader("X-Inertia", "true");
+        inertiaRequest();
         request.addHeader("X-Inertia-Partial-Component", testComponent);
-        request.addHeader("X-Inertia-Partial-Data", "prop1"); // Request only prop1
+        request.addHeader("X-Inertia-Partial-Data", "prop1");
 
         ResponseEntity<String> response = inertia.render(testComponent, testProps);
 
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertEquals(MediaType.APPLICATION_JSON, response.getHeaders().getContentType());
-        assertEquals("true", response.getHeaders().getFirst("X-Inertia"));
-        assertEquals(getExpectedJsonBody(false, false, Map.of("prop1", "value1")), response.getBody());
+        assertEquals(
+            "{\"component\":\"TestComponent\",\"props\":{\"errors\":{},\"prop1\":\"value1\"},\"url\":\"/test-url\",\"version\":\"1\",\"sharedProps\":[\"errors\"]}",
+            response.getBody()
+        );
     }
 
     @Test
     void render_withMismatchingVersion_returnsConflictResponse() {
+        request.setQueryString("page=2");
         request.addHeader("X-Inertia", "true");
         request.addHeader("X-Inertia-Version", "stale-version");
 
         ResponseEntity<String> response = inertia.render(testComponent, testProps);
 
         assertEquals(HttpStatus.CONFLICT, response.getStatusCode());
-        assertEquals(Collections.singletonList("/test-url"), response.getHeaders().get("X-Inertia-Location"));
+        assertEquals("http://localhost/test-url?page=2", response.getHeaders().getFirst("X-Inertia-Location"));
+        assertEquals("1", response.getHeaders().getFirst("X-Inertia-Version"));
         assertNull(response.getHeaders().get("X-Inertia"));
         assertNull(response.getBody());
     }
 
     @Test
-    void redirect_returnsSeeOtherResponse() {
+    void render_withOptions_setsHistoryFlagsAndStatus() {
+        inertiaRequest();
+
+        ResponseEntity<String> response = inertia.render(testComponent, Map.of(), Options.encryptHistory().status(404));
+
+        assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
+        assertEquals(
+            "{\"component\":\"TestComponent\",\"props\":{\"errors\":{}},\"url\":\"/test-url\",\"version\":\"1\",\"encryptHistory\":true,\"sharedProps\":[\"errors\"]}",
+            response.getBody()
+        );
+    }
+
+    @Test
+    void render_withSharedData_mergesSharedPropsWithPageProps() {
+        SharedDataProvider appNameProvider = request -> Map.of("appName", "Inertia4J");
+        inertia = inertia(List.of(appNameProvider));
+        inertiaRequest();
+        inertia.share("prop1", "shared");
+        inertia.share("user", (Supplier<String>) () -> "john");
+
+        ResponseEntity<String> response = inertia.render(testComponent, testProps);
+
+        assertEquals(
+            "{\"component\":\"TestComponent\",\"props\":{\"appName\":\"Inertia4J\",\"errors\":{},\"prop1\":\"value1\",\"prop2\":123,\"user\":\"john\"},\"url\":\"/test-url\",\"version\":\"1\","
+                + "\"sharedProps\":[\"appName\",\"prop1\",\"user\",\"errors\"]}",
+            response.getBody()
+        );
+    }
+
+    @Test
+    void render_withPropTypes_listsTheirMetadata() {
+        inertiaRequest();
+
+        Map<String, Object> props = new LinkedHashMap<>();
+        props.put("posts", Inertia.defer(() -> List.of(1), "posts").merge().matchOn("id"));
+        props.put("plans", Inertia.once(() -> List.of("Basic")));
+        props.put("feed", Inertia.scroll(Map.of("data", List.of(1)), ScrollMetadata.forPage(1, true)));
+        props.put("stats", Inertia.optional(() -> 1));
+
+        ResponseEntity<String> response = inertia.render(testComponent, props);
+
+        assertEquals(
+            "{\"component\":\"TestComponent\",\"props\":{\"errors\":{},\"feed\":{\"data\":[1]},\"plans\":[\"Basic\"]},\"url\":\"/test-url\",\"version\":\"1\","
+                + "\"mergeProps\":[\"posts\",\"feed.data\"],\"matchPropsOn\":[\"posts.id\"],"
+                + "\"scrollProps\":{\"feed\":{\"pageName\":\"page\",\"previousPage\":null,\"nextPage\":2,\"currentPage\":1,\"reset\":false}},"
+                + "\"deferredProps\":{\"posts\":[\"posts\"]},\"onceProps\":{\"plans\":{\"prop\":\"plans\",\"expiresAt\":null}},\"sharedProps\":[\"errors\"]}",
+            response.getBody()
+        );
+    }
+
+    @Test
+    void flashAndErrors_areSentWithTheNextRenderedPageOnly() {
+        request.setMethod("POST");
+        inertia.flash("message", "Saved");
+        inertia.errors(Map.of("name", "The name field is required."));
+        inertia.preserveFragment();
+        inertia.clearHistory();
+
+        request = newRequest("GET", "/test-url");
+        inertiaRequest();
+        ResponseEntity<String> firstResponse = inertia.render(testComponent, Map.of());
+
+        request = newRequest("GET", "/test-url");
+        inertiaRequest();
+        ResponseEntity<String> secondResponse = inertia.render(testComponent, Map.of());
+
+        assertEquals(
+            "{\"component\":\"TestComponent\",\"props\":{\"errors\":{\"name\":\"The name field is required.\"}},\"url\":\"/test-url\",\"version\":\"1\","
+                + "\"clearHistory\":true,\"preserveFragment\":true,\"sharedProps\":[\"errors\"],\"flash\":{\"message\":\"Saved\"}}",
+            firstResponse.getBody()
+        );
+        assertEquals(
+            "{\"component\":\"TestComponent\",\"props\":{\"errors\":{}},\"url\":\"/test-url\",\"version\":\"1\",\"sharedProps\":[\"errors\"]}",
+            secondResponse.getBody()
+        );
+    }
+
+    @Test
+    void flash_survivesAssetVersionConflicts() {
+        inertia.flash("message", "Saved");
+
+        request = newRequest("GET", "/test-url");
+        request.addHeader("X-Inertia", "true");
+        request.addHeader("X-Inertia-Version", "stale-version");
+        ResponseEntity<String> conflictResponse = inertia.render(testComponent, Map.of());
+
+        request = newRequest("GET", "/test-url");
+        inertiaRequest();
+        ResponseEntity<String> reloadResponse = inertia.render(testComponent, Map.of());
+
+        assertEquals(HttpStatus.CONFLICT, conflictResponse.getStatusCode());
+        assertEquals(
+            "{\"component\":\"TestComponent\",\"props\":{\"errors\":{}},\"url\":\"/test-url\",\"version\":\"1\",\"sharedProps\":[\"errors\"],\"flash\":{\"message\":\"Saved\"}}",
+            reloadResponse.getBody()
+        );
+    }
+
+    @Test
+    void errors_fromBindingResult_areNamespacedByRequestedErrorBag() {
+        Errors errors = new BeanPropertyBindingResult(new Object(), "user");
+        errors.rejectValue(null, "required", "Invalid user.");
+        inertia.errors(errors);
+
+        inertiaRequest();
+        request.addHeader("X-Inertia-Error-Bag", "createUser");
+        ResponseEntity<String> response = inertia.render(testComponent, Map.of());
+
+        assertEquals(
+            "{\"component\":\"TestComponent\",\"props\":{\"errors\":{\"createUser\":{\"user\":\"Invalid user.\"}}},\"url\":\"/test-url\",\"version\":\"1\",\"sharedProps\":[\"errors\"]}",
+            response.getBody()
+        );
+    }
+
+    @Test
+    void redirect_afterPut_returnsSeeOtherResponse() {
         request.setMethod("PUT");
         request.addHeader("X-Inertia", "true");
 
         ResponseEntity<String> response = inertia.redirect("/target");
 
         assertEquals(HttpStatus.SEE_OTHER, response.getStatusCode());
-        assertNull(response.getHeaders().get("X-Inertia"));
-        assertEquals(Collections.singletonList("/target"), response.getHeaders().get(HttpHeaders.LOCATION));
-        assertNull(response.getBody());
-    }
-
-    @Test
-    void redirect_returnsFoundResponse() {
-        request.setMethod("GET");
-        ResponseEntity<String> response = inertia.redirect("/target");
-
-        assertEquals(HttpStatus.FOUND, response.getStatusCode());
-        assertNull(response.getHeaders().get("X-Inertia"));
         assertEquals("/target", response.getHeaders().getFirst(HttpHeaders.LOCATION));
         assertNull(response.getBody());
     }
 
     @Test
-    void location_returnsConflictResponseWithLocationHeader() {
+    void redirect_afterGet_returnsFoundResponse() {
+        ResponseEntity<String> response = inertia.redirect("/target");
+
+        assertEquals(HttpStatus.FOUND, response.getStatusCode());
+        assertEquals("/target", response.getHeaders().getFirst(HttpHeaders.LOCATION));
+    }
+
+    @Test
+    void redirect_toFragment_returnsConflictResponseWithRedirectHeader() {
+        request.setMethod("POST");
+        request.addHeader("X-Inertia", "true");
+
+        ResponseEntity<String> response = inertia.redirect("/users/1#comments");
+
+        assertEquals(HttpStatus.CONFLICT, response.getStatusCode());
+        assertEquals("/users/1#comments", response.getHeaders().getFirst("X-Inertia-Redirect"));
+        assertNull(response.getHeaders().get(HttpHeaders.LOCATION));
+    }
+
+    @Test
+    void back_redirectsToReferer() {
+        request.addHeader("Referer", "/form");
+
+        ResponseEntity<String> response = inertia.back();
+
+        assertEquals("/form", response.getHeaders().getFirst(HttpHeaders.LOCATION));
+    }
+
+    @Test
+    void location_whenInertiaRequest_returnsConflictResponseWithLocationHeader() {
         request.addHeader("X-Inertia", "true");
 
         ResponseEntity<String> response = inertia.location("https://external.example.com");
@@ -132,93 +262,57 @@ public class InertiaTest {
         assertEquals(HttpStatus.CONFLICT, response.getStatusCode());
         assertNull(response.getHeaders().get("X-Inertia"));
         assertEquals("https://external.example.com", response.getHeaders().getFirst("X-Inertia-Location"));
-        assertNull(response.getBody());
     }
 
     @Test
-    void render_whenInitialRequestWithEncryptHistory_returnsHtmlResponse() {
-        ResponseEntity<String> response = inertia.render(testComponent, testProps, Options.encryptHistory());
+    void location_whenNotInertiaRequest_returnsFoundResponse() {
+        ResponseEntity<String> response = inertia.location("https://external.example.com");
 
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertEquals(MediaType.TEXT_HTML, response.getHeaders().getContentType());
-        assertNull(response.getHeaders().get("X-Inertia"));
-        assertEquals(getExpectedHtmlBody(true, false), response.getBody());
+        assertEquals(HttpStatus.FOUND, response.getStatusCode());
+        assertEquals("https://external.example.com", response.getHeaders().getFirst(HttpHeaders.LOCATION));
     }
 
     @Test
-    void render_withEncryptHistory_returnsJsonResponse() {
+    void precognition_withoutErrors_returnsNoContent() {
+        request.setMethod("POST");
+        request.addHeader("Precognition", "true");
+
+        ResponseEntity<String> response = inertia.precognition(new BeanPropertyBindingResult(new Object(), "user"));
+
+        assertEquals(true, inertia.isPrecognitive());
+        assertEquals(HttpStatus.NO_CONTENT, response.getStatusCode());
+        assertEquals("true", response.getHeaders().getFirst("Precognition-Success"));
+    }
+
+    @Test
+    void precognition_withErrors_returnsUnprocessableEntity() {
+        request.setMethod("POST");
+        request.addHeader("Precognition", "true");
+        Errors errors = new BeanPropertyBindingResult(new Object(), "user");
+        errors.rejectValue(null, "required", "Invalid user.");
+
+        ResponseEntity<String> response = inertia.precognition(errors);
+
+        assertEquals(422, response.getStatusCode().value());
+        assertEquals("{\"message\":\"Invalid user.\",\"errors\":{\"user\":[\"Invalid user.\"]}}", response.getBody());
+    }
+
+    private Inertia inertia(List<SharedDataProvider> sharedDataProviders) {
+        InertiaRenderer renderer = InertiaRenderer
+            .builder(pageObjectSerializer, () -> "1", page -> page.getBody())
+            .build();
+
+        return new Inertia(renderer, () -> request, sharedDataProviders);
+    }
+
+    private MockHttpServletRequest newRequest(String method, String uri) {
+        MockHttpServletRequest newRequest = new MockHttpServletRequest(method, uri);
+        newRequest.setSession(session);
+        return newRequest;
+    }
+
+    private void inertiaRequest() {
         request.addHeader("X-Inertia", "true");
         request.addHeader("X-Inertia-Version", "1");
-        ResponseEntity<String> response = inertia.render(testComponent, testProps, Options.encryptHistory());
-
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertEquals(MediaType.APPLICATION_JSON, response.getHeaders().getContentType());
-        assertEquals("true", response.getHeaders().getFirst("X-Inertia"));
-        assertEquals(getExpectedJsonBody(true, false), response.getBody());
     }
-
-    @Test
-    void render_withSharedData_mergesSharedPropsWithPageProps() {
-        SharedDataProvider appNameProvider = request -> Map.of("appName", "Inertia4J", "prop1", "shared");
-        inertia = new Inertia(
-            versionProvider,
-            pageObjectSerializer,
-            templateRenderer,
-            () -> request,
-            List.of(appNameProvider)
-        );
-        request.addHeader("X-Inertia", "true");
-        inertia.share("user", (Supplier<String>) () -> "john");
-
-        ResponseEntity<String> response = inertia.render(testComponent, testProps);
-
-        assertEquals(
-            getExpectedJsonBody(false, false, Map.of("appName", "Inertia4J", "user", "john", "prop1", "value1", "prop2", 123)),
-            response.getBody()
-        );
-    }
-
-    @Test
-    void render_withDeferredMergeProp_listsDeferredAndMergeMetadata() {
-        request.addHeader("X-Inertia", "true");
-
-        ResponseEntity<String> response = inertia.render(
-            testComponent,
-            Map.of("posts", Inertia.defer(() -> List.of(1), "posts").merge().matchOn("id"))
-        );
-
-        assertEquals(
-            "{\"component\":\"" + testComponent + "\",\"props\":{},\"url\":\"" + testUrl + "\",\"version\":\"1\",\"encryptHistory\":false,\"clearHistory\":false,"
-                + "\"mergeProps\":[\"posts\"],\"matchPropsOn\":[\"posts.id\"],\"deferredProps\":{\"posts\":[\"posts\"]}}",
-            response.getBody()
-        );
-    }
-
-    private static String getExpectedJsonBody(boolean encryptHistory, boolean clearHistory) {
-        return getExpectedJsonBody(encryptHistory, clearHistory, testProps);
-    }
-
-    private static String getExpectedJsonBody(boolean encryptHistory, boolean clearHistory, Map<String, Object> props) {
-        String propsJson;
-        try {
-            propsJson = objectMapper.writeValueAsString(props);
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
-        }
-
-        return "{\"component\":\"" + testComponent + "\",\"props\":" + propsJson + ",\"url\":\"" + testUrl + "\",\"version\":\"1\",\"encryptHistory\":" + encryptHistory + ",\"clearHistory\":" + clearHistory + "}";
-    }
-
-    private static String getExpectedHtmlBody(boolean encryptHistory, boolean clearHistory) {
-        String expectedPageJson = getExpectedJsonBody(encryptHistory, clearHistory);
-        return "<!doctype html>\n" +
-               "<html lang=\"en\">\n" +
-               "  <body>\n" +
-               "    <div id=\"app\" data-page='" + expectedPageJson + "'></div>\n" +
-               "  </body>\n" +
-               "</html>";
-    }
-
-    private static final ObjectMapper objectMapper = new ObjectMapper()
-        .configure(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS, true);
 }

@@ -15,7 +15,7 @@ repositories {
 }
 
 dependencies {
-    implementation("io.github.inertia4j:inertia4j.spring-boot-3:1.0.4")
+    implementation("io.github.inertia4j:inertia4j.spring-boot-3:2.0.0")
     implementation("org.springframework.boot:spring-boot-starter-web")
 
     testImplementation("org.springframework.boot:spring-boot-starter-test")

@@ -7,7 +7,7 @@
     "build": "tsc --noEmit && vite build"
   },
   "dependencies": {
-    "@inertiajs/react": "^2.3.28",
+    "@inertiajs/react": "^3.7.1",
     "react": "^19.3.0",
     "react-dom": "^19.3.0"
   },

@@ -55,7 +55,7 @@ class ViteDisabledMockMvcTest {
 
     @Test
     void inertiaVisit_usesDefaultVersion() throws Exception {
-        mvc.perform(get("/").header("X-Inertia", "true"))
+        mvc.perform(get("/").header("X-Inertia", "true").header("X-Inertia-Version", "1"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.version").value("1"));
     }

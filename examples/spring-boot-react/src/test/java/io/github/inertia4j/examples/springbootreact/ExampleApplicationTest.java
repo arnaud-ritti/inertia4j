@@ -1,5 +1,6 @@
 package io.github.inertia4j.examples.springbootreact;
 
+import io.github.inertia4j.springboot3.VersionProvider;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -18,6 +19,9 @@ class ExampleApplicationTest {
     @Autowired
     MockMvc mvc;
 
+    @Autowired
+    VersionProvider versionProvider;
+
     @Test
     void homePage_loadsBuiltViteEntry() throws Exception {
         mvc.perform(get("/"))
@@ -29,7 +33,7 @@ class ExampleApplicationTest {
 
     @Test
     void aboutPage_rendersAboutComponent() throws Exception {
-        mvc.perform(get("/about").header("X-Inertia", "true"))
+        mvc.perform(get("/about").header("X-Inertia", "true").header("X-Inertia-Version", versionProvider.get()))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.component").value("About"));
     }

@@ -37,7 +37,7 @@ public class ViteAssetsConfiguration {
             public void addResourceHandlers(ResourceHandlerRegistry registry) {
                 registry.addResourceHandler(config.getPublicPath() + "**")
                     .addResourceLocations("classpath:/" + config.getBuildDirectory() + "/")
-                    .setCacheControl(CacheControl.maxAge(properties.vite.cacheMaxAge).cachePublic().immutable());
+                    .setCacheControl(CacheControl.maxAge(properties.getVite().getCacheMaxAge()).cachePublic().immutable());
             }
         };
     }

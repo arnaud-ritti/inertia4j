@@ -71,9 +71,10 @@ import 'vite/modulepreload-polyfill'
 <head>
   @ViteReactRefresh@
   @Vite(src/main/frontend/main.tsx)@
+  @InertiaHead@
 </head>
 <body>
-  <div id="app" data-page='@PageObject@'></div>
+  @InertiaApp@
 </body>
 ```
 
