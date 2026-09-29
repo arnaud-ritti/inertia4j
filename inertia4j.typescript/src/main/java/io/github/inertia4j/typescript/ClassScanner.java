@@ -51,6 +51,12 @@ final class ClassScanner {
                 if (hasRoleAnnotation(type)) {
                     annotatedClasses.add(type);
                 }
+            } catch (UnsupportedClassVersionError e) {
+                throw new GenerationException(
+                    "Cannot load " + className + ": the Gradle JVM is older than the JVM the classes were compiled for ("
+                        + e.getMessage() + "). Run Gradle with a JDK at least as recent as the compiled classes.",
+                    e
+                );
             } catch (ClassNotFoundException | LinkageError e) {
                 warnings.add("Skipped class " + className + ": " + e);
             }

@@ -16,6 +16,7 @@ import java.util.jar.JarOutputStream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ClassScannerTest {
@@ -64,6 +65,23 @@ class ClassScannerTest {
             assertTrue(result.annotatedClasses().isEmpty());
             assertEquals(1, result.warnings().size());
             assertTrue(result.warnings().get(0).contains("io.github.inertia4j.typescript.fixtures.broken.Broken"));
+        }
+    }
+
+    @Test
+    void scan_classCompiledForNewerJvm_failsNamingClassAndJvm(@TempDir Path tempDir) throws Exception {
+        Path futureClass = tempDir.resolve("io/github/inertia4j/typescript/fixtures/future/Future.class");
+        Files.createDirectories(futureClass.getParent());
+        Files.write(futureClass, new byte[]{(byte) 0xCA, (byte) 0xFE, (byte) 0xBA, (byte) 0xBE, 0, 0, 0x7F, 0x7F});
+
+        try (URLClassLoader loader = new URLClassLoader(new URL[]{tempDir.toUri().toURL()}, getClass().getClassLoader())) {
+            GenerationException exception = assertThrows(
+                GenerationException.class,
+                () -> ClassScanner.scan(List.of(tempDir), List.of("io.github.inertia4j.typescript.fixtures.future"), loader)
+            );
+
+            assertTrue(exception.getMessage().contains("io.github.inertia4j.typescript.fixtures.future.Future"), exception.getMessage());
+            assertTrue(exception.getMessage().contains("Gradle JVM is older"), exception.getMessage());
         }
     }
 
