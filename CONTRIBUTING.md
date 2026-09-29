@@ -7,7 +7,7 @@ By participating in this project you agree to abide by the [Code of Conduct](COD
 
 ## Reporting bugs and requesting features
 
-Search the [issue tracker](https://github.com/Inertia4J/inertia4j/issues) first, including closed issues. If nothing
+Search the [issue tracker](https://github.com/arnaud-ritti/inertia4j/issues) first, including closed issues. If nothing
 covers your case, open a new issue and pick the template that fits: bug report, feature request or documentation
 improvement. A minimal reproduction makes a bug much easier to fix.
 
@@ -17,9 +17,6 @@ Security vulnerabilities must **not** be reported in public issues. See [SECURIT
 
 Comment on the issue you want to work on so others know it is taken, and wait for a maintainer to confirm the approach
 for anything larger than a small fix. Pull requests should always reference an issue.
-
-Features listed in the [roadmap](docs/roadmap.md) for the next release take precedence over other proposals. If you
-are looking for something to work on, start there.
 
 ## Development setup
 

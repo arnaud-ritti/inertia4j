@@ -10,7 +10,7 @@ reporting an issue.
 Please do **not** open a public issue for security problems.
 
 Report vulnerabilities privately through
-[GitHub Security Advisories](https://github.com/Inertia4J/inertia4j/security/advisories/new). Include:
+[GitHub Security Advisories](https://github.com/arnaud-ritti/inertia4j/security/advisories/new). Include:
 
 - the affected module and version,
 - a description of the vulnerability and its impact,

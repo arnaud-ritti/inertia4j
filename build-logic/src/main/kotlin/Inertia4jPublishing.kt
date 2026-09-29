@@ -6,7 +6,7 @@ import org.gradle.api.publish.maven.MavenPom
  * POM metadata shared by every published Inertia4J artifact.
  */
 fun MavenPom.inertia4jMetadata() {
-    url.set("https://github.com/Inertia4J/inertia4j")
+    url.set("https://github.com/arnaud-ritti/inertia4j")
 
     licenses {
         license {
@@ -28,9 +28,9 @@ fun MavenPom.inertia4jMetadata() {
     }
 
     scm {
-        connection.set("scm:git:https://github.com/Inertia4J/inertia4j.git")
-        developerConnection.set("scm:git:ssh://git@github.com:Inertia4J/inertia4j.git")
-        url.set("https://github.com/Inertia4J/inertia4j")
+        connection.set("scm:git:https://github.com/arnaud-ritti/inertia4j.git")
+        developerConnection.set("scm:git:ssh://git@github.com:arnaud-ritti/inertia4j.git")
+        url.set("https://github.com/arnaud-ritti/inertia4j")
     }
 }
 

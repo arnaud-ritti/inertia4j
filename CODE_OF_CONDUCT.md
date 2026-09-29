@@ -42,7 +42,7 @@ representing the community in public spaces.
 ## Reporting
 
 Instances of abusive, harassing or otherwise unacceptable behavior may be reported privately to the project
-maintainers ([@edrd-f](https://github.com/edrd-f), [@pefcos](https://github.com/pefcos)). All complaints will be
+maintainer ([@arnaud-ritti](https://github.com/arnaud-ritti)). All complaints will be
 reviewed and investigated promptly and fairly, and maintainers will respect the privacy and security of the reporter.
 
 ## Enforcement

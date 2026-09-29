@@ -201,7 +201,7 @@ public class RecordController {
   
     @GetMapping("/external-redirect")
     public ResponseEntity<String> externalRedirect() {
-        return inertia.location("https://github.com/Inertia4J/inertia4j"); // Redirects to an external route.
+        return inertia.location("https://github.com/arnaud-ritti/inertia4j"); // Redirects to an external route.
     }
 }
  ```

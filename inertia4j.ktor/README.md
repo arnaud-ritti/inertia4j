@@ -2,8 +2,6 @@
 
 This document describes how to install and use Inertia4J with Ktor.
 
-For a complete example, please refer to the [inertia4j-ktor-example](https://github.com/Inertia4J/inertia4j-ktor-example) repository.
-
 ## Installation
 
 ### Backend
@@ -204,7 +202,7 @@ embeddedServer(Netty, port = 8080) {
         }
             
         get("/external-redirect") {
-            inertia.location("https://github.com/Inertia4J/inertia4j")
+            inertia.location("https://github.com/arnaud-ritti/inertia4j")
         }
     }
 }.start(wait = true)
