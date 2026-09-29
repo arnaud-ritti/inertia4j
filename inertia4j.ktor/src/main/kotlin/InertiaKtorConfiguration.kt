@@ -87,8 +87,10 @@ class InertiaKtorConfiguration {
     /**
      * Whether the plugin applies the Inertia protocol to every call, including those answered without rendering a
      * page: a `GET` Inertia request sent with an outdated asset version receives a 409 Conflict before reaching its
-     * route, a 302 Found answering a PUT, PATCH or DELETE Inertia request becomes a 303 See Other, and a redirect to
-     * a location with a URL fragment becomes a 409 Conflict with `X-Inertia-Redirect`. Defaults to `true`.
+     * route, an empty 200 OK answering an Inertia request redirects back to the `Referer` (or `/`), a 302 Found
+     * answering a PUT, PATCH or DELETE Inertia request becomes a 303 See Other, a redirect to a location with a URL
+     * fragment becomes a 409 Conflict with `X-Inertia-Redirect`, and every response carries `Vary: X-Inertia`.
+     * Defaults to `true`.
      */
     var middleware: Boolean = true
 

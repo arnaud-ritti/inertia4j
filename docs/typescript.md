@@ -82,6 +82,9 @@ inertiaTypes {
 Import `io.github.inertia4j.typescript.ErrorValueType` and `io.github.inertia4j.core.PropertyNaming` at the top of the
 build script when you set these options.
 
+Use `ErrorValueType.StringArray` when the server sends every validation message of each field: with
+`inertia.validation.all-errors=true` (Spring) or lists of messages passed to `inertia.errors` (Ktor).
+
 - `./gradlew generateInertiaTypes` writes the file.
 - `./gradlew checkInertiaTypes` fails when the file is out of date; add `tasks.check { dependsOn("checkInertiaTypes") }`
   to run it in CI.

@@ -15,6 +15,7 @@ import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.validation.BeanPropertyBindingResult;
 import org.springframework.validation.Errors;
+import org.springframework.validation.MapBindingResult;
 
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -226,6 +227,56 @@ public class InertiaTest {
     }
 
     @Test
+    void errors_fromBindingResult_keepTheFirstMessageOfEachField() {
+        inertia.errors(twoNameErrors());
+
+        inertiaRequest();
+        ResponseEntity<String> response = inertia.render(testComponent, Map.of());
+
+        assertEquals(
+            "{\"component\":\"TestComponent\",\"props\":{\"errors\":{\"name\":\"The name field is required.\"}},\"url\":\"/test-url\",\"version\":\"1\",\"sharedProps\":[\"errors\"]}",
+            response.getBody()
+        );
+    }
+
+    @Test
+    void errors_fromBindingResult_withAllErrors_sendEveryMessageOfEachField() {
+        inertia.setAllErrors(true);
+        inertia.errors(twoNameErrors());
+
+        inertiaRequest();
+        ResponseEntity<String> response = inertia.render(testComponent, Map.of());
+
+        assertEquals(
+            "{\"component\":\"TestComponent\",\"props\":{\"errors\":{\"name\":[\"The name field is required.\",\"The name must be a string.\"]}},\"url\":\"/test-url\",\"version\":\"1\",\"sharedProps\":[\"errors\"]}",
+            response.getBody()
+        );
+    }
+
+    @Test
+    void flash_isConsumedByPrefetchRequests() {
+        inertia.flash("message", "Saved");
+
+        request = newRequest("GET", "/test-url");
+        inertiaRequest();
+        request.addHeader("Purpose", "prefetch");
+        ResponseEntity<String> prefetchResponse = inertia.render(testComponent, Map.of());
+
+        request = newRequest("GET", "/test-url");
+        inertiaRequest();
+        ResponseEntity<String> visitResponse = inertia.render(testComponent, Map.of());
+
+        assertEquals(
+            "{\"component\":\"TestComponent\",\"props\":{\"errors\":{}},\"url\":\"/test-url\",\"version\":\"1\",\"sharedProps\":[\"errors\"],\"flash\":{\"message\":\"Saved\"}}",
+            prefetchResponse.getBody()
+        );
+        assertEquals(
+            "{\"component\":\"TestComponent\",\"props\":{\"errors\":{}},\"url\":\"/test-url\",\"version\":\"1\",\"sharedProps\":[\"errors\"]}",
+            visitResponse.getBody()
+        );
+    }
+
+    @Test
     void redirect_afterPut_returnsSeeOtherResponse() {
         request.setMethod("PUT");
         request.addHeader("X-Inertia", "true");
@@ -331,6 +382,13 @@ public class InertiaTest {
             .build();
 
         return new Inertia(renderer, () -> request, sharedDataProviders);
+    }
+
+    private static Errors twoNameErrors() {
+        Errors errors = new MapBindingResult(new LinkedHashMap<>(), "user");
+        errors.rejectValue("name", "required", "The name field is required.");
+        errors.rejectValue("name", "string", "The name must be a string.");
+        return errors;
     }
 
     private MockHttpServletRequest newRequest(String method, String uri) {

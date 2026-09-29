@@ -356,6 +356,44 @@ public class InertiaRendererTest {
     }
 
     @Test
+    void render_withRescuedPropNotDeferred_whenItThrows_propagatesTheException() {
+        List<RuntimeException> reported = new ArrayList<>();
+        InertiaRenderer renderer = InertiaRenderer
+            .builder(pageObjectSerializer, versionProvider, page -> page.getBody())
+            .exceptionReporter(reported::add)
+            .build();
+
+        assertThrows(IllegalStateException.class, () -> renderer.render(
+            partialRequest(Map.of("X-Inertia-Partial-Data", "permissions")),
+            options().props(props("permissions", InertiaProps.optional(() -> { throw new IllegalStateException("boom"); }).rescue())).build()
+        ));
+        assertThrows(IllegalStateException.class, () -> renderer.render(
+            new FakeHttpRequest("GET", inertiaHeaders),
+            options().props(props("permissions", InertiaProps.always(() -> { throw new IllegalStateException("boom"); }).rescue())).build()
+        ));
+        assertEquals(List.of(), reported);
+    }
+
+    @Test
+    void render_withMergePropsMatchingOnNestedPaths_listsTheFieldsUnderTheirPath() {
+        HttpResponse response = render(
+            new FakeHttpRequest("GET", inertiaHeaders),
+            options().props(props(
+                "posts", InertiaProps.merge(Map.of("data", List.of(Map.of("id", 1)))).append("data", "id"),
+                "chat", InertiaProps.merge(Map.of("messages", List.of(Map.of("uuid", "a")))).prepend("messages", "uuid"),
+                "users", InertiaProps.merge(List.of(Map.of("id", 1))).append().matchOn("id")
+            )).build()
+        );
+
+        assertJson(
+            "{\"component\":\"Component\",\"props\":{\"chat\":{\"messages\":[{\"uuid\":\"a\"}]},\"errors\":{},\"posts\":{\"data\":[{\"id\":1}]},\"users\":[{\"id\":1}]},"
+                + "\"url\":\"/page\",\"version\":\"1\",\"mergeProps\":[\"posts.data\",\"users\"],\"prependProps\":[\"chat.messages\"],"
+                + "\"matchPropsOn\":[\"posts.data.id\",\"chat.messages.uuid\",\"users.id\"],\"sharedProps\":[\"errors\"]}",
+            response
+        );
+    }
+
+    @Test
     void render_withMergeProps_onPartialReload_listsOnlyIncludedAndNotResetProps() {
         HttpResponse response = render(
             partialRequest(Map.of("X-Inertia-Partial-Data", "posts,comments", "X-Inertia-Reset", "comments")),
@@ -455,6 +493,23 @@ public class InertiaRendererTest {
         assertJson(
             "{\"component\":\"Component\",\"props\":{\"errors\":{}},\"url\":\"/page\",\"version\":\"1\","
                 + "\"onceProps\":{\"plans\":{\"prop\":\"plans\",\"expiresAt\":null}},\"sharedProps\":[\"errors\"]}",
+            response
+        );
+    }
+
+    @Test
+    void render_withOptionalOrDeferredOnceProp_onFirstVisit_skipsItButListsIt() {
+        HttpResponse response = render(
+            new FakeHttpRequest("GET", inertiaHeaders),
+            options().props(props(
+                "plans", InertiaProps.defer(() -> { throw new AssertionError("must not be resolved"); }).once(),
+                "countries", InertiaProps.optional(() -> { throw new AssertionError("must not be resolved"); }).once()
+            )).build()
+        );
+
+        assertJson(
+            "{\"component\":\"Component\",\"props\":{\"errors\":{}},\"url\":\"/page\",\"version\":\"1\",\"deferredProps\":{\"default\":[\"plans\"]},"
+                + "\"onceProps\":{\"plans\":{\"prop\":\"plans\",\"expiresAt\":null},\"countries\":{\"prop\":\"countries\",\"expiresAt\":null}},\"sharedProps\":[\"errors\"]}",
             response
         );
     }

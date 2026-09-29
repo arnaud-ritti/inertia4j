@@ -9,11 +9,14 @@ import org.junit.jupiter.api.Test;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.validation.Errors;
+import org.springframework.validation.MapBindingResult;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.LinkedHashMap;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -57,6 +60,29 @@ public class AutoconfigurationPropertiesTest {
             String body = context.getBean(Inertia.class).render(new UsersShowProps("Miles")).getBody();
 
             assertTrue(body.contains("\"props\":{\"errors\":{},\"first_name\":\"Miles\"}"), body);
+        });
+    }
+
+    @Test
+    void validationAllErrors_sendsEveryMessageOfEachField() {
+        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/users/1");
+        request.addHeader("X-Inertia", "true");
+        request.addHeader("X-Inertia-Version", "1");
+        RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
+
+        contextRunner.withPropertyValues("inertia.validation.all-errors=true").run(context -> {
+            Inertia inertia = context.getBean(Inertia.class);
+            Errors errors = new MapBindingResult(new LinkedHashMap<>(), "user");
+            errors.rejectValue("name", "required", "The name field is required.");
+            errors.rejectValue("name", "string", "The name must be a string.");
+            inertia.errors(errors);
+
+            String body = inertia.render("Users/Edit").getBody();
+
+            assertTrue(
+                body.contains("\"errors\":{\"name\":[\"The name field is required.\",\"The name must be a string.\"]}"),
+                body
+            );
         });
     }
 

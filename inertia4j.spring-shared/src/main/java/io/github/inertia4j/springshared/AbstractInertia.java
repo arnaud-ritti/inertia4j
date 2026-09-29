@@ -43,6 +43,7 @@ public abstract class AbstractInertia {
     private final List<SharedDataProvider> sharedDataProviders;
     private final PropertyNaming propertyNaming;
     private InertiaSpringRendererOptions defaultOptions = new InertiaSpringRendererOptions();
+    private boolean allErrors = false;
 
     /**
      * Internal constructor used in tests.
@@ -133,6 +134,16 @@ public abstract class AbstractInertia {
      */
     public void setDefaultOptions(InertiaSpringRendererOptions defaultOptions) {
         this.defaultOptions = defaultOptions;
+    }
+
+    /**
+     * Sets whether {@link #errors(Errors)} sends every validation message of each field, as a list, instead of the
+     * first one. Mirrors the {@code inertia.validation.all-errors} property.
+     *
+     * @param allErrors whether to send every message of each field.
+     */
+    public void setAllErrors(boolean allErrors) {
+        this.allErrors = allErrors;
     }
 
     /**
@@ -344,11 +355,17 @@ public abstract class AbstractInertia {
     }
 
     /**
-     * Sets validation errors sent with the next rendered page, keeping the first message of each field.
+     * Sets validation errors sent with the next rendered page, keeping the first message of each field, or every
+     * message of each field as a list when {@link #setAllErrors(boolean) all errors} are enabled.
      *
      * @param errors validation result.
      */
     public void errors(Errors errors) {
+        if (allErrors) {
+            errors(ValidationErrors.allMessages(errors));
+            return;
+        }
+
         errors(ValidationErrors.firstMessages(errors));
     }
 

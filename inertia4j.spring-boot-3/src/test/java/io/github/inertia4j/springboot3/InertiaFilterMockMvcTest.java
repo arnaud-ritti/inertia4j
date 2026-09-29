@@ -12,6 +12,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
 
 import java.net.URI;
 import java.util.Map;
@@ -22,6 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -85,6 +87,32 @@ class InertiaFilterMockMvcTest {
         ResponseEntity<String> target() {
             return inertia.render("Target");
         }
+
+        @PutMapping("/empty")
+        ResponseEntity<Void> updateWithoutResponse() {
+            return ResponseEntity.ok().build();
+        }
+
+        @GetMapping("/empty")
+        ResponseEntity<Void> showNothing() {
+            return ResponseEntity.ok().build();
+        }
+
+        @GetMapping("/no-content")
+        ResponseEntity<Void> noContent() {
+            return ResponseEntity.noContent().build();
+        }
+
+        @GetMapping("/text")
+        @ResponseBody
+        String text() {
+            return "plain";
+        }
+
+        @GetMapping("/vary")
+        ResponseEntity<String> vary() {
+            return ResponseEntity.ok().header("Vary", "Accept-Language, X-Inertia").body("varied");
+        }
     }
 
     @Test
@@ -144,5 +172,53 @@ class InertiaFilterMockMvcTest {
         mvc.perform(get("/target").session(session).header("X-Inertia", "true").header("X-Inertia-Version", "1"))
             .andExpect(status().isOk())
             .andExpect(result -> assertFalse(result.getResponse().getContentAsString().contains("Saved")));
+    }
+
+    @Test
+    void filter_whenInertiaResponseIsEmpty_redirectsBackToTheReferer() throws Exception {
+        mvc.perform(put("/empty").header("X-Inertia", "true").header("X-Inertia-Version", "1").header("Referer", "http://localhost/records/1/edit"))
+            .andExpect(status().isSeeOther())
+            .andExpect(header().string("Location", "http://localhost/records/1/edit"));
+    }
+
+    @Test
+    void filter_whenInertiaResponseIsEmptyWithoutReferer_redirectsToTheRoot() throws Exception {
+        mvc.perform(get("/empty").header("X-Inertia", "true").header("X-Inertia-Version", "1"))
+            .andExpect(status().isFound())
+            .andExpect(header().string("Location", "/"));
+    }
+
+    @Test
+    void filter_whenResponseIsEmptyButNotOk_keepsIt() throws Exception {
+        mvc.perform(get("/no-content").header("X-Inertia", "true").header("X-Inertia-Version", "1"))
+            .andExpect(status().isNoContent());
+    }
+
+    @Test
+    void filter_whenNonInertiaResponseIsEmpty_keepsIt() throws Exception {
+        mvc.perform(get("/empty"))
+            .andExpect(status().isOk());
+    }
+
+    @Test
+    void filter_whenInertiaResponseHasABody_keepsIt() throws Exception {
+        mvc.perform(get("/text").header("X-Inertia", "true").header("X-Inertia-Version", "1"))
+            .andExpect(status().isOk())
+            .andExpect(content().string("plain"));
+    }
+
+    @Test
+    void filter_addsVaryInertiaToEveryResponseOnce() throws Exception {
+        mvc.perform(get("/text"))
+            .andExpect(header().stringValues("Vary", "X-Inertia"));
+        mvc.perform(get("/target"))
+            .andExpect(header().stringValues("Vary", "X-Inertia"));
+        mvc.perform(get("/target").header("X-Inertia", "true").header("X-Inertia-Version", "1"))
+            .andExpect(header().stringValues("Vary", "X-Inertia"));
+        mvc.perform(get("/target").header("X-Inertia", "true").header("X-Inertia-Version", "old"))
+            .andExpect(status().isConflict())
+            .andExpect(header().stringValues("Vary", "X-Inertia"));
+        mvc.perform(get("/vary"))
+            .andExpect(header().stringValues("Vary", "X-Inertia", "Accept-Language"));
     }
 }

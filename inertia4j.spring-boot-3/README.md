@@ -213,7 +213,9 @@ The same rules apply to redirects that don't go through `inertia.redirect`, such
 `InertiaFilter`, registered automatically, turns a `302 Found` answering a `PUT`, `PATCH` or `DELETE` Inertia request
 into a `303 See Other`, and a `sendRedirect` to a location with a URL fragment into a `409 Conflict` with
 `X-Inertia-Redirect`. It also answers `GET` Inertia requests sent with an outdated asset version before they reach
-your controller, keeping flash data in the session. Disable it with `inertia.filter.enabled=false`.
+your controller, keeping flash data in the session, redirects an Inertia request answered with an empty `200 OK` (e.g.
+`ResponseEntity.ok().build()`) back to its `Referer` (or `/`), and adds `Vary: X-Inertia` to every response. Disable it
+with `inertia.filter.enabled=false`.
 
 ### Partial Reloads
 
@@ -284,6 +286,8 @@ renders the `rescue` slot of its `<Deferred>` component:
 "permissions", Inertia.defer(() -> permissionService.fetch()).rescue()
 ```
 
+Rescuing only applies to deferred props: `rescue()` has no effect on other props, whose exceptions propagate.
+
 See the [official docs](https://inertiajs.com/docs/v3/data-props/deferred-props).
 
 ### Merging Props
@@ -296,6 +300,7 @@ return inertia.render("records/Index", Map.of(
     "notifications", Inertia.merge(notifications).prepend(),            // prepend items
     "feed", Inertia.merge(feed).append("data").prepend("messages"),     // merge nested arrays
     "posts", Inertia.merge(posts).matchOn("id"),                        // update existing items in place
+    "users", Inertia.merge(users).append("data", "id"),                 // append to data, match on data.id
     "conversations", Inertia.deepMerge(conversations).matchOn("data.id") // merge nested objects recursively
 ));
 ```
@@ -356,7 +361,7 @@ public ResponseEntity<String> create() {
 ```
 
 Flash data, validation errors and the `preserveFragment` and `clearHistory` flags are kept in the HTTP session until a
-page is rendered. See the [official docs](https://inertiajs.com/docs/v3/data-props/flash-data).
+page is rendered, including for a prefetch request, as in the Laravel adapter. See the [official docs](https://inertiajs.com/docs/v3/data-props/flash-data).
 
 ### Validation Errors
 
@@ -375,7 +380,9 @@ public ResponseEntity<String> store(@Valid @ModelAttribute UserForm form, Bindin
 ```
 
 `inertia.errors(Map)` accepts any messages, and `ValidationErrors.allMessages(result)` keeps every message of each
-field. See the [official docs](https://inertiajs.com/docs/v3/the-basics/validation).
+field. Set `inertia.validation.all-errors=true` to make `inertia.errors(result)` send every message of each field as a
+list, and pair it with `errorValueType.set(ErrorValueType.StringArray)` in the [TypeScript types](../docs/typescript.md)
+configuration. See the [official docs](https://inertiajs.com/docs/v3/the-basics/validation).
 
 ### Precognition
 

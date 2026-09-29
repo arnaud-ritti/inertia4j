@@ -102,7 +102,11 @@ public class InertiaProp<T> {
 
     /**
      * Rescues failures of this deferred prop: an exception thrown while resolving it is reported instead of failing
-     * the response, and the client renders the {@code rescue} slot of its {@code <Deferred>} component.
+     * the response, the prop is listed in {@code rescuedProps}, and the client renders the {@code rescue} slot of its
+     * {@code <Deferred>} component.
+     * <p>
+     * Like Laravel's {@code Inertia::defer(..., rescue: true)}, rescuing only applies to deferred props, which are
+     * resolved by partial reloads: on a prop that is not deferred it has no effect and the exception propagates.
      *
      * @return this prop.
      */
@@ -203,6 +207,9 @@ public class InertiaProp<T> {
     /**
      * Enables shallow merging, appending new items. Without arguments, items are appended at the root of the prop.
      * When paths are given (e.g. {@code "data"}), items are appended to the arrays at those nested paths instead.
+     * <p>
+     * Called with exactly two paths, this method resolves to {@link #append(String, String)}, whose second argument
+     * is the identifying field: chain {@code append} calls to append at two paths.
      *
      * @param paths nested paths, relative to the prop, whose arrays should be appended to.
      * @return this prop.
@@ -217,8 +224,26 @@ public class InertiaProp<T> {
     }
 
     /**
+     * Enables shallow merging, appending new items to the array at a nested path, identified by a field of the items:
+     * {@code append("data", "id")} appends to {@code data} and matches items on {@code data.id}, so existing items are
+     * updated in place instead of being duplicated.
+     *
+     * @param path    nested path, relative to the prop, whose array should be appended to.
+     * @param matchOn identifying field, relative to the items of the array.
+     * @return this prop.
+     */
+    public InertiaProp<T> append(String path, String matchOn) {
+        append(new String[]{path});
+        this.matchOn.add(path + "." + matchOn);
+        return this;
+    }
+
+    /**
      * Enables shallow merging, prepending new items. Without arguments, items are prepended at the root of the prop.
      * When paths are given (e.g. {@code "messages"}), items are prepended to the arrays at those nested paths instead.
+     * <p>
+     * Called with exactly two paths, this method resolves to {@link #prepend(String, String)}, whose second argument
+     * is the identifying field: chain {@code prepend} calls to prepend at two paths.
      *
      * @param paths nested paths, relative to the prop, whose arrays should be prepended to.
      * @return this prop.
@@ -229,6 +254,21 @@ public class InertiaProp<T> {
             this.rootStrategy = RootStrategy.PREPEND;
         }
         this.prependPaths.addAll(Arrays.asList(paths));
+        return this;
+    }
+
+    /**
+     * Enables shallow merging, prepending new items to the array at a nested path, identified by a field of the
+     * items: {@code prepend("messages", "id")} prepends to {@code messages} and matches items on {@code messages.id},
+     * so existing items are updated in place instead of being duplicated.
+     *
+     * @param path    nested path, relative to the prop, whose array should be prepended to.
+     * @param matchOn identifying field, relative to the items of the array.
+     * @return this prop.
+     */
+    public InertiaProp<T> prepend(String path, String matchOn) {
+        prepend(new String[]{path});
+        this.matchOn.add(path + "." + matchOn);
         return this;
     }
 

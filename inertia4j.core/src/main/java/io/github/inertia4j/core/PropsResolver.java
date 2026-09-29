@@ -167,7 +167,7 @@ class PropsResolver {
         try {
             resolvedValue = resolveLazy(prop != null ? prop.value() : value);
         } catch (RuntimeException exception) {
-            if (prop == null || !prop.isRescuable()) {
+            if (prop == null || !prop.isRescuable() || !prop.isDeferred()) {
                 throw exception;
             }
 
