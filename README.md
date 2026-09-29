@@ -32,7 +32,7 @@ can read the [advanced usage guide](docs/advanced.md).
 
 ### Contributing
 
-Inertia4J is an open source project. If you'd like to contribute with any new features or bug fixes, please read the
+Inertia4J is an open source project maintained by [@arnaud-ritti](https://github.com/arnaud-ritti). If you'd like to contribute with any new features or bug fixes, please read the
 [contributing guide](CONTRIBUTING.md) and the [code of conduct](CODE_OF_CONDUCT.md). Security issues should be reported
 privately as described in the [security policy](SECURITY.md).
 

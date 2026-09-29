@@ -25,6 +25,11 @@ fun MavenPom.inertia4jMetadata() {
             name.set("Pedro Fronchetti Costa da Silva")
             email.set("pfronchetti@gmail.com")
         }
+        developer {
+            id.set("arnaud-ritti")
+            name.set("Arnaud Ritti")
+            email.set("arnaud.ritti@gmail.com")
+        }
     }
 
     scm {
