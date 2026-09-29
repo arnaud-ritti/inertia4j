@@ -2,6 +2,7 @@ package dev.arkoder.inertia4j.typescript.gradle;
 
 import dev.arkoder.inertia4j.core.PropertyNaming;
 import dev.arkoder.inertia4j.typescript.ErrorValueType;
+import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.Property;
@@ -34,4 +35,20 @@ public abstract class InertiaTypesExtension {
      * @return whether unannotated Java properties are nullable. Defaults to {@code false}.
      */
     public abstract Property<Boolean> getNullableByDefault();
+
+    /**
+     * @return generated route helpers file. Defaults to {@code build/inertia/routes.ts}.
+     */
+    public abstract RegularFileProperty getRoutesOutputFile();
+
+    /**
+     * @return package roots holding the Spring MVC controllers. Defaults to {@link #getPackages()}.
+     */
+    public abstract ListProperty<String> getRoutePackages();
+
+    /**
+     * @return route manifests written by the Ktor plugin ({@code routeManifest} setting).
+     */
+    public abstract ConfigurableFileCollection getRouteManifests();
+
 }

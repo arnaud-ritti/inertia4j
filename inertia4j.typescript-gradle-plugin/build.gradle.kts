@@ -15,6 +15,9 @@ dependencies {
 
     testImplementation(project(":inertia4j.typescript-annotations"))
     testImplementation(libs.junit.jupiter)
+    testImplementation(platform(libs.spring.boot3.dependencies))
+    testImplementation("org.springframework:spring-web")
+    testImplementation("org.springframework:spring-context")
     testRuntimeOnly(libs.junit.platform.launcher)
 }
 

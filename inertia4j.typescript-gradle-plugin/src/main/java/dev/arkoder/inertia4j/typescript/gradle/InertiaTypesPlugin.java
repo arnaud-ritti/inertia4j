@@ -21,6 +21,8 @@ public class InertiaTypesPlugin implements Plugin<Project> {
         extension.getErrorValueType().convention(ErrorValueType.String);
         extension.getPropertyNaming().convention(PropertyNaming.Camel);
         extension.getNullableByDefault().convention(false);
+        extension.getRoutesOutputFile().convention(project.getLayout().getBuildDirectory().file("inertia/routes.ts"));
+        extension.getRoutePackages().convention(extension.getPackages());
 
         project.getPluginManager().withPlugin("java", plugin -> {
             SourceSetContainer sourceSets = project.getExtensions().getByType(SourceSetContainer.class);
@@ -32,6 +34,16 @@ public class InertiaTypesPlugin implements Plugin<Project> {
                 task.getOutputFile().set(extension.getOutputFile());
             });
 
+            project.getTasks().register("generateInertiaRoutes", GenerateInertiaRoutesTask.class, task -> {
+                configureRoutes(task, extension, runtimeClasspath);
+                task.setDescription("Generates TypeScript route helpers for the controllers and route manifests.");
+                task.getOutputFile().set(extension.getRoutesOutputFile());
+            });
+            project.getTasks().register("checkInertiaRoutes", CheckInertiaRoutesTask.class, task -> {
+                configureRoutes(task, extension, runtimeClasspath);
+                task.setDescription("Checks that the generated Inertia route helpers are up to date.");
+                task.getRoutesFile().set(extension.getRoutesOutputFile());
+            });
             project.getTasks().register("checkInertiaTypes", CheckInertiaTypesTask.class, task -> {
                 configure(task, extension, runtimeClasspath);
                 task.setDescription("Checks that the generated Inertia TypeScript types are up to date.");
@@ -48,4 +60,12 @@ public class InertiaTypesPlugin implements Plugin<Project> {
         task.getPropertyNaming().set(extension.getPropertyNaming());
         task.getNullableByDefault().set(extension.getNullableByDefault());
     }
+
+    private static void configureRoutes(InertiaRoutesTask task, InertiaTypesExtension extension, FileCollection runtimeClasspath) {
+        task.setGroup(TaskGroup);
+        task.getClasspath().from(runtimeClasspath);
+        task.getRoutePackages().set(extension.getRoutePackages());
+        task.getRouteManifests().from(extension.getRouteManifests());
+    }
+
 }
