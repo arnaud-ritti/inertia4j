@@ -6,6 +6,10 @@ import org.jspecify.annotations.Nullable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
+import java.nio.file.Path;
+import java.nio.file.attribute.FileTime;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
@@ -16,8 +20,7 @@ import java.util.Set;
 import java.util.regex.Pattern;
 
 /**
- * Produces the HTML tags loading Vite entries, following the Vite backend integration guide,
- * and the Inertia asset version derived from the Vite manifest.
+ * Produces the HTML tags loading Vite entries from the Vite dev server when its hot file exists, or from the build manifest otherwise, following the Vite backend integration guide, and the Inertia asset version.
  * Thread-safe; one instance is meant to be shared by the whole application.
  *
  * @see <a href="https://vite.dev/guide/backend-integration.html">Vite backend integration</a>
@@ -27,9 +30,12 @@ public class Vite {
     private static final String defaultVersion = "1";
     private static final Pattern stylesheetPattern =
         Pattern.compile("\\.(css|less|sass|scss|styl|stylus|pcss|postcss)(\\?.*)?$");
+    private static final String devVersion = "dev";
+    private static final System.Logger logger = System.getLogger(Vite.class.getName());
 
     private final ViteConfig config;
     private volatile @Nullable LoadedManifest loadedManifest;
+    private volatile @Nullable HotFile hotFile;
 
     /**
      * @param config integration settings.
@@ -43,6 +49,48 @@ public class Vite {
      */
     public ViteConfig getConfig() {
         return config;
+    }
+
+    /**
+     * @return whether the Vite dev server is running, i.e. the hot file exists and holds a URL.
+     */
+    public boolean isDevMode() {
+        return readDevServerUrl() != null;
+    }
+
+    /**
+     * @return URL of the running Vite dev server, without trailing slash.
+     * @throws ViteException if the dev server is not running.
+     */
+    public String devServerUrl() {
+        String url = readDevServerUrl();
+
+        if (url == null) {
+            throw new ViteException("Vite dev server is not running: no URL in hot file " + config.getHotFile());
+        }
+
+        return url;
+    }
+
+    /**
+     * @return the React Fast Refresh preamble in dev mode, an empty string otherwise.
+     */
+    public String reactRefreshTag() {
+        String url = readDevServerUrl();
+
+        if (url == null) {
+            return "";
+        }
+
+        return String.join("\n",
+            "<script type=\"module\">",
+            "  import RefreshRuntime from '" + url + "/@react-refresh'",
+            "  RefreshRuntime.injectIntoGlobalHook(window)",
+            "  window.$RefreshReg$ = () => {}",
+            "  window.$RefreshSig$ = () => (type) => type",
+            "  window.__vite_plugin_react_preamble_installed__ = true",
+            "</script>"
+        );
     }
 
     /**
@@ -63,13 +111,24 @@ public class Vite {
             normalisedEntries.add(stripLeadingSlash(entry));
         }
 
+        String devServerUrl = readDevServerUrl();
+
+        if (devServerUrl != null) {
+            return devTags(devServerUrl, normalisedEntries);
+        }
+
         return productionTags(normalisedEntries);
     }
 
     /**
-     * @return SHA-256 of the manifest, or {@code "1"} when the manifest is missing or invalid.
+     * @return {@code "dev"} in dev mode, otherwise the SHA-256 of the manifest,
+     * or {@code "1"} when the manifest is missing or invalid.
      */
     public String version() {
+        if (readDevServerUrl() != null) {
+            return devVersion;
+        }
+
         try {
             return manifest().hash;
         } catch (ViteException e) {
@@ -247,6 +306,57 @@ public class Vite {
         }
     }
 
+    private String devTags(String devServerUrl, List<String> entries) {
+        List<String> tags = new ArrayList<>();
+        tags.add(scriptTag(devServerUrl + "/@vite/client"));
+
+        for (String entry : entries) {
+            String url = devServerUrl + "/" + entry;
+            tags.add(isStylesheet(entry) ? stylesheetTag(url) : scriptTag(url));
+        }
+
+        return String.join("\n", tags);
+    }
+
+    private @Nullable String readDevServerUrl() {
+        Path path = config.getHotFile();
+
+        try {
+            if (!Files.isRegularFile(path)) {
+                return null;
+            }
+
+            FileTime modified = Files.getLastModifiedTime(path);
+            long size = Files.size(path);
+            HotFile cached = hotFile;
+
+            if (cached != null && cached.modified.equals(modified) && cached.size == size) {
+                return cached.url;
+            }
+
+            String url = stripTrailingSlash(Files.readString(path).trim());
+            HotFile current = new HotFile(modified, size, url.isEmpty() ? null : url);
+            hotFile = current;
+
+            return current.url;
+        } catch (NoSuchFileException e) {
+            return null;
+        } catch (IOException e) {
+            logger.log(System.Logger.Level.WARNING, "Unable to read Vite hot file " + path, e);
+            return null;
+        }
+    }
+
+    private static String stripTrailingSlash(String url) {
+        String stripped = url;
+
+        while (stripped.endsWith("/")) {
+            stripped = stripped.substring(0, stripped.length() - 1);
+        }
+
+        return stripped;
+    }
+
     private static class LoadedManifest {
         private final ViteManifest manifest;
         private final String hash;
@@ -254,6 +364,18 @@ public class Vite {
         private LoadedManifest(ViteManifest manifest, String hash) {
             this.manifest = manifest;
             this.hash = hash;
+        }
+    }
+
+    private static class HotFile {
+        private final FileTime modified;
+        private final long size;
+        private final @Nullable String url;
+
+        private HotFile(FileTime modified, long size, @Nullable String url) {
+            this.modified = modified;
+            this.size = size;
+            this.url = url;
         }
     }
 }
