@@ -1,0 +1,55 @@
+{
+  "_shared-B7PI925R.js": {
+    "file": "assets/shared-B7PI925R.js",
+    "name": "shared",
+    "imports": ["_util-D1gK2mQx.js"],
+    "css": ["assets/shared-ChJ_j-JJ.css"]
+  },
+  "_util-D1gK2mQx.js": {
+    "file": "assets/util-D1gK2mQx.js",
+    "name": "util",
+    "css": ["assets/util-Cq0cE3aP.css"]
+  },
+  "_a-Xy12Ab34.js": {
+    "file": "assets/a-Xy12Ab34.js",
+    "imports": ["_b-Zt56Cd78.js"]
+  },
+  "_b-Zt56Cd78.js": {
+    "file": "assets/b-Zt56Cd78.js",
+    "imports": ["_a-Xy12Ab34.js"]
+  },
+  "baz.js": {
+    "file": "assets/baz-B2H3sXNv.js",
+    "name": "baz",
+    "src": "baz.js",
+    "isDynamicEntry": true
+  },
+  "views/foo.js": {
+    "file": "assets/foo-BRBmoGS9.js",
+    "name": "foo",
+    "src": "views/foo.js",
+    "isEntry": true,
+    "imports": ["_shared-B7PI925R.js"],
+    "css": ["assets/foo-5UjPuW-k.css"]
+  },
+  "views/bar.js": {
+    "file": "assets/bar-gkvgaI9m.js",
+    "name": "bar",
+    "src": "views/bar.js",
+    "isEntry": true,
+    "imports": ["_shared-B7PI925R.js"],
+    "dynamicImports": ["baz.js"]
+  },
+  "views/cycle.js": {
+    "file": "assets/cycle-C9dE0fGh.js",
+    "name": "cycle",
+    "src": "views/cycle.js",
+    "isEntry": true,
+    "imports": ["_a-Xy12Ab34.js"]
+  },
+  "styles/app.css": {
+    "file": "assets/app-DfP3c1rW.css",
+    "src": "styles/app.css",
+    "isEntry": true
+  }
+}
