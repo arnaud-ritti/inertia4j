@@ -4,6 +4,7 @@ import io.github.inertia4j.core.DefaultPageObjectSerializer
 import io.github.inertia4j.core.SimpleTemplateRenderer
 import io.github.inertia4j.spi.PageObjectSerializer
 import io.github.inertia4j.spi.TemplateRenderer
+import io.ktor.server.application.*
 
 /**
  * Configuration class for the Inertia Ktor plugin.
@@ -40,6 +41,20 @@ class InertiaKtorConfiguration {
      * @see <a href="https://inertiajs.com/history-encryption">Inertia History Encryption</a>
      */
     var encryptHistory: Boolean = false
+
+    internal val sharedDataProviders = mutableListOf<suspend (ApplicationCall) -> Map<String, Any?>>()
+
+    /**
+     * Registers a provider of data shared with every Inertia response.
+     * Shared props are merged with the props given to `render`, which take precedence on key collisions.
+     * Function values (`() -> T`) are lazy: they are only evaluated when the prop is sent to the client.
+     *
+     * @param provider returns the props shared with the response to the given call.
+     * @see <a href="https://inertiajs.com/shared-data">Inertia shared data</a>
+     */
+    fun share(provider: suspend (ApplicationCall) -> Map<String, Any?>) {
+        sharedDataProviders.add(provider)
+    }
 
     internal val templateRendererOrDefault: TemplateRenderer get() {
         return templateRenderer ?: SimpleTemplateRenderer(templatePath)

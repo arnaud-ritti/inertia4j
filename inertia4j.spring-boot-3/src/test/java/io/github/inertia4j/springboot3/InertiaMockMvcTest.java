@@ -1,10 +1,12 @@
 package io.github.inertia4j.springboot3;
 
+import io.github.inertia4j.springshared.SharedDataProvider;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Bean;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -28,7 +30,12 @@ class Inertia4jSpringApplicationTests {
     MockMvc mvc;
 
     @SpringBootApplication
-    static class FakeApplication { }
+    static class FakeApplication {
+        @Bean
+        SharedDataProvider appNameProvider() {
+            return request -> Map.of("appName", "Inertia4J");
+        }
+    }
 
     @RestController
     static class FakeController {
@@ -53,7 +60,7 @@ class Inertia4jSpringApplicationTests {
                 <title>App</title>
               </head>
               <body>
-                <div id="app" data-page='{&quot;component&quot;:&quot;records/Index&quot;,&quot;props&quot;:{&quot;records&quot;:[]},&quot;url&quot;:&quot;/&quot;,&quot;version&quot;:&quot;1&quot;,&quot;encryptHistory&quot;:false,&quot;clearHistory&quot;:false}'></div>
+                <div id="app" data-page='{&quot;component&quot;:&quot;records/Index&quot;,&quot;props&quot;:{&quot;appName&quot;:&quot;Inertia4J&quot;,&quot;records&quot;:[]},&quot;url&quot;:&quot;/&quot;,&quot;version&quot;:&quot;1&quot;,&quot;encryptHistory&quot;:false,&quot;clearHistory&quot;:false}'></div>
                 <script type="module" src="/src/main.tsx"></script>
               </body>
             </html>

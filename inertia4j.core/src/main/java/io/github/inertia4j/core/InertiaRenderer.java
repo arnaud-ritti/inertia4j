@@ -5,11 +5,9 @@ import io.github.inertia4j.spi.PageObjectSerializer;
 import io.github.inertia4j.spi.SerializationException;
 import io.github.inertia4j.spi.TemplateRenderer;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 /**
  * The core class responsible for transforming regular web responses into Inertia-compatible responses.
@@ -169,7 +167,8 @@ public class InertiaRenderer {
 
     /**
      * Creates a {@link PageObject} instance from the provided rendering options.
-     * Checks for the `X-Inertia-Partial-Component` header to potentially modify props based on partial rendering requests.
+     * Checks for the `X-Inertia-Partial-Component` header to potentially modify props based on partial rendering requests,
+     * resolves deferred, merge and lazy props, and computes the merge and deferred props metadata.
      *
      * @param request The incoming HTTP request.
      * @param options The rendering options.
@@ -180,13 +179,19 @@ public class InertiaRenderer {
         if (partialComponentHeader != null) {
             options = options.withPartialComponent(partialComponentHeader);
         }
+        var propsResolver = new PropsResolver(request, options.props != null ? options.props : Map.of());
         return new PageObject(
             options.componentName,
-            options.props != null ? options.props : Map.of(),
+            propsResolver.resolvedProps,
             options.url,
             options.encryptHistory,
             options.clearHistory,
-            versionProvider.get()
+            versionProvider.get(),
+            propsResolver.mergeProps,
+            propsResolver.prependProps,
+            propsResolver.deepMergeProps,
+            propsResolver.matchPropsOn,
+            propsResolver.deferredProps
         );
     }
 
@@ -204,10 +209,7 @@ public class InertiaRenderer {
 
         List<String> partialDataProps = null;
         if (partialDataHeader != null) {
-            partialDataProps = Arrays.stream(partialDataHeader.split(","))
-                .map(String::trim)
-                .filter(s -> !s.isEmpty())
-                .collect(Collectors.toList());
+            partialDataProps = PropsResolver.parseHeaderList(partialDataHeader);
         }
 
         return pageObjectSerializer.serialize(pageObject, partialDataProps);

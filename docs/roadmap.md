@@ -38,6 +38,7 @@
 
 ## 1.1
 
-- [ ] Shared data
-- [ ] Deferred props
+- [x] Shared data
+- [x] Deferred props
+- [x] Merging props (shallow and deep)
 - [ ] Generate TypeScript types for props ([inspiration](https://www.youtube.com/watch?v=LeYF1NE3jQ4))

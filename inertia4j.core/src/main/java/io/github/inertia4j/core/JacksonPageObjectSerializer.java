@@ -1,6 +1,7 @@
 package io.github.inertia4j.core;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -17,6 +18,14 @@ import java.util.List;
  */
 @NullMarked
 public class JacksonPageObjectSerializer implements PageObjectSerializer {
+    private static final List<String> OptionalFields = List.of(
+        "mergeProps",
+        "prependProps",
+        "deepMergeProps",
+        "matchPropsOn",
+        "deferredProps"
+    );
+
     /**
      * The Jackson ObjectMapper instance used for serialization.
      * Configured to order map entries by keys for consistent output.
@@ -37,6 +46,7 @@ public class JacksonPageObjectSerializer implements PageObjectSerializer {
     ) throws SerializationException {
         try {
             ObjectNode tree = objectMapper.valueToTree(pageObject);
+            removeNullOptionalFields(tree);
             if (partialDataProps != null) {
                 ObjectNode propsNode = (ObjectNode) tree.get("props");
                 propsNode.retain(partialDataProps);
@@ -44,6 +54,15 @@ public class JacksonPageObjectSerializer implements PageObjectSerializer {
             return objectMapper.writeValueAsString(tree);
         } catch (JsonProcessingException e) {
             throw new SerializationException(e);
+        }
+    }
+
+    private static void removeNullOptionalFields(ObjectNode tree) {
+        for (String field : OptionalFields) {
+            JsonNode node = tree.get(field);
+            if (node != null && node.isNull()) {
+                tree.remove(field);
+            }
         }
     }
 }
