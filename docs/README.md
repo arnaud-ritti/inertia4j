@@ -27,6 +27,7 @@ Each guide shows both the Spring Boot (Java) and the Ktor (Kotlin) API.
 | [Testing](guides/testing.md)                           | Asserting Inertia responses in MockMvc and Ktor tests                    |
 | [Vite integration](vite.md)                            | Dev server, production build, CSP nonces, Subresource Integrity          |
 | [TypeScript types](typescript.md)                      | Generating TypeScript declarations from props classes                    |
+| [Maven](maven.md)                                      | Dependencies, frontend build and TypeScript types in a Maven project     |
 | [Extending Inertia4J](advanced.md)                     | Custom serializers, template renderers, SSR gateways, other frameworks   |
 
 ## Reference

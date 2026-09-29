@@ -56,6 +56,17 @@ dependencies {
 }
 ```
 
+```xml
+<dependency>
+    <groupId>io.github.inertia4j</groupId>
+    <artifactId>inertia4j-spring-boot-3</artifactId>
+    <version>2.0.0</version>
+</dependency>
+```
+
+Gradle and Maven are both supported; see the [Maven guide](docs/maven.md) for building the frontend and generating
+TypeScript types with Maven.
+
 Inertia4J 2.x works with Inertia.js v3 clients. Coming from 1.x? Read the [migration guide](docs/migration-2.0.md).
 
 Follow [Getting started](docs/getting-started.md) for the frontend setup and your first page.
@@ -67,7 +78,7 @@ Follow [Getting started](docs/getting-started.md) for the frontend setup and you
   [props](docs/guides/props.md), [shared data](docs/guides/shared-data.md),
   [forms and validation](docs/guides/forms-and-validation.md), [asset versioning](docs/guides/asset-versioning.md),
   [server-side rendering](docs/guides/ssr.md), [testing](docs/guides/testing.md)
-- [Vite integration](docs/vite.md), [TypeScript types](docs/typescript.md),
+- [Vite integration](docs/vite.md), [TypeScript types](docs/typescript.md), [Maven](docs/maven.md),
   [extending Inertia4J](docs/advanced.md)
 - [Configuration reference](docs/reference/configuration.md) and [architecture](docs/architecture.md)
 

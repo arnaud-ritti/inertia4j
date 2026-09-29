@@ -62,6 +62,9 @@ fun Application.module() {
 
 Jackson is only needed by the default page object serializer; you can [plug in your own](advanced.md#serialization).
 
+Using Maven? The [Maven guide](maven.md#dependencies) lists the equivalent `pom.xml` entries; Ktor artifacts need
+their `-jvm` suffix there.
+
 ## 2. Create the root template
 
 The first visit to your application returns a full HTML document; later visits only exchange JSON. Create
@@ -180,7 +183,7 @@ In development, run Vite and the backend side by side:
 
 ```shell
 npx vite            # terminal 1: writes vite.hot, serves modules with hot reload
-./gradlew bootRun   # terminal 2 (Spring Boot), or ./gradlew run for Ktor
+./gradlew bootRun   # terminal 2 (Spring Boot), or ./gradlew run for Ktor, or ./mvnw spring-boot:run
 ```
 
 Open `http://localhost:8080`. Clicking the link performs an Inertia visit: the client asks the server for the next
@@ -188,7 +191,8 @@ page as JSON and swaps the component without reloading the document.
 
 For production, run `npx vite build` before packaging. The backend then serves the hashed files from
 `/build/`, and the asset version changes with each build so browsers pick up new deployments. The
-[example application](../examples/spring-boot-react) wires `npm run build` into Gradle's `processResources`.
+[example application](../examples/spring-boot-react) wires `npm run build` into Gradle's `processResources`; the
+[Maven guide](maven.md#building-the-frontend) does the same with the `exec-maven-plugin`.
 
 ## Next steps
 

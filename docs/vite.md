@@ -107,7 +107,8 @@ hot module replacement. The asset version is `dev`.
 ## Production
 
 Run `vite build` before packaging (for example from a Gradle task, as in the
-[example application](../examples/spring-boot-react)). Pages load the hashed files listed in
+[example application](../examples/spring-boot-react), or from the `exec-maven-plugin`, as in the
+[Maven guide](maven.md#building-the-frontend)). Pages load the hashed files listed in
 `.vite/manifest.json` with their stylesheets and `modulepreload` hints. Files are served under `/build/` with
 `Cache-Control: public, max-age=31536000, immutable`. The asset version is the SHA-256 of the manifest.
 

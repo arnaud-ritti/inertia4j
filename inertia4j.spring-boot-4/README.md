@@ -67,5 +67,5 @@ public class UsersController {
   [props](../docs/guides/props.md), [shared data](../docs/guides/shared-data.md),
   [forms and validation](../docs/guides/forms-and-validation.md), [asset versioning](../docs/guides/asset-versioning.md),
   [server-side rendering](../docs/guides/ssr.md), [testing](../docs/guides/testing.md)
-- [Vite integration](../docs/vite.md) and [TypeScript types](../docs/typescript.md)
+- [Vite integration](../docs/vite.md), [TypeScript types](../docs/typescript.md) and [Maven builds](../docs/maven.md)
 - [Configuration reference](../docs/reference/configuration.md#spring-boot-properties)
