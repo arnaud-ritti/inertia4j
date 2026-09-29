@@ -98,3 +98,33 @@ install(Inertia) {
     templateRenderer = MyCustomTemplateRenderer()
 }
 ```
+
+### Vite tags in a custom renderer
+
+Custom renderers render the Vite tags through the `Vite` instance, available as a Spring bean or created from a
+`ViteConfig`:
+
+```java
+import io.github.inertia4j.core.vite.Vite;
+import io.github.inertia4j.spi.TemplateRenderer;
+import org.springframework.context.annotation.Primary;
+import org.springframework.stereotype.Component;
+
+@Component
+@Primary
+public class MyCustomTemplateRenderer implements TemplateRenderer {
+    private final Vite vite;
+
+    public MyCustomTemplateRenderer(Vite vite) {
+        this.vite = vite;
+    }
+
+    @Override
+    public String render(String pageObjectJson) {
+        String head = vite.reactRefreshTag() + vite.tags("src/main/frontend/main.tsx");
+        /* ... */
+    }
+}
+```
+
+`vite.version()` returns the matching Inertia asset version.

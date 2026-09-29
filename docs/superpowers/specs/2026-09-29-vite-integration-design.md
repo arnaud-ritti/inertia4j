@@ -154,6 +154,8 @@ export default defineConfig(({ command }) => ({
     rollupOptions: { input: 'src/main/frontend/main.tsx' },
   },
   server: {
+    port: 5173,
+    strictPort: true,
     origin: 'http://localhost:5173',
     cors: { origin: 'http://localhost:8080' },
   },
