@@ -7,7 +7,7 @@ import java.nio.file.Path;
 import java.util.function.Supplier;
 
 /**
- * Settings of the Vite integration. Defaults match the {@code vite.config.ts} documented in {@code docs/vite.md}.
+ * Settings of the Vite integration. Defaults match the {@code vite.config.ts} documented in {@code docs/guides/vite.md}.
  */
 @NullMarked
 public class ViteConfig {

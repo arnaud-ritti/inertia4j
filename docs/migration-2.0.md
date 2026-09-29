@@ -56,6 +56,23 @@ New prop types: `optional`, `always`, `once`, `scroll`, and `rescue()` for defer
   the servlet context path.
 - Once prop `expiresAt` timestamps keep their milliseconds.
 
+## Vite integration
+
+The [Vite integration](guides/vite.md) is new in 2.0:
+
+- The Vite integration is enabled by default. Without `vite.hot` and without a manifest, the asset version stays `1`
+  and templates without placeholders render as before.
+- `/build/**` is now served from `classpath:/static/build/` with `Cache-Control: public, max-age=31536000, immutable`.
+  Opt out with `inertia.vite.enabled=false` (Spring) or `vite { serveAssets = false }` (Ktor).
+- Spring: `inertia.*` properties (`inertia.template-path`, `inertia.encrypt-history`) are now actually bound; they were
+  previously ignored.
+- Spring: `AbstractInertiaSpringAutoconfiguration#versionProvider` and `#templateRenderer` now take a `Vite`
+  parameter. This affects only subclasses of the auto-configuration.
+- Ktor: `versionProvider` is now nullable (`(() -> String)?`, default `null` uses the Vite version); setting it is
+  unchanged.
+- Ktor: the plugin installs routing when `serveAssets` is true. Install `Routing` with `routing { }` rather than
+  `install(Routing)` after `install(Inertia)`, or disable `serveAssets`.
+
 ## Extension points
 
 - `PageObjectSerializer.serialize(PageObject)` no longer receives the partial reload props: props are filtered before

@@ -7,7 +7,7 @@ in full to pick up the new assets. Flash data is kept for that reload.
 
 ## Default version
 
-With the [Vite integration](../vite.md), you don't need to do anything:
+With the [Vite integration](vite.md), you don't need to do anything:
 
 | Situation                        | Version                            |
 |----------------------------------|------------------------------------|

@@ -61,7 +61,7 @@ In Spring, `inertia.share(request, key, value)` targets an explicit request, use
 
 ## Typed shared data
 
-A class annotated with `@InertiaShared` describes shared props for the [TypeScript generator](../typescript.md):
+A class annotated with `@InertiaShared` describes shared props for the [TypeScript generator](typescript.md):
 
 ```java
 @InertiaShared

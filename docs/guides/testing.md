@@ -100,4 +100,4 @@ Paths are dotted, with numeric segments indexing arrays (`users.0.name`). Number
 ## Other test clients
 
 Both adapters wrap `io.github.inertia4j.core.testing.AssertableInertia`, which works with any HTTP client. See
-[Extending Inertia4J](../advanced.md#testing).
+[Extending Inertia4J](extending.md#testing).

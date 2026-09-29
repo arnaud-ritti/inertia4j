@@ -55,7 +55,7 @@ data class RecordsIndexProps(val records: List<Record>, val stats: InertiaProp<L
 inertia.render(RecordsIndexProps(records, InertiaProps.defer { stats() }))
 ```
 
-Typed props are the input of the [TypeScript generator](../typescript.md), which keeps frontend page types in sync
+Typed props are the input of the [TypeScript generator](typescript.md), which keeps frontend page types in sync
 with the backend.
 
 ## Status and history options
@@ -98,7 +98,7 @@ First visits are answered with the HTML template at `classpath:templates/app.htm
 | `@InertiaApp@`                       | The page object `<script data-page="app" type="application/json">` followed by `<div id="app"></div>`          |
 | `@InertiaHead@`                      | The `<head>` elements rendered by the [SSR server](ssr.md); empty without SSR                                  |
 | `@InertiaHead@…@EndInertiaHead@`     | The SSR `<head>` elements, or the enclosed fallback (e.g. a default `<title>`) when the page isn't server-rendered |
-| `@Vite(entry, …)@`                   | Script and stylesheet tags of the entries, from the dev server or the build. See [Vite](../vite.md)            |
+| `@Vite(entry, …)@`                   | Script and stylesheet tags of the entries, from the dev server or the build. See [Vite](vite.md)            |
 | `@ViteReactRefresh@`                 | The React Fast Refresh preamble in development; nothing in production                                          |
 | `@ViteAsset(path)@`                  | The URL of a file processed by Vite                                                                            |
 
@@ -109,4 +109,4 @@ The template is loaded once, when the application starts, so restart after editi
 startup; see the [migration guide](../migration-2.0.md#html-template).
 
 To use a template engine such as Thymeleaf or Pebble instead, implement a
-[custom `TemplateRenderer`](../advanced.md#html-template).
+[custom `TemplateRenderer`](extending.md#html-template).

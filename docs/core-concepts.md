@@ -32,7 +32,7 @@ Every response carries a page object:
 
 - `component` is the name your client resolves to a page component.
 - `props` are the data passed to it, serialized to JSON (by Jackson unless you
-  [replace the serializer](advanced.md#serialization)).
+  [replace the serializer](guides/extending.md#serialization)).
 - `url` is the URL of the page, used by the client for history entries.
 - `version` is the [asset version](guides/asset-versioning.md).
 - Metadata fields (`deferredProps`, `mergeProps`, `onceProps`, `encryptHistory`, …) are only present when used.

@@ -25,10 +25,10 @@ Each guide shows both the Spring Boot (Java) and the Ktor (Kotlin) API.
 | [Asset versioning](guides/asset-versioning.md)         | Forcing clients to reload after a deployment                             |
 | [Server-side rendering](guides/ssr.md)                 | Rendering the first visit with the Node.js SSR server                    |
 | [Testing](guides/testing.md)                           | Asserting Inertia responses in MockMvc and Ktor tests                    |
-| [Vite integration](vite.md)                            | Dev server, production build, CSP nonces, Subresource Integrity          |
-| [TypeScript types](typescript.md)                      | Generating TypeScript declarations from props classes                    |
-| [Maven](maven.md)                                      | Dependencies, frontend build and TypeScript types in a Maven project     |
-| [Extending Inertia4J](advanced.md)                     | Custom serializers, template renderers, SSR gateways, other frameworks   |
+| [Vite integration](guides/vite.md)                            | Dev server, production build, CSP nonces, Subresource Integrity          |
+| [TypeScript types](guides/typescript.md)                      | Generating TypeScript declarations from props classes                    |
+| [Maven](guides/maven.md)                                      | Dependencies, frontend build and TypeScript types in a Maven project     |
+| [Extending Inertia4J](guides/extending.md)                     | Custom serializers, template renderers, SSR gateways, other frameworks   |
 
 ## Reference
 

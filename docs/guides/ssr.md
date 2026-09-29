@@ -6,7 +6,7 @@ inserts the returned markup into the [root template](responses.md#the-root-templ
 `@InertiaApp@`, the head elements replace `@InertiaHead@`. Inertia visits are unaffected: they still return JSON.
 
 The frontend side (the SSR entry and the `@inertiajs/vite` plugin) is described in the
-[Vite guide](../vite.md#server-side-rendering).
+[Vite guide](vite.md#server-side-rendering).
 
 ## Enabling SSR
 
@@ -120,7 +120,7 @@ setup({ el, App, props }) {
 ## Custom gateway
 
 To render pages some other way (another runtime, a remote service), replace the `SsrGateway`. See
-[Extending Inertia4J](../advanced.md#server-side-rendering). All properties are listed in the
+[Extending Inertia4J](extending.md#server-side-rendering). All properties are listed in the
 [configuration reference](../reference/configuration.md#server-side-rendering).
 
 See the [Inertia documentation](https://inertiajs.com/docs/v3/advanced/server-side-rendering).

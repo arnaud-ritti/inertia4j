@@ -90,7 +90,7 @@ By default each field gets one message. To send all of them as a list:
 - Spring: set `inertia.validation.all-errors=true`, or call `inertia.errors(ValidationErrors.allMessages(result))`.
 - Ktor: pass lists of messages to `inertia.errors`.
 
-If you generate [TypeScript types](../typescript.md), set `errorValueType.set(ErrorValueType.StringArray)` to match.
+If you generate [TypeScript types](typescript.md), set `errorValueType.set(ErrorValueType.StringArray)` to match.
 
 See the [Inertia documentation](https://inertiajs.com/docs/v3/the-basics/validation).
 

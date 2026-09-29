@@ -7,7 +7,7 @@ body:
     attributes:
       label: Location
       description: Link to the page or file concerned, if any.
-      placeholder: "docs/advanced.md"
+      placeholder: "docs/guides/extending.md"
 
   - type: textarea
     id: description

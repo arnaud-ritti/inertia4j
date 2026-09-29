@@ -194,9 +194,7 @@ element id, SSR gateway and excluded paths, reporter of rescued deferred prop ex
 and exposure of shared prop keys. In Spring, define an `InertiaRenderer` bean to replace the one built from the
 `inertia.*` properties.
 
-Adapters for other frameworks should also run `InertiaRenderer.checkVersion(request)` before handling each request, and
-pass the status and location of every redirect through `InertiaRedirects`, as the Spring `InertiaFilter` and the Ktor
-plugin do.
+To support another framework, see [writing an adapter](../architecture.md#writing-an-adapter-for-another-framework).
 
 ## Testing
 

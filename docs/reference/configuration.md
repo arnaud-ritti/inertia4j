@@ -64,12 +64,12 @@ The auto-configuration backs off when you define your own bean of these types:
 | Bean type              | Default                                              | Replace it to                                                   |
 |------------------------|------------------------------------------------------|-----------------------------------------------------------------|
 | `VersionProvider`      | Vite manifest hash                                   | Compute the [asset version](../guides/asset-versioning.md)      |
-| `PageObjectSerializer` | Jackson (2 on Boot 3; 3 on Boot 4, falling back to 2) | [Serialize page objects](../advanced.md#serialization) differently |
-| `TemplateRenderer`     | `SimpleTemplateRenderer` on `template-path`          | Use a [template engine](../advanced.md#html-template)           |
-| `SsrGateway`           | `HttpSsrGateway`                                     | [Render pages another way](../advanced.md#server-side-rendering) |
+| `PageObjectSerializer` | Jackson (2 on Boot 3; 3 on Boot 4, falling back to 2) | [Serialize page objects](../guides/extending.md#serialization) differently |
+| `TemplateRenderer`     | `SimpleTemplateRenderer` on `template-path`          | Use a [template engine](../guides/extending.md#html-template)           |
+| `SsrGateway`           | `HttpSsrGateway`                                     | [Render pages another way](../guides/extending.md#server-side-rendering) |
 | `JsonReader`           | Jackson                                              | Parse SSR responses without Jackson                             |
 | `Vite`                 | Built from `inertia.vite.*`                          | Resolve frontend tags differently                               |
-| `InertiaRenderer`      | Built from `inertia.*`                               | Configure the [core renderer](../advanced.md#core-renderer)     |
+| `InertiaRenderer`      | Built from `inertia.*`                               | Configure the [core renderer](../guides/extending.md#core-renderer)     |
 | `InertiaFilter`        | Registered for every request                         | Change the filter's order or URL patterns                       |
 | `Inertia`              | Built from the beans above                           | Rarely needed                                                   |
 

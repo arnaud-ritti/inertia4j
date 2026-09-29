@@ -9,7 +9,7 @@ import kotlin.time.Duration.Companion.days
 
 /**
  * Vite integration settings of the Inertia plugin.
- * Defaults match the `vite.config.ts` documented in `docs/vite.md`.
+ * Defaults match the `vite.config.ts` documented in `docs/guides/vite.md`.
  */
 class ViteKtorConfiguration {
     /**

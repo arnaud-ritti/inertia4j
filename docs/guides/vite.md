@@ -107,7 +107,7 @@ hot module replacement. The asset version is `dev`.
 ## Production
 
 Run `vite build` before packaging (for example from a Gradle task, as in the
-[example application](../examples/spring-boot-react), or from the `exec-maven-plugin`, as in the
+[example application](../../examples/spring-boot-react), or from the `exec-maven-plugin`, as in the
 [Maven guide](maven.md#building-the-frontend)). Pages load the hashed files listed in
 `.vite/manifest.json` with their stylesheets and `modulepreload` hints. Files are served under `/build/` with
 `Cache-Control: public, max-age=31536000, immutable`. The asset version is the SHA-256 of the manifest.
@@ -173,39 +173,9 @@ attributes.
 
 ## Configuration
 
-### Spring Boot
-
-| Property | Default | Description |
-|---|---|---|
-| `inertia.vite.enabled` | `true` | Enables placeholders, asset version and asset serving |
-| `inertia.vite.hot-file` | `vite.hot` | File enabling dev mode |
-| `inertia.vite.build-directory` | `static/build` | Classpath directory of the build output |
-| `inertia.vite.manifest` | `{build-directory}/.vite/manifest.json` | Classpath location of the manifest |
-| `inertia.vite.public-path` | `/build/` | URL prefix of built files; a path such as `/build/`, not an absolute URL |
-| `inertia.vite.cache-max-age` | `365d` | `max-age` of built files |
-| `inertia.vite.integrity-key` | `integrity` | Manifest field holding the SRI hash of chunks; empty or `false` disables it |
-| `inertia.vite.nonce-attribute` | `cspNonce` | Request attribute holding the CSP nonce of rendered tags; empty disables it |
-
-Defining your own `Vite`, `VersionProvider` or `TemplateRenderer` bean replaces the default one.
-
-### Ktor
-
-```kotlin
-install(Inertia) {
-    vite {
-        hotFile = Path.of("vite.hot")
-        buildDirectory = "static/build"
-        manifestPath = null // "$buildDirectory/.vite/manifest.json"
-        publicPath = "/build/"
-        serveAssets = true
-        cacheMaxAge = 365.days
-        integrityKey = "integrity" // null disables integrity attributes
-        nonce = null // (ApplicationCall) -> String?
-    }
-}
-```
-
-Setting `versionProvider` replaces the Vite asset version.
+Every Vite setting (`inertia.vite.*` in Spring, `vite { }` in Ktor) is listed with its default in the
+[configuration reference](../reference/configuration.md#vite). Defining your own `Vite`, `VersionProvider` or
+`TemplateRenderer` bean, or setting `versionProvider` in Ktor, replaces the default one.
 
 ## Server-side rendering
 
@@ -232,23 +202,15 @@ as described in the [official guide](https://inertiajs.com/docs/v3/advanced/serv
   no SSR build nor separate Node.js process is needed. The endpoint only exists when the plugin finds the SSR entry,
   otherwise every render falls back to client-side rendering and reports a failure. While the dev server warms up it
   answers without markup, and pages are rendered on the client without reporting a failure.
-- **Production:** build the SSR bundle with `vite build --ssr` after `vite build`, and run it with `node` next to your
-  application, or let the application run it (`inertia.ssr.process.enabled=true` in Spring,
-  `ssr { process { enabled = true } }` in Ktor), like `php artisan inertia:start-ssr`. Inertia4J posts pages to
-  `http://127.0.0.1:13714/render` by default (`inertia.ssr.url` / `url`).
-- **Missing bundle:** point `inertia.ssr.bundle` (Spring) or `bundle` (Ktor) at the file written by `vite build --ssr`.
-  While it is missing, pages are rendered client-side without contacting the SSR server nor reporting a failure, so
-  an application started without the SSR build keeps working; the check is disabled with
-  `inertia.ssr.ensure-bundle-exists=false` / `ensureBundleExists = false`, and skipped while `vite.hot` exists.
-- **Health:** `inertia.ssr.check-on-startup=true` / `checkOnStartup = true` logs a warning when the SSR server is
-  unreachable on startup, and Spring Boot Actuator reports it as the `inertiaSsr` health indicator.
+- **Production:** build the SSR bundle with `vite build --ssr` after `vite build`, and point `inertia.ssr.bundle`
+  (Spring) or `bundle` (Ktor) at the file it writes.
 
-Setting `inertia.ssr.hot-url` (Spring) or `hotUrl` (Ktor) replaces the URL read from `vite.hot`; it only applies
-while the hot file exists.
+Running the SSR server, fallbacks, health checks and the `hot-url` override are covered in the
+[server-side rendering guide](ssr.md).
 
 ## Custom template renderers
 
-See [Extending Inertia4J](advanced.md#vite-tags-in-a-custom-renderer).
+See [Extending Inertia4J](extending.md#vite-tags-in-a-custom-renderer).
 
 ## Troubleshooting
 
@@ -262,20 +224,3 @@ See [Extending Inertia4J](advanced.md#vite-tags-in-a-custom-renderer).
   while Java resolves `localhost` to `127.0.0.1`, so the backend cannot reach `/__inertia_ssr`. Set
   `server.host: '127.0.0.1'` and `server.origin: 'http://127.0.0.1:5173'` as in the configuration above, or point
   `inertia.ssr.hot-url` / `hotUrl` at an address the backend can reach.
-
-## Upgrading
-
-Behavior changes for existing users:
-
-- The Vite integration is enabled by default. Without `vite.hot` and without a manifest, the asset version stays `1`
-  and templates without placeholders render as before.
-- `/build/**` is now served from `classpath:/static/build/` with `Cache-Control: public, max-age=31536000, immutable`.
-  Opt out with `inertia.vite.enabled=false` (Spring) or `vite { serveAssets = false }` (Ktor).
-- Spring: `inertia.*` properties (`inertia.template-path`, `inertia.encrypt-history`) are now actually bound; they were
-  previously ignored.
-- Spring: `AbstractInertiaSpringAutoconfiguration#versionProvider` and `#templateRenderer` now take a `Vite`
-  parameter. This affects only subclasses of the auto-configuration.
-- Ktor: `versionProvider` is now nullable (`(() -> String)?`, default `null` uses the Vite version); setting it is
-  unchanged.
-- Ktor: the plugin installs routing when `serveAssets` is true. Install `Routing` with `routing { }` rather than
-  `install(Routing)` after `install(Inertia)`, or disable `serveAssets`.

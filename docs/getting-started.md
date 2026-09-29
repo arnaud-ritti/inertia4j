@@ -60,9 +60,9 @@ fun Application.module() {
 }
 ```
 
-Jackson is only needed by the default page object serializer; you can [plug in your own](advanced.md#serialization).
+Jackson is only needed by the default page object serializer; you can [plug in your own](guides/extending.md#serialization).
 
-Using Maven? The [Maven guide](maven.md#dependencies) lists the equivalent `pom.xml` entries; Ktor artifacts need
+Using Maven? The [Maven guide](guides/maven.md#dependencies) lists the equivalent `pom.xml` entries; Ktor artifacts need
 their `-jvm` suffix there.
 
 ## 2. Create the root template
@@ -100,7 +100,7 @@ npm install --save-dev vite @vitejs/plugin-react typescript @types/react @types/
 ```
 
 Add a `vite.config.ts` that writes the `vite.hot` file and builds into `src/main/resources/static/build`. The complete
-file, with an explanation of each option, is in the [Vite integration guide](vite.md#1-configure-vite).
+file, with an explanation of each option, is in the [Vite integration guide](guides/vite.md#1-configure-vite).
 
 Create the entry point, `src/main/frontend/main.tsx`:
 
@@ -192,11 +192,11 @@ page as JSON and swaps the component without reloading the document.
 For production, run `npx vite build` before packaging. The backend then serves the hashed files from
 `/build/`, and the asset version changes with each build so browsers pick up new deployments. The
 [example application](../examples/spring-boot-react) wires `npm run build` into Gradle's `processResources`; the
-[Maven guide](maven.md#building-the-frontend) does the same with the `exec-maven-plugin`.
+[Maven guide](guides/maven.md#building-the-frontend) does the same with the `exec-maven-plugin`.
 
 ## Next steps
 
 - Learn the [core concepts](core-concepts.md) behind visits, page objects and partial reloads.
 - Share the current user with every page: [Shared data](guides/shared-data.md).
 - Handle a form submission: [Forms and validation](guides/forms-and-validation.md).
-- Type your props end to end: [TypeScript types](typescript.md).
+- Type your props end to end: [TypeScript types](guides/typescript.md).

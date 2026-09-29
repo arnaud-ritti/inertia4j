@@ -48,4 +48,4 @@ Pages are rendered on the server (`inertia.ssr.enabled=true` in `application.pro
 When the SSR server is not reachable, pages fall back to client-side rendering, and the client entry mounts the page
 instead of hydrating it.
 
-See [the Vite integration guide](../../docs/vite.md).
+See [the Vite integration guide](../../docs/guides/vite.md).

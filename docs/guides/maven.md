@@ -42,7 +42,7 @@ With the Spring Boot parent, only the Inertia4J version needs to be set:
 </dependencies>
 ```
 
-`spring-boot-starter-test` also brings `spring-test`, which the [MockMvc assertions](guides/testing.md) need.
+`spring-boot-starter-test` also brings `spring-test`, which the [MockMvc assertions](testing.md) need.
 
 ### Ktor
 

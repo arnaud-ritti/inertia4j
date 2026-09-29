@@ -32,7 +32,7 @@ dependencies {
 </dependency>
 ```
 
-See the [Maven guide](../docs/maven.md) for the frontend build and TypeScript types.
+See the [Maven guide](../docs/guides/maven.md) for the frontend build and TypeScript types.
 
 ## Usage
 
@@ -89,5 +89,5 @@ The plugin serves the Vite build under `/build/` and installs routing for it. Us
   [props](../docs/guides/props.md), [shared data](../docs/guides/shared-data.md),
   [forms and validation](../docs/guides/forms-and-validation.md), [asset versioning](../docs/guides/asset-versioning.md),
   [server-side rendering](../docs/guides/ssr.md), [testing](../docs/guides/testing.md)
-- [Vite integration](../docs/vite.md), [TypeScript types](../docs/typescript.md) and [Maven builds](../docs/maven.md)
+- [Vite integration](../docs/guides/vite.md), [TypeScript types](../docs/guides/typescript.md) and [Maven builds](../docs/guides/maven.md)
 - [Configuration reference](../docs/reference/configuration.md#ktor-plugin-settings)
