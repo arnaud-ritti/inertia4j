@@ -1,5 +1,12 @@
 import com.fasterxml.jackson.databind.ObjectMapper;
-import dev.arkoder.inertia4j.core.*;
+import dev.arkoder.inertia4j.core.DefaultPageObjectSerializer;
+import dev.arkoder.inertia4j.core.HttpRequest;
+import dev.arkoder.inertia4j.core.HttpResponse;
+import dev.arkoder.inertia4j.core.InertiaProps;
+import dev.arkoder.inertia4j.core.InertiaRedirects;
+import dev.arkoder.inertia4j.core.InertiaRenderer;
+import dev.arkoder.inertia4j.core.InertiaRenderingOptions;
+import dev.arkoder.inertia4j.core.ScrollMetadata;
 import dev.arkoder.inertia4j.spi.PageObjectSerializer;
 import dev.arkoder.inertia4j.spi.RenderedPage;
 import org.junit.jupiter.api.Test;

@@ -15,30 +15,28 @@ import kotlin.test.assertFalse
 class ViteTemplateKtorTest {
     private val cspNonceKey = AttributeKey<String>("cspNonce")
 
-    private fun viteApp(
-        configure: ViteKtorConfiguration.() -> Unit = {},
-        block: suspend ApplicationTestBuilder.() -> Unit
-    ) = testApplication {
-        application {
-            install(Inertia) {
-                templatePath = "templates/vite-template.html"
-                vite {
-                    buildDirectory = "vite-sri"
-                    configure()
+    private fun viteApp(configure: ViteKtorConfiguration.() -> Unit = {}, block: suspend ApplicationTestBuilder.() -> Unit) =
+        testApplication {
+            application {
+                install(Inertia) {
+                    templatePath = "templates/vite-template.html"
+                    vite {
+                        buildDirectory = "vite-sri"
+                        configure()
+                    }
+                }
+                routing {
+                    get("/") {
+                        call.request.queryParameters["nonce"]?.let { call.attributes.put(cspNonceKey, it) }
+                        inertia.render("Home")
+                    }
+                    get("/logo") {
+                        call.respondText(inertia.vite.asset("src/images/logo.png"))
+                    }
                 }
             }
-            routing {
-                get("/") {
-                    call.request.queryParameters["nonce"]?.let { call.attributes.put(cspNonceKey, it) }
-                    inertia.render("Home")
-                }
-                get("/logo") {
-                    call.respondText(inertia.vite.asset("src/images/logo.png"))
-                }
-            }
+            block()
         }
-        block()
-    }
 
     @Test
     fun `full page visit renders integrity of manifest chunks`() = viteApp {
@@ -47,7 +45,7 @@ class ViteTemplateKtorTest {
         assertContains(
             body,
             "<link rel=\"stylesheet\" href=\"/build/assets/main-5UjPuW-k.css\" integrity=\"sha384-css\" crossorigin=\"anonymous\">\n" +
-                "<script type=\"module\" src=\"/build/assets/main-BRBmoGS9.js\" integrity=\"sha384-main\" crossorigin=\"anonymous\"></script>"
+                "<script type=\"module\" src=\"/build/assets/main-BRBmoGS9.js\" integrity=\"sha384-main\" crossorigin=\"anonymous\"></script>",
         )
         assertFalse(body.contains("nonce"))
     }

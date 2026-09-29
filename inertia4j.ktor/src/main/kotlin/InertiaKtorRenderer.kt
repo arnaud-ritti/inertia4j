@@ -4,7 +4,6 @@ import dev.arkoder.inertia4j.core.HttpResponse
 import dev.arkoder.inertia4j.core.InertiaProps
 import dev.arkoder.inertia4j.core.InertiaRenderer
 import dev.arkoder.inertia4j.core.InertiaRenderingOptions
-import dev.arkoder.inertia4j.core.Precognition as CorePrecognition
 import dev.arkoder.inertia4j.core.PropsExtractor
 import dev.arkoder.inertia4j.core.vite.Vite
 import io.ktor.http.*
@@ -16,6 +15,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.asContextElement
 import kotlinx.coroutines.withContext
 import java.util.function.Supplier
+import dev.arkoder.inertia4j.core.Precognition as CorePrecognition
 
 /**
  * Ktor-specific renderer that integrates with the core [InertiaRenderer].
@@ -63,7 +63,7 @@ class InertiaKtorRenderer internal constructor(
             url: String = request.url,
             encryptHistory: Boolean = configuration.encryptHistory,
             clearHistory: Boolean = false,
-            status: HttpStatusCode = HttpStatusCode.OK
+            status: HttpStatusCode = HttpStatusCode.OK,
         ) {
             val stored = flashStore.read(call)
 
@@ -108,7 +108,7 @@ class InertiaKtorRenderer internal constructor(
             url: String = request.url,
             encryptHistory: Boolean = configuration.encryptHistory,
             clearHistory: Boolean = false,
-            status: HttpStatusCode = HttpStatusCode.OK
+            status: HttpStatusCode = HttpStatusCode.OK,
         ) {
             val props = PropsExtractor.toMap(pageProps, configuration.propertyNaming)
 
@@ -118,7 +118,7 @@ class InertiaKtorRenderer internal constructor(
                 url = url,
                 encryptHistory = encryptHistory,
                 clearHistory = clearHistory,
-                status = status
+                status = status,
             )
         }
 
@@ -241,11 +241,9 @@ class InertiaKtorRenderer internal constructor(
             flashStore.write(call, stored + (key to current + values))
         }
 
-        private fun lazyProps(props: Map<String, Any?>): Map<String, Any?> =
-            props.mapValues { (_, value) -> toLazyProp(value) }
+        private fun lazyProps(props: Map<String, Any?>): Map<String, Any?> = props.mapValues { (_, value) -> toLazyProp(value) }
 
-        private fun toLazyProp(value: Any?): Any? =
-            if (value is Function0<*>) Supplier { value() } else value
+        private fun toLazyProp(value: Any?): Any? = if (value is Function0<*>) Supplier { value() } else value
 
         private suspend fun respond(coreResponse: HttpResponse) {
             coreResponse.headers.forEach { (name: String, values: List<String>) ->

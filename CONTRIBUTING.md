@@ -41,6 +41,9 @@ Useful commands:
 |---|---|
 | `./gradlew build` | Compiles, tests and assembles every module |
 | `./gradlew test` | Runs the test suites only |
+| `./gradlew test -PtestJavaVersion=25` | Runs the test suites on another JDK (CI covers 17, 21, 25 and 27) |
+| `./gradlew spotlessCheck` | Checks formatting and lint rules |
+| `./gradlew spotlessApply` | Fixes formatting and import issues automatically |
 | `./gradlew :inertia4j.core:test` | Runs the tests of a single module |
 | `./gradlew -p examples/spring-boot-react build` | Builds the Spring Boot + React example |
 | `./gradlew publishToMavenLocal` | Installs the artifacts in `~/.m2` for testing |
@@ -65,6 +68,9 @@ Useful commands:
 
 - Follow the style of the surrounding code. The repository ships an [`.editorconfig`](.editorconfig) that most IDEs
   pick up automatically.
+- `./gradlew build` enforces the lint rules: Spotless (unused and wildcard imports, whitespace) for Java, ktlint for
+  Kotlin, and `javac -Xlint:all -Werror`. Run `./gradlew spotlessApply` before committing. When CI's lint job fails,
+  it uploads a `lint-report` artifact with the violations and a `spotless-fix.patch` you can apply with `git apply`.
 - Keep the public API small. Prefer package-private types and document every public type and method with Javadoc.
 - Every behavior change needs a test. Bug fixes should come with a test that fails without the fix.
 - Update the matching guide in [`docs/`](docs/README.md) in the same pull request as the code, with a Java and a Kotlin

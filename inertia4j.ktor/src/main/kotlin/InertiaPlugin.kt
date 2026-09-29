@@ -8,8 +8,8 @@ import io.ktor.http.content.*
 import io.ktor.server.application.*
 import io.ktor.server.application.hooks.*
 import io.ktor.server.http.content.*
-import io.ktor.server.response.*
 import io.ktor.server.request.*
+import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import io.ktor.utils.io.*
 
@@ -19,20 +19,20 @@ import io.ktor.utils.io.*
  */
 val Inertia = createApplicationPlugin(
     name = "Inertia",
-    createConfiguration = ::InertiaKtorConfiguration
+    createConfiguration = ::InertiaKtorConfiguration,
 ) {
     val builder = InertiaRenderer
         .builder(
             pluginConfig.serializerOrDefault,
             pluginConfig.versionProviderOrDefault,
-            pluginConfig.templateRendererOrDefault
+            pluginConfig.templateRendererOrDefault,
         )
         .rootId(pluginConfig.rootId)
         .exposeSharedPropKeys(pluginConfig.exposeSharedPropKeys)
         .withoutSsr(*pluginConfig.ssr.except.toTypedArray())
         .exceptionReporter(
             pluginConfig.exceptionReporter
-                ?: { exception -> application.log.error("Rescued deferred prop failed to resolve", exception) }
+                ?: { exception -> application.log.error("Rescued deferred prop failed to resolve", exception) },
         )
 
     val ssrGateway = pluginConfig.ssr
@@ -45,7 +45,7 @@ val Inertia = createApplicationPlugin(
         val ssrServer = SsrServerOperator(
             serverGateway,
             pluginConfig.ssr.serverProcessOrNull(serverGateway),
-            pluginConfig.ssr.checkOnStartup
+            pluginConfig.ssr.checkOnStartup,
         ) { message, cause -> application.log.warn(message, cause) }
 
         application.monitor.subscribe(ApplicationStarted) { ssrServer.start() }
@@ -56,7 +56,7 @@ val Inertia = createApplicationPlugin(
 
     application.attributes.put(
         InertiaKtorRenderer.key,
-        InertiaKtorRenderer(coreRenderer, pluginConfig)
+        InertiaKtorRenderer(coreRenderer, pluginConfig),
     )
 
     if (pluginConfig.middleware) {

@@ -8,6 +8,7 @@ ktor = "3.0.0"
 spring-boot3 = "3.3.12"
 spring-boot4 = "4.0.6"
 spring-dependency-management = "1.1.7"
+spotless = "8.10.3"
 
 [libraries]
 jackson2-databind = { module = "com.fasterxml.jackson.core:jackson-databind", version.ref = "jackson2" }
@@ -25,6 +26,7 @@ ktor-server-test-host = { module = "io.ktor:ktor-server-test-host", version.ref 
 spring-boot3-dependencies = { module = "org.springframework.boot:spring-boot-dependencies", version.ref = "spring-boot3" }
 spring-boot4-dependencies = { module = "org.springframework.boot:spring-boot-dependencies", version.ref = "spring-boot4" }
 spring-boot-starter-webmvc-test = { module = "org.springframework.boot:spring-boot-starter-webmvc-test" }
+spotless-plugin = { module = "com.diffplug.spotless:spotless-plugin-gradle", version.ref = "spotless" }
 spring-dependency-management-plugin = { module = "io.spring.gradle:dependency-management-plugin", version.ref = "spring-dependency-management" }
 
 [plugins]

@@ -252,9 +252,8 @@ class InertiaKtorConfiguration {
                 .build()
         }
 
-        internal fun serverGateway(renderGateway: SsrGateway, vite: Vite): HttpSsrGateway {
-            return renderGateway as? HttpSsrGateway ?: httpGatewayBuilder(vite).build()
-        }
+        internal fun serverGateway(renderGateway: SsrGateway, vite: Vite): HttpSsrGateway =
+            renderGateway as? HttpSsrGateway ?: httpGatewayBuilder(vite).build()
 
         internal fun serverProcessOrNull(serverGateway: HttpSsrGateway): SsrServerProcess? {
             if (!processConfiguration.enabled) return null
@@ -285,7 +284,7 @@ class InertiaKtorConfiguration {
 
     /**
      * Settings of the server-side rendering server run by the application: started with
-     * `<runtime> [arguments...] <bundle>` when the application starts, unless the Vite dev server renders pages, and
+     * `<runtime> <arguments> <bundle>` when the application starts, unless the Vite dev server renders pages, and
      * stopped when it stops.
      */
     class SsrProcessConfiguration {
@@ -325,15 +324,13 @@ class InertiaKtorConfiguration {
          */
         var shutdownTimeout: Duration = SsrServerProcess.DefaultShutdownTimeout
 
-        internal fun toProcess(gateway: HttpSsrGateway, bundle: Path): SsrServerProcess {
-            return SsrServerProcess.builder(gateway, bundle)
-                .runtime(runtime)
-                .arguments(arguments)
-                .workingDirectory(workingDirectory)
-                .environment(environment)
-                .startupTimeout(startupTimeout)
-                .shutdownTimeout(shutdownTimeout)
-                .build()
-        }
+        internal fun toProcess(gateway: HttpSsrGateway, bundle: Path): SsrServerProcess = SsrServerProcess.builder(gateway, bundle)
+            .runtime(runtime)
+            .arguments(arguments)
+            .workingDirectory(workingDirectory)
+            .environment(environment)
+            .startupTimeout(startupTimeout)
+            .shutdownTimeout(shutdownTimeout)
+            .build()
     }
 }

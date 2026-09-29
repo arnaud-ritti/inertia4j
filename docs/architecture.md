@@ -124,5 +124,10 @@ The build uses Gradle with convention plugins in `build-logic`:
 - `inertia4j.publishing-conventions`: Maven publication to GitHub Packages with shared POM metadata
   (`Inertia4jPublishing.kt`).
 - `inertia4j.spring-conventions`: Java 17, Spring dependency management, `-parameters`.
+- `inertia4j.lint-conventions`: Spotless and ktlint (configured in `.editorconfig`), and `javac -Xlint:all -Werror`.
+  Applied to every module through `inertia4j.java-conventions`.
+
+`-PtestJavaVersion=N` runs the test suites on JDK N instead of each module's toolchain; CI runs it for 17, 21, 25 and
+27. The Gradle plugin's tests are excluded, since they run Gradle itself.
 
 Dependency versions live in `gradle/libs.versions.toml`, the project version in `gradle.properties`. See [CONTRIBUTING.md](../CONTRIBUTING.md) for the development workflow.

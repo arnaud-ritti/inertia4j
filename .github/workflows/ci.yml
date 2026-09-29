@@ -14,16 +14,52 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Check formatting and lint rules
+        run: |
+          mkdir -p build/lint
+          set -o pipefail
+          ./gradlew spotlessCheck --continue 2>&1 | tee build/lint/spotless.txt
+
+      - name: Prepare lint fix patch
+        if: failure()
+        run: |
+          ./gradlew spotlessApply --continue || true
+          git diff > build/lint/spotless-fix.patch
+
+      - name: Upload lint report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lint-report
+          path: build/lint/
+          retention-days: 14
+
   build:
-    name: Build and test
+    name: Build and test (default toolchains)
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
     steps:
       - uses: actions/checkout@v4
 
-      # The library targets Java 11 while the Spring modules and tests need Java 17.
-      # Installing both avoids toolchain downloads during the build.
+      # The library targets Java 11 while the Spring modules and the Gradle plugin need Java 17.
       - name: Set up JDKs
         uses: actions/setup-java@v4
         with:
@@ -41,15 +77,61 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
 
       - name: Build and test
-        run: ./gradlew build
+        run: ./gradlew build -x spotlessCheck --continue
 
       - name: Upload test reports
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: test-reports
-          path: '**/build/reports/tests/'
-          retention-days: 7
+          name: test-reports-default
+          path: |
+            **/build/reports/tests/
+            **/build/test-results/
+            build/reports/problems/
+          retention-days: 14
+
+  test-jdk:
+    name: Test on JDK ${{ matrix.java }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    strategy:
+      fail-fast: false
+      matrix:
+        java: [ 17, 21, 25, 27 ]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # JDK 11 and 17 compile the sources; the JDK under test is provisioned by the Gradle toolchain resolver.
+      - name: Set up JDKs
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: |
+            11
+            17
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Test
+        run: ./gradlew test -PtestJavaVersion=${{ matrix.java }} --continue
+
+      - name: Upload test reports
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-reports-jdk${{ matrix.java }}
+          path: |
+            **/build/reports/tests/
+            **/build/test-results/
+          retention-days: 14
 
   example:
     name: Build example application
@@ -79,3 +161,11 @@ jobs:
 
       - name: Build example application
         run: ./gradlew -p examples/spring-boot-react build
+
+      - name: Upload test reports
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-reports-example
+          path: examples/spring-boot-react/build/reports/tests/
+          retention-days: 14

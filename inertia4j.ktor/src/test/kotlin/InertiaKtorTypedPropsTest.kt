@@ -1,3 +1,5 @@
+@file:Suppress("ktlint:standard:max-line-length") // expected JSON responses are kept on one line
+
 package dev.arkoder.inertia4j.ktor
 
 import dev.arkoder.inertia4j.annotations.InertiaPage
@@ -34,23 +36,21 @@ data class Owner(val firstName: String, val homeAddress: Address)
 data class OwnersShowProps(val owner: Owner)
 
 class InertiaKtorTypedPropsTest {
-    private fun testApp(
-        configure: InertiaKtorConfiguration.() -> Unit = {},
-        block: suspend ApplicationTestBuilder.() -> Unit
-    ) = testApplication {
-        application {
-            install(Sessions) {
-                cookie<InertiaSession>("INERTIA_SESSION", SessionStorageMemory()) {
-                    serializer = InertiaSession.Serializer
+    private fun testApp(configure: InertiaKtorConfiguration.() -> Unit = {}, block: suspend ApplicationTestBuilder.() -> Unit) =
+        testApplication {
+            application {
+                install(Sessions) {
+                    cookie<InertiaSession>("INERTIA_SESSION", SessionStorageMemory()) {
+                        serializer = InertiaSession.Serializer
+                    }
+                }
+                install(Inertia) {
+                    versionProvider = { "1" }
+                    configure()
                 }
             }
-            install(Inertia) {
-                versionProvider = { "1" }
-                configure()
-            }
+            block()
         }
-        block()
-    }
 
     private fun HttpRequestBuilder.inertia() {
         header("X-Inertia", "true")

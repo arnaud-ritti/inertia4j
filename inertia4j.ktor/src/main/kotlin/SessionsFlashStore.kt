@@ -64,7 +64,7 @@ class SessionsFlashStore : InertiaFlashStore {
     private fun missingSessionException(cause: Exception) = InertiaException(
         "Flash data, errors and redirect flags need the Sessions plugin with an InertiaSession registered, " +
             "or a custom InertiaFlashStore",
-        cause
+        cause,
     )
 }
 
@@ -80,7 +80,7 @@ internal object UnavailableFlashStore : InertiaFlashStore {
 
         throw InertiaException(
             "Flash data, errors and redirect flags need io.ktor:ktor-server-sessions and " +
-                "com.fasterxml.jackson.core:jackson-databind on the classpath, or a custom InertiaFlashStore"
+                "com.fasterxml.jackson.core:jackson-databind on the classpath, or a custom InertiaFlashStore",
         )
     }
 }
@@ -88,7 +88,7 @@ internal object UnavailableFlashStore : InertiaFlashStore {
 internal fun defaultFlashStore(): InertiaFlashStore {
     val dependenciesPresent = listOf(
         "io.ktor.server.sessions.SessionsConfig",
-        "com.fasterxml.jackson.databind.ObjectMapper"
+        "com.fasterxml.jackson.databind.ObjectMapper",
     ).all(::isClassPresent)
 
     return if (dependenciesPresent) SessionsFlashStore() else UnavailableFlashStore

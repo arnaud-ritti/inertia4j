@@ -11,7 +11,7 @@ internal class SsrServerOperator(
     private val gateway: HttpSsrGateway,
     val process: SsrServerProcess?,
     private val checkOnStartup: Boolean,
-    private val warn: (String, Throwable?) -> Unit
+    private val warn: (String, Throwable?) -> Unit,
 ) {
     fun start() {
         if (gateway.hotUrl != null) return

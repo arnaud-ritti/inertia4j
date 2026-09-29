@@ -96,6 +96,12 @@ process, and the [code of conduct](CODE_OF_CONDUCT.md). Report security issues p
 
 Inertia4J is maintained by [@arnaud-ritti](https://github.com/arnaud-ritti).
 
+## Credits
+
+Inertia4J was originally created by [Eduardo Fonseca (@edrd-f)](https://github.com/edrd-f) and
+[Pedro Fronchetti (@pefcos)](https://github.com/pefcos). Thanks to them and to every
+[contributor](https://github.com/arnaud-ritti/inertia4j/graphs/contributors).
+
 ## License
 
 Released under the [Apache License 2.0](LICENSE).

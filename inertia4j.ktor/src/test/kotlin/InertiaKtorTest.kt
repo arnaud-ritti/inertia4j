@@ -1,3 +1,5 @@
+@file:Suppress("ktlint:standard:max-line-length") // expected JSON responses are kept on one line
+
 package dev.arkoder.inertia4j.ktor
 
 import dev.arkoder.inertia4j.core.InertiaProps
@@ -191,7 +193,7 @@ class InertiaKtorTest {
                 inertia.render(
                     "SampleComponent",
                     "posts" to InertiaProps.defer({ listOf(1) }, "posts").merge().matchOn("id"),
-                    "expensive" to { error("must not be resolved") }
+                    "expensive" to { error("must not be resolved") },
                 )
             }
         }
@@ -230,11 +232,11 @@ class InertiaKtorTest {
 
         assertEquals(
             """{"component":"Records","props":{"errors":{"name":"Required."}},"url":"/records","version":"1","encryptHistory":true,"preserveFragment":true,"sharedProps":["errors"],"flash":{"message":"Created"}}""",
-            firstResponse.bodyAsText()
+            firstResponse.bodyAsText(),
         )
         assertEquals(
             """{"component":"Records","props":{"errors":{}},"url":"/records","version":"1","encryptHistory":true,"sharedProps":["errors"]}""",
-            secondResponse.bodyAsText()
+            secondResponse.bodyAsText(),
         )
     }
 

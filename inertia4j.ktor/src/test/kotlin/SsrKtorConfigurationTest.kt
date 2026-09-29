@@ -200,7 +200,7 @@ class SsrKtorConfigurationTest {
         val stopped = tempDir.resolve("stopped")
         val bundle = Files.writeString(
             tempDir.resolve("ssr.sh"),
-            "trap 'echo > \"$stopped\"; exit 0' TERM\necho > \"$started\"\nsleep 30 &\nwait\n"
+            "trap 'echo > \"$stopped\"; exit 0' TERM\necho > \"$started\"\nsleep 30 &\nwait\n",
         )
 
         testApplication {

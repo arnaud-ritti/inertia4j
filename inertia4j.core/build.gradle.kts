@@ -14,15 +14,17 @@ dependencies {
 }
 
 tasks.named<JavaCompile>("compileTestJava") {
-    javaCompiler = javaToolchains.compilerFor {
-        languageVersion = JavaLanguageVersion.of(17)
-    }
+    javaCompiler =
+        javaToolchains.compilerFor {
+            languageVersion = JavaLanguageVersion.of(17)
+        }
 }
 
 tasks.named<Test>("test") {
-    javaLauncher = javaToolchains.launcherFor {
-        languageVersion = JavaLanguageVersion.of(17)
-    }
+    javaLauncher =
+        javaToolchains.launcherFor {
+            languageVersion = JavaLanguageVersion.of(17)
+        }
 }
 
 publishing.publications.named<MavenPublication>("mavenJava") {

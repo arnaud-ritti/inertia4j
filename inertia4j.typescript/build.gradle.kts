@@ -23,9 +23,11 @@ dependencies {
 
 tasks.named<Test>("test") {
     val testRuntimeClasspath = sourceSets["test"].runtimeClasspath
-    jvmArgumentProviders.add(CommandLineArgumentProvider {
-        listOf("-Dinertia4j.test.classpath=${testRuntimeClasspath.asPath}")
-    })
+    jvmArgumentProviders.add(
+        CommandLineArgumentProvider {
+            listOf("-Dinertia4j.test.classpath=${testRuntimeClasspath.asPath}")
+        },
+    )
 }
 
 publishing.publications.named<MavenPublication>("mavenJava") {

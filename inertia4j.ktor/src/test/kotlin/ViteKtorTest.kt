@@ -13,27 +13,25 @@ import kotlin.test.assertEquals
 import kotlin.time.Duration.Companion.hours
 
 class ViteKtorTest {
-    private fun viteApp(
-        configure: InertiaKtorConfiguration.() -> Unit = {},
-        block: suspend ApplicationTestBuilder.() -> Unit
-    ) = testApplication {
-        application {
-            install(Inertia) {
-                templatePath = "templates/vite.html"
-                vite {
-                    buildDirectory = "vite-fixture"
-                    cacheMaxAge = 1.hours
+    private fun viteApp(configure: InertiaKtorConfiguration.() -> Unit = {}, block: suspend ApplicationTestBuilder.() -> Unit) =
+        testApplication {
+            application {
+                install(Inertia) {
+                    templatePath = "templates/vite.html"
+                    vite {
+                        buildDirectory = "vite-fixture"
+                        cacheMaxAge = 1.hours
+                    }
+                    configure()
                 }
-                configure()
-            }
-            routing {
-                get("/") {
-                    inertia.render("Home")
+                routing {
+                    get("/") {
+                        inertia.render("Home")
+                    }
                 }
             }
+            block()
         }
-        block()
-    }
 
     private fun manifestHash(): String {
         val bytes = javaClass.classLoader.getResourceAsStream("vite-fixture/.vite/manifest.json")!!.readBytes()
@@ -47,7 +45,7 @@ class ViteKtorTest {
         assertContains(
             body,
             "<link rel=\"stylesheet\" href=\"/build/assets/main-5UjPuW-k.css\">\n" +
-                "<script type=\"module\" src=\"/build/assets/main-BRBmoGS9.js\"></script>"
+                "<script type=\"module\" src=\"/build/assets/main-BRBmoGS9.js\"></script>",
         )
     }
 
