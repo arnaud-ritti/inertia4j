@@ -58,6 +58,17 @@ class InertiaTypesPluginTest {
     }
 
     @Test
+    void check_passesWhenCurrentTypesHaveCrlfLineEndings() throws IOException {
+        runner("generateInertiaTypes").build();
+        Path typesFile = projectDir.resolve("src/types/inertia.d.ts");
+        Files.writeString(typesFile, Files.readString(typesFile).replace("\n", "\r\n"));
+
+        BuildResult result = runner("checkInertiaTypes").build();
+
+        assertEquals(TaskOutcome.SUCCESS, result.task(":checkInertiaTypes").getOutcome());
+    }
+
+    @Test
     void check_failsWhenTypesAreStale() throws IOException {
         runner("generateInertiaTypes").build();
         writeUsersShow("String name, int age");

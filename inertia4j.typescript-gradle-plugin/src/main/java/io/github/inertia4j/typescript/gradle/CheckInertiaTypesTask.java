@@ -11,6 +11,7 @@ import java.nio.file.Path;
 
 /**
  * Fails when the committed TypeScript declaration file differs from freshly generated types.
+ * Line endings are ignored, so checkouts with CRLF line endings pass.
  */
 public abstract class CheckInertiaTypesTask extends InertiaTypesTask {
     /**
@@ -34,10 +35,14 @@ public abstract class CheckInertiaTypesTask extends InertiaTypesTask {
     @TaskAction
     public void check() throws IOException {
         Path typesFile = getTypesFile().get().getAsFile().toPath();
-        String expected = generateContent();
+        String expected = normalizeLineEndings(generateContent());
 
-        if (!Files.exists(typesFile) || !Files.readString(typesFile).equals(expected)) {
+        if (!Files.exists(typesFile) || !normalizeLineEndings(Files.readString(typesFile)).equals(expected)) {
             throw new GradleException("Inertia types are out of date, run `generateInertiaTypes`");
         }
+    }
+
+    private static String normalizeLineEndings(String content) {
+        return content.replace("\r\n", "\n");
     }
 }
