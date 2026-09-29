@@ -1,8 +1,10 @@
 package io.github.inertia4j.springboot3;
 
+import io.github.inertia4j.core.DefaultJsonReader;
 import io.github.inertia4j.core.DefaultPageObjectSerializer;
+import io.github.inertia4j.core.InertiaRenderer;
+import io.github.inertia4j.spi.JsonReader;
 import io.github.inertia4j.spi.PageObjectSerializer;
-import io.github.inertia4j.spi.TemplateRenderer;
 import io.github.inertia4j.springshared.AbstractInertiaSpringAutoconfiguration;
 import io.github.inertia4j.springshared.SharedDataProvider;
 import org.springframework.beans.factory.ObjectProvider;
@@ -13,7 +15,7 @@ import org.springframework.context.annotation.Configuration;
 import java.util.stream.Collectors;
 
 /**
- * Spring Boot 3 auto-configuration for Inertia4j.
+ * Spring Boot 3 autoconfiguration for Inertia4j.
  */
 @Configuration
 public class InertiaSpringAutoconfiguration extends AbstractInertiaSpringAutoconfiguration {
@@ -24,20 +26,26 @@ public class InertiaSpringAutoconfiguration extends AbstractInertiaSpringAutocon
         return super.versionProvider()::get;
     }
 
+    /**
+     * Provides the {@link Inertia} bean if none is defined.
+     *
+     * @param inertiaRenderer     core renderer.
+     * @param sharedDataProviders providers of data shared with all responses.
+     * @return an Inertia instance.
+     */
     @Bean
     @ConditionalOnMissingBean
     public Inertia inertia(
-        VersionProvider versionProvider,
-        PageObjectSerializer pageObjectSerializer,
-        TemplateRenderer templateRenderer,
+        InertiaRenderer inertiaRenderer,
         ObjectProvider<SharedDataProvider> sharedDataProviders
     ) {
-        return new Inertia(
-            versionProvider,
-            pageObjectSerializer,
-            templateRenderer,
+        Inertia inertia = new Inertia(
+            inertiaRenderer,
             sharedDataProviders.orderedStream().collect(Collectors.toList())
         );
+        inertia.setDefaultOptions(Inertia.Options.encryptHistory(properties.isEncryptHistory()));
+
+        return inertia;
     }
 
     @Override
@@ -45,5 +53,12 @@ public class InertiaSpringAutoconfiguration extends AbstractInertiaSpringAutocon
     @ConditionalOnMissingBean
     public PageObjectSerializer pageObjectSerializer() {
         return new DefaultPageObjectSerializer();
+    }
+
+    @Override
+    @Bean
+    @ConditionalOnMissingBean
+    public JsonReader jsonReader() {
+        return new DefaultJsonReader();
     }
 }

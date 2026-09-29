@@ -1,69 +1,170 @@
 package io.github.inertia4j.springshared;
 
+import io.github.inertia4j.core.HttpSsrGateway;
+import io.github.inertia4j.core.InertiaRenderer;
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.boot.context.properties.bind.ConstructorBinding;
 import org.springframework.context.annotation.Configuration;
+
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Configuration properties for Inertia4j integration with Spring Boot.
- * Allows setting the template path and default history encryption behavior via application properties.
  * Properties are prefixed with `inertia`.
  * <p>
  * Example `application.properties`:
  * <pre>
  * inertia.template-path=templates/my-app.html
  * inertia.encrypt-history=true
+ * inertia.ssr.enabled=true
+ * inertia.ssr.url=http://127.0.0.1:13714
  * </pre>
  */
 @Configuration
 @ConfigurationProperties(prefix = "inertia")
 public class InertiaConfigurationProperties {
-    private static final String defaultTemplatePath = "templates/app.html";
-    private static final boolean defaultEncryptHistory = false;
-
     /**
      * The classpath path to the main HTML template file used by the default {@link io.github.inertia4j.core.SimpleTemplateRenderer}.
-     * Corresponds to the `inertia.template-path` property.
      */
-    final String templatePath;
-    /**
-     * Default value for the encryptHistory flag, determining whether browser history state should be encrypted.
-     * Corresponds to the `inertia.encrypt-history` property.
-     * @see <a href="https://inertiajs.com/history-encryption">Inertia History Encryption</a>
-     */
-    final boolean encryptHistory;
+    private String templatePath = "templates/app.html";
 
     /**
-     * Constructor used by Spring Boot for property binding.
-     * @param templatePath Value of `inertia.template-path`.
-     * @param encryptHistory Value of `inertia.encrypt-history`.
+     * Default value for the encryptHistory flag, determining whether browser history state should be encrypted.
      */
-    @ConstructorBinding
-    public InertiaConfigurationProperties(String templatePath, boolean encryptHistory) {
+    private boolean encryptHistory = false;
+
+    /**
+     * Id of the element the client-side application is mounted on.
+     */
+    private String rootId = InertiaRenderer.DefaultRootId;
+
+    /**
+     * Whether page objects list the top-level keys of shared props in {@code sharedProps}.
+     */
+    private boolean exposeSharedPropKeys = true;
+
+    /**
+     * Server-side rendering settings.
+     */
+    private final Ssr ssr = new Ssr();
+
+    public String getTemplatePath() {
+        return templatePath;
+    }
+
+    public void setTemplatePath(String templatePath) {
         this.templatePath = templatePath;
+    }
+
+    public boolean isEncryptHistory() {
+        return encryptHistory;
+    }
+
+    public void setEncryptHistory(boolean encryptHistory) {
         this.encryptHistory = encryptHistory;
     }
 
-    /**
-     * Constructor using default `encryptHistory`.
-     * @param templatePath The template path.
-     */
-    public InertiaConfigurationProperties(String templatePath) {
-        this(templatePath, defaultEncryptHistory);
+    public String getRootId() {
+        return rootId;
+    }
+
+    public void setRootId(String rootId) {
+        this.rootId = rootId;
+    }
+
+    public boolean isExposeSharedPropKeys() {
+        return exposeSharedPropKeys;
+    }
+
+    public void setExposeSharedPropKeys(boolean exposeSharedPropKeys) {
+        this.exposeSharedPropKeys = exposeSharedPropKeys;
+    }
+
+    public Ssr getSsr() {
+        return ssr;
     }
 
     /**
-     * Constructor using default `templatePath`.
-     * @param encryptHistory The encryptHistory flag value.
+     * Server-side rendering settings, prefixed with `inertia.ssr`.
      */
-    public InertiaConfigurationProperties(boolean encryptHistory) {
-        this(defaultTemplatePath, encryptHistory);
-    }
+    public static class Ssr {
+        /**
+         * Whether full page loads are server-side rendered.
+         */
+        private boolean enabled = false;
 
-    /**
-     * Constructor using default values for both `templatePath` and `encryptHistory`.
-     */
-    public InertiaConfigurationProperties() {
-        this(defaultTemplatePath, defaultEncryptHistory);
+        /**
+         * URL of the server-side rendering server.
+         */
+        private String url = HttpSsrGateway.DefaultUrl;
+
+        /**
+         * URL of the Vite development server, used instead of the server-side rendering server when set.
+         */
+        private String hotUrl;
+
+        /**
+         * Timeout of render requests. No timeout is applied when unset.
+         */
+        private Duration timeout;
+
+        /**
+         * Whether failed renders throw instead of falling back to client-side rendering.
+         */
+        private boolean throwOnError = false;
+
+        /**
+         * Request paths never server-side rendered; {@code *} matches any sequence of characters.
+         */
+        private List<String> except = new ArrayList<>();
+
+        public boolean isEnabled() {
+            return enabled;
+        }
+
+        public void setEnabled(boolean enabled) {
+            this.enabled = enabled;
+        }
+
+        public String getUrl() {
+            return url;
+        }
+
+        public void setUrl(String url) {
+            this.url = url;
+        }
+
+        public String getHotUrl() {
+            return hotUrl;
+        }
+
+        public void setHotUrl(String hotUrl) {
+            this.hotUrl = hotUrl;
+        }
+
+        public Duration getTimeout() {
+            return timeout;
+        }
+
+        public void setTimeout(Duration timeout) {
+            this.timeout = timeout;
+        }
+
+        public boolean isThrowOnError() {
+            return throwOnError;
+        }
+
+        public void setThrowOnError(boolean throwOnError) {
+            this.throwOnError = throwOnError;
+        }
+
+        public List<String> getExcept() {
+            return except;
+        }
+
+        public void setExcept(List<String> except) {
+            this.except = except;
+        }
     }
 }
