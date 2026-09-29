@@ -102,6 +102,7 @@ install(Inertia) {
 | `serializer`           | `PageObjectSerializer?`           | Jackson 2               | Serializes page objects                                                              |
 | `templateRenderer`     | `TemplateRenderer?`               | `SimpleTemplateRenderer` | Renders the root template                                                           |
 | `flashStore`           | `InertiaFlashStore?`              | `SessionsFlashStore`    | Keeps flash data, errors and redirect flags between requests                         |
+| `routeManifest`        | `Path?`                           | `null`                  | File the [route manifest](../guides/routes.md#ktor) is written to on startup          |
 | `exceptionReporter`    | `((RuntimeException) -> Unit)?`   | Logs                    | Reports exceptions of rescued deferred props                                         |
 | `share { call -> }`    | function                          |                         | Adds shared props                                                                    |
 | `shareTyped { call -> }` | function                        |                         | Adds typed shared props                                                              |

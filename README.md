@@ -38,7 +38,8 @@ export default function Index({ users }: { users: User[] }) {
   Subresource Integrity.
 - **Server-side rendering** through the Inertia Node.js server, with a managed process, health checks and client-side
   fallback.
-- **TypeScript types** generated from your props classes by a Gradle plugin.
+- **TypeScript types** generated from your props classes, and **route helpers** for your controllers and Ktor routes,
+  by a Gradle plugin.
 - **Test assertions** for MockMvc and Ktor's `testApplication`, modeled on Laravel's `assertInertia`.
 - Pluggable JSON serializer, template renderer and SSR gateway.
 
@@ -77,6 +78,7 @@ Follow [Getting started](docs/getting-started.md) for the frontend setup and you
 
 - [Getting started](docs/getting-started.md) and [core concepts](docs/core-concepts.md)
 - Guides: [responses and templates](docs/guides/responses.md), [redirects](docs/guides/redirects.md),
+  [route helpers](docs/guides/routes.md),
   [props](docs/guides/props.md), [shared data](docs/guides/shared-data.md),
   [forms and validation](docs/guides/forms-and-validation.md), [asset versioning](docs/guides/asset-versioning.md),
   [server-side rendering](docs/guides/ssr.md), [testing](docs/guides/testing.md)

@@ -228,7 +228,8 @@ public class GenerateInertiaTypes {
 }
 ```
 
-The options match those of the [Gradle plugin](typescript.md#2-generate-the-types-with-gradle). Then add two
+The options match those of the [Gradle plugin](typescript.md#2-generate-the-types-with-gradle). For [route helpers](routes.md),
+call `TypeScriptGenerator.generateRoutes(new RouteGeneratorOptions(packages, manifests), classpath)` the same way. Then add two
 executions to the `exec-maven-plugin`. `<classpath/>` expands to the test classpath, which holds your compiled
 classes, their dependencies and the generator:
 

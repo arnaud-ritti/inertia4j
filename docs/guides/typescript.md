@@ -93,6 +93,8 @@ to the objects inside props, so nested objects are snake_case too, while the Ine
 The plugin is Gradle-only. Maven builds can call the generator through the `exec-maven-plugin`, with the same
 options and an up-to-date check; see [TypeScript types with Maven](maven.md#typescript-types).
 
+The same plugin also generates typed [route helpers](routes.md) with `generateInertiaRoutes`.
+
 ## 3. Use the types in the frontend
 
 Make sure `tsconfig.json` includes the generated file, e.g. `"include": ["src/main/frontend/**/*.ts", "src/main/frontend/**/*.d.ts"]`.
