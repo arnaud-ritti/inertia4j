@@ -9,6 +9,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.function.Predicate;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.stream.Stream;
@@ -34,6 +35,10 @@ final class ClassScanner {
     }
 
     static Result scan(List<Path> classpath, List<String> packages, ClassLoader loader) {
+        return scan(classpath, packages, loader, ClassScanner::hasRoleAnnotation);
+    }
+
+    static Result scan(List<Path> classpath, List<String> packages, ClassLoader loader, Predicate<Class<?>> accept) {
         Set<String> classNames = new TreeSet<>();
         for (Path entry : classpath) {
             classNames.addAll(classNamesIn(entry));
@@ -49,7 +54,7 @@ final class ClassScanner {
 
             try {
                 Class<?> type = Class.forName(className, false, loader);
-                if (hasRoleAnnotation(type)) {
+                if (accept.test(type)) {
                     annotatedClasses.add(type);
                 }
             } catch (UnsupportedClassVersionError e) {

@@ -18,6 +18,9 @@ dependencies {
     testImplementation(libs.junit.jupiter)
     testImplementation(libs.jackson2.databind)
     testImplementation(libs.jspecify)
+    testImplementation(platform(libs.spring.boot3.dependencies))
+    testImplementation("org.springframework:spring-web")
+    testImplementation("org.springframework:spring-context")
     testRuntimeOnly(libs.junit.platform.launcher)
 }
 

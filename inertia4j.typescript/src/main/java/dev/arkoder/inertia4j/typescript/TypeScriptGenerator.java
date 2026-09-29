@@ -44,6 +44,35 @@ public final class TypeScriptGenerator {
         }
     }
 
+    /**
+     * Generates the routes file: Spring MVC controller routes found under the packages, and the routes listed in
+     * route manifests exported by the Ktor plugin.
+     *
+     * @param options   generation options.
+     * @param classpath runtime classpath of the application: class directories and jars.
+     * @return generated content and warnings.
+     * @throws GenerationException on fatal problems (route name collisions, invalid manifests, …).
+     */
+    public static GenerationResult generateRoutes(RouteGeneratorOptions options, List<Path> classpath) {
+        List<String> warnings = new ArrayList<>();
+        List<RouteEntry> routes = new ArrayList<>();
+
+        if (!options.packages().isEmpty()) {
+            try (URLClassLoader loader = new URLClassLoader(toUrls(classpath), ClassLoader.getPlatformClassLoader())) {
+                ClassScanner.Result scan = ClassScanner.scan(classpath, options.packages(), loader, SpringRoutes::isController);
+
+                warnings.addAll(scan.warnings());
+                routes.addAll(SpringRoutes.routes(scan.annotatedClasses(), warnings));
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+        }
+
+        routes.addAll(RouteManifests.read(options.routeManifests(), warnings));
+
+        return new GenerationResult(RoutesWriter.write(routes), List.copyOf(new LinkedHashSet<>(warnings)));
+    }
+
     private static URL[] toUrls(List<Path> classpath) {
         URL[] urls = new URL[classpath.size()];
 
