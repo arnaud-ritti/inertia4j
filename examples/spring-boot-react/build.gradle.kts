@@ -34,6 +34,7 @@ val npmBuild by tasks.registering(Exec::class) {
     inputs.dir("src/main/frontend")
     inputs.files("package.json", "package-lock.json", "tsconfig.json", "vite.config.ts")
     outputs.dir("src/main/resources/static/build")
+    outputs.dir("build/ssr")
 }
 
 tasks.processResources {

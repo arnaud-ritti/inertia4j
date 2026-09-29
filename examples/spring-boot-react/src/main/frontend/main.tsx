@@ -1,21 +1,17 @@
 import 'vite/modulepreload-polyfill'
-import type { ComponentType } from 'react'
-import { createRoot } from 'react-dom/client'
+import { createRoot, hydrateRoot } from 'react-dom/client'
 import { createInertiaApp } from '@inertiajs/react'
-
-const pages = import.meta.glob<{ default: ComponentType<any> }>('./pages/**/*.tsx', { eager: true })
+import { resolvePage } from './resolvePage'
 
 createInertiaApp({
-  resolve: (name) => {
-    const page = pages[`./pages/${name}.tsx`]
-
-    if (!page) {
-      throw new Error(`Unknown page: ${name}`)
+  resolve: resolvePage,
+  setup({ el, App, props }) {
+    // Pages fall back to client-side rendering when the SSR server is unavailable.
+    if (el.hasAttribute('data-server-rendered')) {
+      hydrateRoot(el, <App {...props} />)
+      return
     }
 
-    return page
-  },
-  setup({ el, App, props }) {
     createRoot(el).render(<App {...props} />)
   },
 })
