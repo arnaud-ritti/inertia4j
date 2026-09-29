@@ -1,90 +1,23 @@
 plugins {
-    `java-library`
-    `maven-publish`
-    id("signing")
+    id("inertia4j.publishing-conventions")
 }
 
-repositories {
-    mavenCentral()
-}
+version = "1.0.2"
 
 dependencies {
     implementation(project(":inertia4j.spi"))
 
-    compileOnly("com.fasterxml.jackson.core:jackson-databind:2.17.2")
+    compileOnly(libs.jackson2.databind)
 
-    testImplementation("org.junit.jupiter:junit-jupiter:5.12.1")
-    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
-    testRuntimeOnly("com.fasterxml.jackson.core:jackson-databind:2.17.2")
+    testImplementation(libs.junit.jupiter)
+    testRuntimeOnly(libs.junit.platform.launcher)
+    testRuntimeOnly(libs.jackson2.databind)
 }
 
-java {
-    toolchain {
-        languageVersion = JavaLanguageVersion.of(11)
-    }
-
-    withSourcesJar()
-    withJavadocJar()
-}
-
-tasks.test {
-    useJUnitPlatform()
-}
-
-group = "io.github.inertia4j"
-version = "1.0.2"
-
-configure<PublishingExtension> {
-    publications {
-        create<MavenPublication>("mavenJava") {
-            from(components["java"])
-
-            artifactId = "inertia4j-core"
-
-            pom {
-                name.set("Inertia4J Core")
-                description.set("Inertia4J back-end adapter core")
-                url.set("https://github.com/Inertia4J/inertia4j")
-                inceptionYear.set("2025")
-
-                licenses {
-                    license {
-                        name.set("The Apache License, Version 2.0")
-                        url.set("https://www.apache.org/licenses/LICENSE-2.0.txt")
-                    }
-                }
-
-                developers {
-                    developer {
-                        id.set("edrd-f")
-                        name.set("Eduardo Fonseca")
-                    }
-                    developer {
-                        id.set("pefcos")
-                        name.set("Pedro Fronchetti Costa da Silva")
-                        email.set("pfronchetti@gmail.com")
-                    }
-                }
-
-                scm {
-                    connection.set("scm:git:https://github.com/Inertia4J/inertia4j.git")
-                    developerConnection.set("scm:git:ssh://git@github.com:Inertia4J/inertia4j.git")
-                    url.set("https://github.com/Inertia4J/inertia4j")
-                }
-            }
-        }
-    }
-
-    repositories {
-        maven {
-            url = layout.buildDirectory.dir("staging-deploy").get().asFile.toURI() // used by JReleaser
-        }
-    }
-}
-
-configure<SigningExtension> {
-    useGpgCmd()
-    if (project.hasProperty("signing.keyId")) {
-        useGpgCmd()
+publishing.publications.named<MavenPublication>("mavenJava") {
+    pom {
+        name = "Inertia4J Core"
+        description = "Inertia4J back-end adapter core"
+        inceptionYear = "2025"
     }
 }
