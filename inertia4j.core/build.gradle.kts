@@ -5,13 +5,26 @@ plugins {
 version = "1.0.2"
 
 dependencies {
+    api(project(":inertia4j.typescript-annotations"))
     implementation(project(":inertia4j.spi"))
 
     compileOnly(libs.jackson2.databind)
 
     testImplementation(libs.junit.jupiter)
+    testImplementation(libs.jackson2.databind)
     testRuntimeOnly(libs.junit.platform.launcher)
-    testRuntimeOnly(libs.jackson2.databind)
+}
+
+tasks.named<JavaCompile>("compileTestJava") {
+    javaCompiler = javaToolchains.compilerFor {
+        languageVersion = JavaLanguageVersion.of(17)
+    }
+}
+
+tasks.named<Test>("test") {
+    javaLauncher = javaToolchains.launcherFor {
+        languageVersion = JavaLanguageVersion.of(17)
+    }
 }
 
 publishing.publications.named<MavenPublication>("mavenJava") {
