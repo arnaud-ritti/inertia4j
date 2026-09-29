@@ -74,6 +74,10 @@ will automatically load the `resources/templates/app.html` file in your project 
 - `@InertiaHead@` is replaced with the `<head>` elements rendered by the [SSR server](#server-side-rendering), and is
   empty otherwise.
 
+Content placed between `@InertiaHead@` and `@EndInertiaHead@` is a fallback, rendered only when the page is not
+server-side rendered, and replaced by the SSR `<head>` elements otherwise, e.g.
+`@InertiaHead@<title>My app</title>@EndInertiaHead@`.
+
 ```html
 <!doctype html>
 <html lang="en">
@@ -95,6 +99,10 @@ properties.
 To load your frontend, add `@Vite(src/main/frontend/main.tsx)@` to the template head (preceded by
 `@ViteReactRefresh@` for React). It renders the tags of the Vite dev server while it runs and of the production
 build otherwise. See the [Vite integration guide](../docs/vite.md).
+
+`@ViteAsset(src/images/logo.png)@` renders the URL of a file processed by Vite. Rendered tags carry the
+[CSP nonce](../docs/vite.md#content-security-policy-nonce) of the request and the
+[integrity hash](../docs/vite.md#subresource-integrity) of built files when available.
 
 ### Options
 

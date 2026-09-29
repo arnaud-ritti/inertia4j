@@ -15,9 +15,13 @@ import java.util.Set;
 @NullMarked
 public class ViteManifest {
     private final Map<String, ManifestChunk> chunks;
+    private final Map<String, ManifestChunk> chunksByFile;
 
     private ViteManifest(Map<String, ManifestChunk> chunks) {
         this.chunks = chunks;
+        this.chunksByFile = new LinkedHashMap<>();
+
+        chunks.values().forEach(chunk -> chunksByFile.putIfAbsent(chunk.getFile(), chunk));
     }
 
     /**
@@ -55,6 +59,14 @@ public class ViteManifest {
      */
     public Optional<ManifestChunk> chunk(String key) {
         return Optional.ofNullable(chunks.get(key));
+    }
+
+    /**
+     * @param file output file, relative to the build directory, such as {@code assets/main-BRBmoGS9.js}.
+     * @return the first chunk whose output is the given file, or empty if no chunk has this output.
+     */
+    public Optional<ManifestChunk> chunkByFile(String file) {
+        return Optional.ofNullable(chunksByFile.get(file));
     }
 
     /**

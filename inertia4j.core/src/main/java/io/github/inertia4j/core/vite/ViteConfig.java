@@ -4,22 +4,41 @@ import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
 import java.nio.file.Path;
+import java.util.function.Supplier;
 
 /**
  * Settings of the Vite integration. Defaults match the {@code vite.config.ts} documented in {@code docs/vite.md}.
  */
 @NullMarked
 public class ViteConfig {
+    /**
+     * Manifest field holding the Subresource Integrity hash of a chunk, as written by {@code vite-plugin-manifest-sri}.
+     */
+    public static final String DefaultIntegrityKey = "integrity";
+
+    private static final Supplier<@Nullable String> noNonce = () -> null;
+
     private final Path hotFile;
     private final String buildDirectory;
     private final String manifestPath;
     private final String publicPath;
+    private final @Nullable String integrityKey;
+    private final Supplier<@Nullable String> nonceProvider;
 
-    private ViteConfig(Path hotFile, String buildDirectory, String manifestPath, String publicPath) {
+    private ViteConfig(
+        Path hotFile,
+        String buildDirectory,
+        String manifestPath,
+        String publicPath,
+        @Nullable String integrityKey,
+        Supplier<@Nullable String> nonceProvider
+    ) {
         this.hotFile = hotFile;
         this.buildDirectory = buildDirectory;
         this.manifestPath = manifestPath;
         this.publicPath = publicPath;
+        this.integrityKey = integrityKey;
+        this.nonceProvider = nonceProvider;
     }
 
     /**
@@ -65,6 +84,21 @@ public class ViteConfig {
     }
 
     /**
+     * @return manifest field holding the Subresource Integrity hash of chunks, or {@code null} when tags are rendered
+     * without {@code integrity} attribute.
+     */
+    public @Nullable String getIntegrityKey() {
+        return integrityKey;
+    }
+
+    /**
+     * @return provider of the Content Security Policy nonce added to the rendered tags, called on every render.
+     */
+    public Supplier<@Nullable String> getNonceProvider() {
+        return nonceProvider;
+    }
+
+    /**
      * Builder of {@link ViteConfig}.
      */
     public static class Builder {
@@ -72,6 +106,8 @@ public class ViteConfig {
         private String buildDirectory = "static/build";
         private @Nullable String manifestPath;
         private String publicPath = "/build/";
+        private @Nullable String integrityKey = DefaultIntegrityKey;
+        private Supplier<@Nullable String> nonceProvider = noNonce;
 
         private Builder() {
         }
@@ -114,6 +150,30 @@ public class ViteConfig {
         }
 
         /**
+         * @param integrityKey manifest field holding the Subresource Integrity hash of chunks, defaults to
+         *                     {@value #DefaultIntegrityKey}; {@code null} or blank to render tags without
+         *                     {@code integrity} attribute.
+         * @return this builder.
+         */
+        public Builder integrityKey(@Nullable String integrityKey) {
+            this.integrityKey = integrityKey;
+            return this;
+        }
+
+        /**
+         * Sets the provider of the Content Security Policy nonce added to the script, stylesheet and preload tags.
+         * The provider is called on every render, typically reading the nonce of the current request, and may
+         * return {@code null} or an empty string to render tags without nonce.
+         *
+         * @param nonceProvider provider of the nonce of the current request.
+         * @return this builder.
+         */
+        public Builder nonceProvider(Supplier<@Nullable String> nonceProvider) {
+            this.nonceProvider = nonceProvider;
+            return this;
+        }
+
+        /**
          * @return the configuration.
          */
         public ViteConfig build() {
@@ -131,7 +191,9 @@ public class ViteConfig {
                 hotFile,
                 normalisedBuildDirectory,
                 normalisedManifestPath,
-                normalisePublicPath(publicPath)
+                normalisePublicPath(publicPath),
+                integrityKey == null || integrityKey.isBlank() ? null : integrityKey.trim(),
+                nonceProvider
             );
         }
 

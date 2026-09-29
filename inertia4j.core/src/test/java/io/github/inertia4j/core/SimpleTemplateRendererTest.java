@@ -109,4 +109,102 @@ class SimpleTemplateRendererTest {
 
         executor.shutdown();
     }
+
+    @Test
+    void render_withoutSsrHead_rendersHeadFallback() {
+        String html = new SimpleTemplateRenderer("templates/head-fallback.html").render(new RenderedPage("", "<div id=\"app\"></div>"));
+
+        assertEquals("<head>\n\n<title>Fallback</title>\n\n</head>\n<div id=\"app\"></div>\n", html);
+    }
+
+    @Test
+    void render_withSsrHead_replacesHeadFallback() {
+        String html = new SimpleTemplateRenderer("templates/head-fallback.html").render(page("<div id=\"app\"></div>"));
+
+        assertEquals("<head>\n<title>t</title>\n</head>\n<div id=\"app\"></div>\n", html);
+    }
+
+    @Test
+    void render_whenHeadFallbackFollowsApp_rendersBoth() {
+        SimpleTemplateRenderer renderer = new SimpleTemplateRenderer("templates/head-fallback-after-app.html");
+
+        assertEquals("<div></div>\n<title>Fallback</title>\n", renderer.render(new RenderedPage("", "<div></div>")));
+        assertEquals("<div></div>\n<title>t</title>\n", renderer.render(page("<div></div>")));
+    }
+
+    @Test
+    void render_whenSsrContentContainsPlaceholders_doesNotSubstituteThem() {
+        RenderedPage page = new RenderedPage("<title>@InertiaApp@ @EndInertiaHead@</title>", "<p>@InertiaHead@ @EndInertiaHead@</p>");
+
+        String html = new SimpleTemplateRenderer("templates/head-fallback.html").render(page);
+
+        assertEquals(
+            "<head>\n<title>@InertiaApp@ @EndInertiaHead@</title>\n</head>\n<p>@InertiaHead@ @EndInertiaHead@</p>\n",
+            html
+        );
+    }
+
+    @Test
+    void constructor_whenEndHeadPlaceholderPrecedesHeadPlaceholder_throws() {
+        TemplateRenderingException exception = assertThrows(
+            TemplateRenderingException.class,
+            () -> new SimpleTemplateRenderer("templates/head-fallback-unopened.html")
+        );
+
+        assertTrue(exception.getMessage().contains("uses @EndInertiaHead@ without a preceding @InertiaHead@"));
+    }
+
+    @Test
+    void constructor_whenAppPlaceholderIsInsideHeadFallback_throws() {
+        TemplateRenderingException exception = assertThrows(
+            TemplateRenderingException.class,
+            () -> new SimpleTemplateRenderer("templates/head-fallback-around-app.html")
+        );
+
+        assertTrue(exception.getMessage().contains("has @InertiaApp@ inside the @InertiaHead@ fallback"));
+    }
+
+    @Test
+    void render_withVite_replacesAssetPlaceholderWithUrl() {
+        Vite vite = new Vite(ViteConfig.builder().hotFile(tempDir.resolve("vite.hot")).buildDirectory("vite-sri").build());
+
+        String html = new SimpleTemplateRenderer("templates/vite-asset.html", vite).render(page("<div id=\"app\"></div>"));
+
+        assertTrue(html.contains("<img src=\"/build/assets/logo-Dx8Kp2Qa.png\">"));
+    }
+
+    @Test
+    void render_withoutVite_leavesAssetPlaceholderUntouched() {
+        String html = new SimpleTemplateRenderer("templates/vite-asset.html").render(page("<div id=\"app\"></div>"));
+
+        assertTrue(html.contains("<img src=\"@ViteAsset( /src/images/logo.png )@\">"));
+    }
+
+    @Test
+    void render_whenAssetPlaceholderIsEmpty_throws() {
+        SimpleTemplateRenderer renderer = new SimpleTemplateRenderer("templates/vite-empty-asset.html", vite());
+
+        ViteException exception = assertThrows(ViteException.class, () -> renderer.render(page("<div id=\"app\"></div>")));
+
+        assertEquals("Empty path in Vite asset placeholder @ViteAsset( )@", exception.getMessage());
+    }
+
+    @Test
+    void render_withNonceProvider_addsNonceOfEachRender() {
+        ThreadLocal<String> nonce = new ThreadLocal<>();
+        Vite vite = new Vite(ViteConfig.builder()
+            .hotFile(tempDir.resolve("vite.hot"))
+            .buildDirectory("vite-fixture")
+            .nonceProvider(nonce::get)
+            .build());
+        SimpleTemplateRenderer renderer = new SimpleTemplateRenderer("templates/vite.html", vite);
+
+        nonce.set("first");
+        String first = renderer.render(page("<div id=\"app\"></div>"));
+        nonce.set("second");
+        String second = renderer.render(page("<div id=\"app\"></div>"));
+
+        assertTrue(first.contains("<script type=\"module\" src=\"/build/assets/foo-BRBmoGS9.js\" nonce=\"first\"></script>"));
+        assertTrue(second.contains("<script type=\"module\" src=\"/build/assets/foo-BRBmoGS9.js\" nonce=\"second\"></script>"));
+    }
 }

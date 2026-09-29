@@ -81,6 +81,10 @@ import 'vite/modulepreload-polyfill'
 - `@Vite(a, b)@` renders the tags of one or more entries, given as paths relative to the Vite root.
 - `@ViteReactRefresh@` renders the React Fast Refresh preamble in dev mode; omit it for Vue, Svelte and other
   frameworks.
+- `@ViteAsset(src/images/logo.png)@` renders the URL of a file processed by Vite: the dev server URL in dev mode, the
+  hashed file of the manifest in production (see [Static assets](#static-assets)).
+- `@InertiaHead@...@EndInertiaHead@` renders its content, such as a default `<title>`, only when the page is not
+  server-side rendered, and the SSR `<head>` elements in its place otherwise.
 
 Use a single `@Vite(...)@` placeholder listing all entries: each placeholder renders independently, so several
 placeholders would load `@vite/client` twice.
@@ -108,6 +112,61 @@ Every file under the build directory is served as immutable, so keep unhashed fi
 in `vite.config.ts`, or serve Vite's `public/` files elsewhere. Exclude `vite.hot` from Docker images
 (`.dockerignore`), otherwise production renders dev tags.
 
+## Static assets
+
+`@ViteAsset(path)@` in the template, `vite.asset(path)` in code (the `Vite` Spring bean, or `inertia.vite` in Ktor
+routes), resolve the URL of a file processed by Vite, given relative to the Vite root:
+
+```html
+<link rel="icon" href="@ViteAsset(src/main/frontend/images/favicon.svg)@">
+```
+
+In production the file must be listed in the manifest: import it from the frontend, or add it to
+`build.rollupOptions.input`, e.g. with `import.meta.glob('./images/**')` in the entry. An unknown file throws
+`Unable to locate '...' in the Vite manifest`.
+
+## Content Security Policy nonce
+
+Every tag rendered by `@Vite(...)@` and `@ViteReactRefresh@` (scripts, stylesheets, module preloads, React preamble)
+gets a `nonce` attribute when the current request has one. The nonce is looked up on every render, so it can differ
+per request.
+
+- **Spring Boot:** set the nonce as a request attribute named `cspNonce` (`inertia.vite.nonce-attribute`), for example
+  from the filter writing the `Content-Security-Policy` header:
+
+  ```java
+  request.setAttribute("cspNonce", nonce);
+  response.setHeader("Content-Security-Policy", "script-src 'nonce-" + nonce + "'");
+  ```
+
+- **Ktor:** resolve the nonce of a call, e.g. from a call attribute set by an interceptor:
+
+  ```kotlin
+  vite {
+      nonce = { call -> call.attributes.getOrNull(CspNonceKey) }
+  }
+  ```
+
+- **Core:** `ViteConfig.builder().nonceProvider(supplier)`; the supplier is called on the rendering thread.
+
+`vite.cspNonce()` returns the nonce of the current render, e.g. to add it to your own inline scripts.
+
+## Subresource Integrity
+
+When manifest chunks have an `integrity` field, as written by
+[vite-plugin-manifest-sri](https://github.com/ElMassimo/vite-plugin-manifest-sri), production script, stylesheet and
+`modulepreload` tags get `integrity="..."` and `crossorigin="anonymous"`:
+
+```ts
+import manifestSRI from 'vite-plugin-manifest-sri'
+
+plugins: [react(), manifestSRI(), inertia4jHotFile()]
+```
+
+The field name is configurable (`inertia.vite.integrity-key` in Spring, `integrityKey` in Ktor,
+`ViteConfig.Builder#integrityKey` in core); set it to `false` in Spring, or `null` in Ktor and core, to disable integrity
+attributes.
+
 ## Configuration
 
 ### Spring Boot
@@ -120,6 +179,8 @@ in `vite.config.ts`, or serve Vite's `public/` files elsewhere. Exclude `vite.ho
 | `inertia.vite.manifest` | `{build-directory}/.vite/manifest.json` | Classpath location of the manifest |
 | `inertia.vite.public-path` | `/build/` | URL prefix of built files; a path such as `/build/`, not an absolute URL |
 | `inertia.vite.cache-max-age` | `365d` | `max-age` of built files |
+| `inertia.vite.integrity-key` | `integrity` | Manifest field holding the SRI hash of chunks; empty or `false` disables it |
+| `inertia.vite.nonce-attribute` | `cspNonce` | Request attribute holding the CSP nonce of rendered tags; empty disables it |
 
 Defining your own `Vite`, `VersionProvider` or `TemplateRenderer` bean replaces the default one.
 
@@ -134,6 +195,8 @@ install(Inertia) {
         publicPath = "/build/"
         serveAssets = true
         cacheMaxAge = 365.days
+        integrityKey = "integrity" // null disables integrity attributes
+        nonce = null // (ApplicationCall) -> String?
     }
 }
 ```
@@ -180,7 +243,7 @@ See [Advanced usage](advanced.md#vite-tags-in-a-custom-renderer).
 - **`Vite manifest not found at classpath:...`** — the dev server is not running (no `vite.hot` in the working
   directory) and the frontend was not built. Start `vite`, or run `vite build`.
 - **`Unable to locate '...' in the Vite manifest`** — the placeholder entry must match `build.rollupOptions.input`,
-  relative to the Vite root.
+  relative to the Vite root; a `@ViteAsset(...)@` file must be imported by the frontend or be an input.
 - **Scripts blocked by CORS in development** — set `server.cors.origin` to the backend origin.
 
 ## Upgrading
