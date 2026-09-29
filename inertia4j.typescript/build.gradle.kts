@@ -36,7 +36,7 @@ tasks.named<Test>("test") {
 publishing.publications.named<MavenPublication>("mavenJava") {
     pom {
         name = "Inertia4J TypeScript"
-        description = "Generates TypeScript types for Inertia4J props classes"
+        description = "Generates TypeScript types and route helpers for Inertia4J applications"
         inceptionYear = "2026"
     }
 }

@@ -27,7 +27,7 @@ gradlePlugin {
             id = "dev.arkoder.inertia4j.typescript"
             implementationClass = "dev.arkoder.inertia4j.typescript.gradle.InertiaTypesPlugin"
             displayName = "Inertia4J TypeScript types"
-            description = "Generates TypeScript types for Inertia4J props classes"
+            description = "Generates TypeScript types and route helpers for Inertia4J applications"
         }
     }
 }
@@ -37,7 +37,7 @@ publishing {
     publications.withType<MavenPublication>().configureEach {
         pom {
             name = "Inertia4J TypeScript Gradle plugin"
-            description = "Gradle plugin generating TypeScript types for Inertia4J props classes"
+            description = "Gradle plugin generating TypeScript types and route helpers for Inertia4J applications"
             inceptionYear = "2026"
             inertia4jMetadata()
         }
