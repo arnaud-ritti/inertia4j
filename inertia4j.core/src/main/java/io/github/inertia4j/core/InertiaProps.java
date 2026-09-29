@@ -14,45 +14,49 @@ public final class InertiaProps {
     /**
      * Creates a deferred prop in the default group.
      *
+     * @param <T>      type of the value.
      * @param supplier provides the prop value when the client requests it.
      * @return the deferred prop.
      * @see <a href="https://inertiajs.com/deferred-props">Inertia deferred props</a>
      */
-    public static DeferredProp defer(Supplier<?> supplier) {
+    public static <T> DeferredProp<T> defer(Supplier<? extends T> supplier) {
         return defer(supplier, DeferredProp.DefaultGroup);
     }
 
     /**
      * Creates a deferred prop in the given group. Props of the same group are fetched in a single request.
      *
+     * @param <T>      type of the value.
      * @param supplier provides the prop value when the client requests it.
      * @param group    name of the group.
      * @return the deferred prop.
      * @see <a href="https://inertiajs.com/deferred-props">Inertia deferred props</a>
      */
-    public static DeferredProp defer(Supplier<?> supplier, String group) {
-        return new DeferredProp(supplier, group);
+    public static <T> DeferredProp<T> defer(Supplier<? extends T> supplier, String group) {
+        return new DeferredProp<>(supplier, group);
     }
 
     /**
      * Creates a prop whose arrays are appended to the existing client-side value on partial reloads.
      *
+     * @param <T>   type of the value.
      * @param value prop value, or a {@link Supplier} evaluated only when the prop is sent.
      * @return the merge prop.
      * @see <a href="https://inertiajs.com/merging-props">Inertia merging props</a>
      */
-    public static MergeProp merge(Object value) {
-        return new MergeProp(value).merge();
+    public static <T> MergeProp<T> merge(T value) {
+        return new MergeProp<T>(value).merge();
     }
 
     /**
      * Creates a prop that is deep merged with the existing client-side value on partial reloads.
      *
+     * @param <T>   type of the value.
      * @param value prop value, or a {@link Supplier} evaluated only when the prop is sent.
      * @return the merge prop.
      * @see <a href="https://inertiajs.com/merging-props">Inertia merging props</a>
      */
-    public static MergeProp deepMerge(Object value) {
-        return new MergeProp(value).deepMerge();
+    public static <T> MergeProp<T> deepMerge(T value) {
+        return new MergeProp<T>(value).deepMerge();
     }
 }

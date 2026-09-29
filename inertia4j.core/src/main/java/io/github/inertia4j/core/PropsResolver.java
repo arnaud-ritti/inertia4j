@@ -47,7 +47,7 @@ class PropsResolver {
 
     private void resolve(String key, Object value) {
         if (!partial && value instanceof DeferredProp) {
-            String group = ((DeferredProp) value).getGroup();
+            String group = ((DeferredProp<?>) value).getGroup();
             deferredProps.computeIfAbsent(group, k -> new ArrayList<>()).add(key);
             collectMergeMetadata(key, value);
             return;
@@ -107,11 +107,11 @@ class PropsResolver {
 
     private static Object resolveValue(Object value) {
         if (value instanceof DeferredProp) {
-            return resolveValue(((DeferredProp) value).resolve());
+            return resolveValue(((DeferredProp<?>) value).resolve());
         }
 
         if (value instanceof MergeProp) {
-            return resolveValue(((MergeProp) value).getValue());
+            return resolveValue(((MergeProp<?>) value).getValue());
         }
 
         if (value instanceof Supplier) {

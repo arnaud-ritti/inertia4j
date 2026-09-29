@@ -287,6 +287,17 @@ public class InertiaRendererTest {
         assertEquals(expectedReloadJson, reloadResponse.getBody());
     }
 
+    @Test
+    void defer_andMerge_keepValueType() {
+        DeferredProp<List<Integer>> deferred = InertiaProps.defer(() -> List.of(1));
+        MergeProp<List<Integer>> merged = InertiaProps.merge(List.of(2));
+        MergeProp<List<Integer>> deepMerged = InertiaProps.deepMerge(List.of(3));
+
+        assertEquals(List.of(1), deferred.resolve());
+        assertEquals(List.of(2), merged.getValue());
+        assertEquals(List.of(3), deepMerged.getValue());
+    }
+
     private HttpResponse render(HttpRequest request, InertiaRenderingOptions options) {
         return new InertiaRenderer(
             pageObjectSerializer,

@@ -81,45 +81,49 @@ public abstract class AbstractInertia {
     /**
      * Creates a deferred prop in the default group.
      *
+     * @param <T>      type of the value.
      * @param supplier provides the prop value when the client requests it.
      * @return the deferred prop.
      * @see InertiaProps#defer(Supplier)
      */
-    public static DeferredProp defer(Supplier<?> supplier) {
+    public static <T> DeferredProp<T> defer(Supplier<? extends T> supplier) {
         return InertiaProps.defer(supplier);
     }
 
     /**
      * Creates a deferred prop in the given group.
      *
+     * @param <T>      type of the value.
      * @param supplier provides the prop value when the client requests it.
      * @param group    name of the group.
      * @return the deferred prop.
      * @see InertiaProps#defer(Supplier, String)
      */
-    public static DeferredProp defer(Supplier<?> supplier, String group) {
+    public static <T> DeferredProp<T> defer(Supplier<? extends T> supplier, String group) {
         return InertiaProps.defer(supplier, group);
     }
 
     /**
      * Creates a prop whose arrays are appended to the existing client-side value on partial reloads.
      *
+     * @param <T>   type of the value.
      * @param value prop value, or a {@link Supplier} evaluated only when the prop is sent.
      * @return the merge prop.
      * @see InertiaProps#merge(Object)
      */
-    public static MergeProp merge(Object value) {
+    public static <T> MergeProp<T> merge(T value) {
         return InertiaProps.merge(value);
     }
 
     /**
      * Creates a prop that is deep merged with the existing client-side value on partial reloads.
      *
+     * @param <T>   type of the value.
      * @param value prop value, or a {@link Supplier} evaluated only when the prop is sent.
      * @return the merge prop.
      * @see InertiaProps#deepMerge(Object)
      */
-    public static MergeProp deepMerge(Object value) {
+    public static <T> MergeProp<T> deepMerge(T value) {
         return InertiaProps.deepMerge(value);
     }
 
