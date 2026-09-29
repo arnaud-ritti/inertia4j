@@ -7,12 +7,12 @@ import io.github.inertia4j.spi.InertiaException;
  */
 public class TemplateRenderingException extends InertiaException {
     /**
-     * Constructs a new exception indicating the template file was not found at the specified path.
+     * Constructs a new exception with the specified detail message.
      *
-     * @param path The classpath path where the template was expected.
+     * @param message the detail message.
      */
-    public TemplateRenderingException(String path) {
-        super("Template file not found at classpath resource path: " + path);
+    public TemplateRenderingException(String message) {
+        super(message);
     }
 
     /**
@@ -23,5 +23,15 @@ public class TemplateRenderingException extends InertiaException {
      */
     public TemplateRenderingException(String path, Throwable cause) {
         super("Failed to read resource at path " + path, cause);
+    }
+
+    /**
+     * Creates an exception indicating the template file was not found at the specified path.
+     *
+     * @param path The classpath path where the template was expected.
+     * @return the exception.
+     */
+    public static TemplateRenderingException notFound(String path) {
+        return new TemplateRenderingException("Template file not found at classpath resource path: " + path);
     }
 }

@@ -2,21 +2,41 @@ package io.github.inertia4j.core;
 
 import io.github.inertia4j.spi.PageObject;
 import io.github.inertia4j.spi.PageObjectSerializer;
+import io.github.inertia4j.spi.RenderedPage;
 import io.github.inertia4j.spi.SerializationException;
+import io.github.inertia4j.spi.SsrGateway;
 import io.github.inertia4j.spi.TemplateRenderer;
 
+import java.time.Clock;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 /**
  * The core class responsible for transforming regular web responses into Inertia-compatible responses.
- * It handles full page loads, partial updates, asset versioning, and redirects according to the Inertia protocol.
+ * It handles full page loads, partial reloads, asset versioning, and redirects according to the Inertia protocol.
+ *
+ * @see <a href="https://inertiajs.com/docs/v3/core-concepts/the-protocol">Inertia protocol</a>
  */
 public class InertiaRenderer {
+    /**
+     * Id of the element the client-side application is mounted on when none is specified.
+     */
+    public static final String DefaultRootId = "app";
+
     private final PageObjectSerializer pageObjectSerializer;
     private final TemplateRenderer templateRenderer;
     private final Supplier<String> versionProvider;
+    private final String rootId;
+    private final SsrGateway ssrGateway;
+    private final List<Pattern> ssrExcludedPaths;
+    private final Consumer<RuntimeException> exceptionReporter;
+    private final Clock clock;
+    private final boolean exposeSharedPropKeys;
 
     /**
      * Constructs an InertiaRenderer with explicit dependencies.
@@ -30,9 +50,7 @@ public class InertiaRenderer {
         Supplier<String> versionProvider,
         TemplateRenderer templateRenderer
     ) {
-        this.pageObjectSerializer = pageObjectSerializer;
-        this.templateRenderer = templateRenderer;
-        this.versionProvider = versionProvider;
+        this(builder(pageObjectSerializer, versionProvider, templateRenderer));
     }
 
     /**
@@ -51,9 +69,37 @@ public class InertiaRenderer {
         this(pageObjectSerializer, versionProvider, new SimpleTemplateRenderer(templatePath));
     }
 
+    private InertiaRenderer(Builder builder) {
+        this.pageObjectSerializer = builder.pageObjectSerializer;
+        this.templateRenderer = builder.templateRenderer;
+        this.versionProvider = builder.versionProvider;
+        this.rootId = builder.rootId;
+        this.ssrGateway = builder.ssrGateway;
+        this.ssrExcludedPaths = builder.ssrExcludedPaths;
+        this.exceptionReporter = builder.exceptionReporter;
+        this.clock = builder.clock;
+        this.exposeSharedPropKeys = builder.exposeSharedPropKeys;
+    }
+
+    /**
+     * Creates a builder of InertiaRenderer, to configure optional features such as server-side rendering.
+     *
+     * @param pageObjectSerializer PageObjectSerializer implementation used to serialize the {@link PageObject}.
+     * @param versionProvider provider for the current Inertia asset version.
+     * @param templateRenderer renderer for the base HTML template used in full page loads.
+     * @return a new builder.
+     */
+    public static Builder builder(
+        PageObjectSerializer pageObjectSerializer,
+        Supplier<String> versionProvider,
+        TemplateRenderer templateRenderer
+    ) {
+        return new Builder(pageObjectSerializer, versionProvider, templateRenderer);
+    }
+
     /**
      * Renders the response according to the Inertia protocol based on the incoming request and rendering options.
-     * Handles full page loads, partial updates, and asset version conflicts.
+     * Handles full page loads, partial reloads, and asset version conflicts.
      *
      * @param request The incoming HTTP request wrapper.
      * @param options rendering options containing component name, props, etc.
@@ -64,15 +110,40 @@ public class InertiaRenderer {
         HttpRequest request,
         InertiaRenderingOptions options
     ) throws SerializationException {
-        if (isVersionConflict(request)) {
-            return handleVersionConflictResponse(request, options);
+        String version = currentVersion();
+
+        if (isVersionConflict(request, version)) {
+            return new HttpResponse()
+                .setCode(409)
+                .setHeader("Vary", InertiaHeaders.Inertia)
+                .setHeader(InertiaHeaders.Location, request.getFullUrl())
+                .setHeader(InertiaHeaders.Version, version);
         }
-        return handleSuccessResponse(request, options);
+
+        PageObject pageObject = pageObject(request, options, version);
+        String serializedPageObject = pageObjectSerializer.serialize(pageObject);
+
+        HttpResponse response = new HttpResponse()
+            .setCode(options.status)
+            .setHeader("Vary", InertiaHeaders.Inertia);
+
+        if (InertiaHeaders.isInertia(request)) {
+            return response
+                .setHeader("Content-Type", "application/json")
+                .setHeader(InertiaHeaders.Inertia, "true")
+                .setBody(serializedPageObject);
+        }
+
+        return response
+            .setHeader("Content-Type", "text/html; charset=utf-8")
+            .setBody(templateRenderer.render(renderPage(request, pageObject, serializedPageObject)));
     }
 
     /**
      * Creates an appropriate redirect response based on the Inertia protocol.
      * Uses a 303 See Other redirect for PUT/PATCH/DELETE requests and a 302 Found for others.
+     * A redirect of an Inertia request to a location containing a URL fragment is returned as a 409 Conflict
+     * with the {@code X-Inertia-Redirect} header instead, so the client visits it with a fresh request.
      *
      * @param request The incoming HTTP request wrapper.
      * @param location URL to redirect to
@@ -82,149 +153,219 @@ public class InertiaRenderer {
         HttpRequest request,
         String location
     ) {
-        return new HttpResponse()
+        HttpResponse response = new HttpResponse().setHeader("Vary", InertiaHeaders.Inertia);
+
+        if (InertiaHeaders.isInertia(request) && location.contains("#") && !InertiaHeaders.isPrefetch(request)) {
+            return response
+                .setCode(409)
+                .setHeader(InertiaHeaders.Redirect, location);
+        }
+
+        return response
             .setCode(isPutPatchDelete(request) ? 303 : 302)
             .setHeader("Location", location);
     }
 
     /**
-     * Instructs the client-side Inertia adapter to perform a hard visit to an external URL
-     * by returning a 409 Conflict response with the `X-Inertia-Location` header.
+     * Instructs the client-side Inertia adapter to perform a full page visit to a URL, possibly external,
+     * by returning a 409 Conflict response with the {@code X-Inertia-Location} header.
+     * Non-Inertia requests are redirected with a 302 Found instead.
      *
-     * @param url The external URL to navigate to.
-     * @return An {@link HttpResponse} object configured for an external redirect.
+     * @param request The incoming HTTP request wrapper.
+     * @param url The URL to navigate to.
+     * @return An {@link HttpResponse} object configured for a location visit.
      */
-    public HttpResponse location(String url) {
-        return new HttpResponse()
+    public HttpResponse location(HttpRequest request, String url) {
+        HttpResponse response = new HttpResponse().setHeader("Vary", InertiaHeaders.Inertia);
+
+        if (!InertiaHeaders.isInertia(request)) {
+            return response
+                .setCode(302)
+                .setHeader("Location", url);
+        }
+
+        return response
             .setCode(409)
-            .setHeader("X-Inertia-Location", url);
+            .setHeader(InertiaHeaders.Location, url);
     }
 
-    /**
-     * Checks if the request indicates an asset version conflict.
-     * This happens on GET requests where the `X-Inertia-Version` header doesn't match the current asset version.
-     *
-     * @param request The incoming HTTP request.
-     * @return {@code true} if there's a version conflict, {@code false} otherwise.
-     */
-    private boolean isVersionConflict(HttpRequest request) {
-        if (!request.getMethod().equalsIgnoreCase("GET")) return false;
+    private String currentVersion() {
+        String version = versionProvider.get();
 
-        String versionHeader = request.getHeader("X-Inertia-Version");
-
-        return versionHeader != null && !versionHeader.equals(versionProvider.get());
+        return version != null ? version : "";
     }
 
-    /**
-     * Handles the response when an asset version conflict is detected.
-     * Returns a 409 Conflict response with the `X-Inertia-Location` header set to the request URL.
-     *
-     * @param request The incoming HTTP request.
-     * @param options The rendering options.
-     * @return An {@link HttpResponse} for a version conflict.
-     */
-    private HttpResponse handleVersionConflictResponse(
-        HttpRequest request,
-        InertiaRenderingOptions options
-    ) {
-        return new HttpResponse()
-            .setCode(409)
-            .setHeader("X-Inertia-Location", options.url);
-    }
-
-    /**
-     * Handles a standard successful Inertia request (not a version conflict or redirect).
-     * Determines whether to return a full HTML response or a JSON response based on the `X-Inertia` header.
-     *
-     * @param request The incoming HTTP request.
-     * @param options The rendering options.
-     * @return An {@link HttpResponse} containing either the full HTML page or the JSON PageObject.
-     * @throws SerializationException if PageObject serialization fails.
-     */
-    private HttpResponse handleSuccessResponse(
-        HttpRequest request,
-        InertiaRenderingOptions options
-    ) throws SerializationException {
-        var response = new HttpResponse();
-
-        PageObject pageObject = pageObjectFromOptions(request, options);
-        String serializedPageObject = serializePageObject(request, pageObject);
-
-        String inertiaHeader = request.getHeader("X-Inertia");
-        if (inertiaHeader != null && inertiaHeader.equalsIgnoreCase("true")) {
-            response
-                .setHeader("Content-Type", "application/json")
-                .setHeader("X-Inertia", "true")
-                .setBody(serializedPageObject);
-        } else {
-            response
-                .setHeader("Content-Type", "text/html")
-                .setBody(templateRenderer.render(serializedPageObject));
+    private boolean isVersionConflict(HttpRequest request, String version) {
+        if (!InertiaHeaders.isInertia(request)) {
+            return false;
         }
 
-        return response.setCode(200);
-    }
-
-    /**
-     * Creates a {@link PageObject} instance from the provided rendering options.
-     * Checks for the `X-Inertia-Partial-Component` header to potentially modify props based on partial rendering requests,
-     * resolves deferred, merge and lazy props, and computes the merge and deferred props metadata.
-     *
-     * @param request The incoming HTTP request.
-     * @param options The rendering options.
-     * @return A configured {@link PageObject}.
-     */
-    private PageObject pageObjectFromOptions(HttpRequest request, InertiaRenderingOptions options) {
-        String partialComponentHeader = request.getHeader("X-Inertia-Partial-Component");
-        if (partialComponentHeader != null) {
-            options = options.withPartialComponent(partialComponentHeader);
-        }
-        var propsResolver = new PropsResolver(request, options.props != null ? options.props : Map.of());
-        return new PageObject(
-            options.componentName,
-            propsResolver.resolvedProps,
-            options.url,
-            options.encryptHistory,
-            options.clearHistory,
-            versionProvider.get(),
-            propsResolver.mergeProps,
-            propsResolver.prependProps,
-            propsResolver.deepMergeProps,
-            propsResolver.matchPropsOn,
-            propsResolver.deferredProps
-        );
-    }
-
-    /**
-     * Serializes the {@link PageObject} into a JSON string.
-     * Checks for the `X-Inertia-Partial-Data` header to determine if only a subset of props should be included in the JSON.
-     *
-     * @param request The incoming HTTP request.
-     * @param pageObject The PageObject to serialize.
-     * @return The JSON string representation of the PageObject.
-     * @throws SerializationException if serialization fails.
-     */
-    private String serializePageObject(HttpRequest request, PageObject pageObject) throws SerializationException {
-        String partialDataHeader = request.getHeader("X-Inertia-Partial-Data");
-
-        List<String> partialDataProps = null;
-        if (partialDataHeader != null) {
-            partialDataProps = PropsResolver.parseHeaderList(partialDataHeader);
+        if (!request.getMethod().equalsIgnoreCase("GET")) {
+            return false;
         }
 
-        return pageObjectSerializer.serialize(pageObject, partialDataProps);
+        String versionHeader = request.getHeader(InertiaHeaders.Version);
+
+        return !version.equals(versionHeader != null ? versionHeader : "");
     }
 
-    /**
-     * Checks if the HTTP request method is PUT, PATCH, or DELETE.
-     *
-     * @param request The incoming HTTP request.
-     * @return {@code true} if the method is PUT, PATCH, or DELETE, {@code false} otherwise.
-     */
+    private PageObject pageObject(HttpRequest request, InertiaRenderingOptions options, String version) {
+        var propsResolver = new PropsResolver(request, options, clock, exceptionReporter, exposeSharedPropKeys);
+
+        return PageObject.builder(options.componentName, options.url, version)
+            .props(propsResolver.resolvedProps)
+            .encryptHistory(options.encryptHistory)
+            .clearHistory(options.clearHistory)
+            .preserveFragment(options.preserveFragment)
+            .mergeProps(propsResolver.mergeProps)
+            .prependProps(propsResolver.prependProps)
+            .deepMergeProps(propsResolver.deepMergeProps)
+            .matchPropsOn(propsResolver.matchPropsOn)
+            .scrollProps(propsResolver.scrollProps)
+            .deferredProps(propsResolver.deferredProps)
+            .rescuedProps(propsResolver.rescuedProps)
+            .onceProps(propsResolver.onceProps)
+            .sharedProps(propsResolver.sharedProps)
+            .flash(options.flash)
+            .build();
+    }
+
+    private RenderedPage renderPage(HttpRequest request, PageObject pageObject, String serializedPageObject) {
+        if (ssrGateway != null && !isExcludedFromSsr(request)) {
+            RenderedPage ssrPage = ssrGateway.render(pageObject, serializedPageObject);
+            if (ssrPage != null) {
+                return ssrPage;
+            }
+        }
+
+        String body = "<script data-page=\"" + rootId + "\" type=\"application/json\">"
+            + HtmlSafeJson.escape(serializedPageObject)
+            + "</script><div id=\"" + rootId + "\"></div>";
+
+        return new RenderedPage("", body);
+    }
+
+    private boolean isExcludedFromSsr(HttpRequest request) {
+        String path = request.getUrl().split("\\?", 2)[0];
+
+        return ssrExcludedPaths.stream().anyMatch(pattern -> pattern.matcher(path).matches());
+    }
+
     private boolean isPutPatchDelete(HttpRequest request) {
         String requestMethod = request.getMethod();
         return (requestMethod.equalsIgnoreCase("PUT")
             || requestMethod.equalsIgnoreCase("PATCH")
             || requestMethod.equalsIgnoreCase("DELETE"));
+    }
+
+    /**
+     * Builder of {@link InertiaRenderer}.
+     */
+    public static class Builder {
+        private final PageObjectSerializer pageObjectSerializer;
+        private final Supplier<String> versionProvider;
+        private final TemplateRenderer templateRenderer;
+        private String rootId = DefaultRootId;
+        private SsrGateway ssrGateway = null;
+        private List<Pattern> ssrExcludedPaths = new ArrayList<>();
+        private Consumer<RuntimeException> exceptionReporter = exception -> {};
+        private Clock clock = Clock.systemUTC();
+        private boolean exposeSharedPropKeys = true;
+
+        private Builder(
+            PageObjectSerializer pageObjectSerializer,
+            Supplier<String> versionProvider,
+            TemplateRenderer templateRenderer
+        ) {
+            this.pageObjectSerializer = pageObjectSerializer;
+            this.versionProvider = versionProvider;
+            this.templateRenderer = templateRenderer;
+        }
+
+        /**
+         * Sets the id of the element the client-side application is mounted on. Defaults to {@value #DefaultRootId}.
+         *
+         * @param rootId root element id.
+         * @return this builder.
+         */
+        public Builder rootId(String rootId) {
+            this.rootId = rootId;
+            return this;
+        }
+
+        /**
+         * Enables server-side rendering of full page loads.
+         *
+         * @param ssrGateway gateway to the server-side rendering server.
+         * @return this builder.
+         */
+        public Builder ssrGateway(SsrGateway ssrGateway) {
+            this.ssrGateway = ssrGateway;
+            return this;
+        }
+
+        /**
+         * Sets request paths that are never server-side rendered. A {@code *} matches any sequence of characters.
+         *
+         * @param paths path patterns, e.g. {@code /admin/*}.
+         * @return this builder.
+         */
+        public Builder withoutSsr(String... paths) {
+            this.ssrExcludedPaths = Arrays.stream(paths)
+                .map(Builder::globToPattern)
+                .collect(Collectors.toList());
+            return this;
+        }
+
+        /**
+         * Sets the callback reporting exceptions of rescued deferred props. Defaults to ignoring them.
+         *
+         * @param exceptionReporter exception callback.
+         * @return this builder.
+         */
+        public Builder exceptionReporter(Consumer<RuntimeException> exceptionReporter) {
+            this.exceptionReporter = exceptionReporter;
+            return this;
+        }
+
+        /**
+         * Sets the clock used to compute the expiration of once props.
+         *
+         * @param clock clock.
+         * @return this builder.
+         */
+        public Builder clock(Clock clock) {
+            this.clock = clock;
+            return this;
+        }
+
+        /**
+         * Sets whether the page object lists the top-level keys of shared props in {@code sharedProps},
+         * which the client uses to carry them over during instant visits. Defaults to {@code true}.
+         *
+         * @param exposeSharedPropKeys whether to list shared prop keys.
+         * @return this builder.
+         */
+        public Builder exposeSharedPropKeys(boolean exposeSharedPropKeys) {
+            this.exposeSharedPropKeys = exposeSharedPropKeys;
+            return this;
+        }
+
+        /**
+         * Builds the renderer.
+         *
+         * @return the renderer.
+         */
+        public InertiaRenderer build() {
+            return new InertiaRenderer(this);
+        }
+
+        private static Pattern globToPattern(String glob) {
+            String regex = Arrays.stream(glob.split("\\*", -1))
+                .map(Pattern::quote)
+                .collect(Collectors.joining(".*"));
+
+            return Pattern.compile(regex);
+        }
     }
 }

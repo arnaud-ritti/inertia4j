@@ -1,26 +1,21 @@
 package io.github.inertia4j.spi;
 
 import org.jspecify.annotations.NullMarked;
-import org.jspecify.annotations.Nullable;
-
-import java.util.List;
 
 /**
- * Interface for implementing serializers for {@link PageObject} objects.
- * Used to transform the {@code PageObject} into a string representation. An implementation must be provided to the renderer.
+ * Serializes a {@link PageObject} to JSON.
+ * <p>
+ * Implementations must omit top-level metadata fields that are empty or {@code false}, and must keep
+ * {@code component}, {@code props}, {@code url} and {@code version} even when empty.
  */
 @NullMarked
 public interface PageObjectSerializer {
     /**
-     * Serializes the provided {@link PageObject}.
+     * Serializes the page object.
      *
-     * @param pageObject {@code PageObject} to serialize
-     * @param partialDataProps list of props to be serialized, used for partial data requests. Can be null
-     * @return {@code PageObject} serialized as a String
-     * @throws SerializationException if any errors occur during serialization
+     * @param pageObject page object to serialize.
+     * @return JSON representation of the page object.
+     * @throws SerializationException if serialization fails.
      */
-    String serialize(
-        PageObject pageObject,
-        @Nullable List<String> partialDataProps
-    ) throws SerializationException;
+    String serialize(PageObject pageObject) throws SerializationException;
 }
