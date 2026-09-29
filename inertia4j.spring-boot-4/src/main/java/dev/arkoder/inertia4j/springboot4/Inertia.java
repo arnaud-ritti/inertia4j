@@ -50,6 +50,14 @@ public class Inertia extends AbstractInertia {
         );
     }
 
+    /**
+     * Constructs an Inertia bean without shared data, resolving the current request from the
+     * {@link org.springframework.web.context.request.RequestContextHolder}.
+     *
+     * @param versionProvider      provider of the asset version.
+     * @param pageObjectSerializer serializer of page objects.
+     * @param templateRenderer     renderer of the HTML document.
+     */
     public Inertia(
         VersionProvider versionProvider,
         PageObjectSerializer pageObjectSerializer,
@@ -58,6 +66,15 @@ public class Inertia extends AbstractInertia {
         this(versionProvider, pageObjectSerializer, templateRenderer, List.of());
     }
 
+    /**
+     * Constructs an Inertia bean converting typed props with camelCase keys, resolving the current request from the
+     * {@link org.springframework.web.context.request.RequestContextHolder}.
+     *
+     * @param versionProvider      provider of the asset version.
+     * @param pageObjectSerializer serializer of page objects.
+     * @param templateRenderer     renderer of the HTML document.
+     * @param sharedDataProviders  providers of data shared with all responses.
+     */
     public Inertia(
         VersionProvider versionProvider,
         PageObjectSerializer pageObjectSerializer,
@@ -135,5 +152,8 @@ public class Inertia extends AbstractInertia {
         super(new InertiaSpringRenderer(coreRenderer), requestSupplier, sharedDataProviders, propertyNaming);
     }
 
+    /**
+     * Response options: {@code Options.status(404)}, {@code Options.encryptHistory()}, {@code Options.clearHistory()}.
+     */
     public static class Options extends AbstractInertia.Options {}
 }
