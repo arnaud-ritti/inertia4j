@@ -1,5 +1,6 @@
 package io.github.inertia4j.springboot4;
 
+import io.github.inertia4j.core.PropertyNaming;
 import io.github.inertia4j.spi.PageObjectSerializer;
 import io.github.inertia4j.spi.TemplateRenderer;
 import io.github.inertia4j.springshared.AbstractInertia;
@@ -29,10 +30,22 @@ public class Inertia extends AbstractInertia {
         Supplier<HttpServletRequest> requestSupplier,
         List<SharedDataProvider> sharedDataProviders
     ) {
+        this(versionProvider, pageObjectSerializer, templateRenderer, requestSupplier, sharedDataProviders, PropertyNaming.Camel);
+    }
+
+    Inertia(
+        VersionProvider versionProvider,
+        PageObjectSerializer pageObjectSerializer,
+        TemplateRenderer templateRenderer,
+        Supplier<HttpServletRequest> requestSupplier,
+        List<SharedDataProvider> sharedDataProviders,
+        PropertyNaming propertyNaming
+    ) {
         super(
             new InertiaSpringRenderer(pageObjectSerializer, versionProvider, templateRenderer),
             requestSupplier,
-            sharedDataProviders
+            sharedDataProviders,
+            propertyNaming
         );
     }
 
@@ -50,9 +63,20 @@ public class Inertia extends AbstractInertia {
         TemplateRenderer templateRenderer,
         List<SharedDataProvider> sharedDataProviders
     ) {
+        this(versionProvider, pageObjectSerializer, templateRenderer, sharedDataProviders, PropertyNaming.Camel);
+    }
+
+    public Inertia(
+        VersionProvider versionProvider,
+        PageObjectSerializer pageObjectSerializer,
+        TemplateRenderer templateRenderer,
+        List<SharedDataProvider> sharedDataProviders,
+        PropertyNaming propertyNaming
+    ) {
         super(
             new InertiaSpringRenderer(pageObjectSerializer, versionProvider, templateRenderer),
-            sharedDataProviders
+            sharedDataProviders,
+            propertyNaming
         );
     }
 

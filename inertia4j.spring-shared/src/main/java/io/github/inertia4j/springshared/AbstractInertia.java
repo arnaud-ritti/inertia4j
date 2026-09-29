@@ -3,6 +3,8 @@ package io.github.inertia4j.springshared;
 import io.github.inertia4j.core.DeferredProp;
 import io.github.inertia4j.core.InertiaProps;
 import io.github.inertia4j.core.MergeProp;
+import io.github.inertia4j.core.PropertyNaming;
+import io.github.inertia4j.core.PropsExtractor;
 import io.github.inertia4j.spi.PageObjectSerializer;
 import io.github.inertia4j.spi.TemplateRenderer;
 import jakarta.servlet.http.HttpServletRequest;
@@ -35,6 +37,22 @@ public abstract class AbstractInertia {
     private final AbstractInertiaSpringRenderer renderer;
     private final Supplier<HttpServletRequest> requestSupplier;
     private final List<SharedDataProvider> sharedDataProviders;
+    private final PropertyNaming propertyNaming;
+
+    /**
+     * Internal constructor used in tests.
+     */
+    protected AbstractInertia(
+        AbstractInertiaSpringRenderer renderer,
+        Supplier<HttpServletRequest> requestSupplier,
+        List<SharedDataProvider> sharedDataProviders,
+        PropertyNaming propertyNaming
+    ) {
+        this.renderer = renderer;
+        this.requestSupplier = requestSupplier;
+        this.sharedDataProviders = sharedDataProviders;
+        this.propertyNaming = propertyNaming;
+    }
 
     /**
      * Internal constructor used in tests.
@@ -44,9 +62,7 @@ public abstract class AbstractInertia {
         Supplier<HttpServletRequest> requestSupplier,
         List<SharedDataProvider> sharedDataProviders
     ) {
-        this.renderer = renderer;
-        this.requestSupplier = requestSupplier;
-        this.sharedDataProviders = sharedDataProviders;
+        this(renderer, requestSupplier, sharedDataProviders, PropertyNaming.Camel);
     }
 
     /**
@@ -64,9 +80,24 @@ public abstract class AbstractInertia {
      *
      * @param renderer            The Spring-specific renderer to use.
      * @param sharedDataProviders Providers of the data shared with every response.
+     * @param propertyNaming      Naming strategy used when converting typed props objects.
+     */
+    protected AbstractInertia(
+        AbstractInertiaSpringRenderer renderer,
+        List<SharedDataProvider> sharedDataProviders,
+        PropertyNaming propertyNaming
+    ) {
+        this(renderer, AbstractInertia::getCurrentRequest, sharedDataProviders, propertyNaming);
+    }
+
+    /**
+     * Constructs the Inertia bean with required dependencies.
+     *
+     * @param renderer            The Spring-specific renderer to use.
+     * @param sharedDataProviders Providers of the data shared with every response.
      */
     protected AbstractInertia(AbstractInertiaSpringRenderer renderer, List<SharedDataProvider> sharedDataProviders) {
-        this(renderer, AbstractInertia::getCurrentRequest, sharedDataProviders);
+        this(renderer, sharedDataProviders, PropertyNaming.Camel);
     }
 
     /**
@@ -159,6 +190,35 @@ public abstract class AbstractInertia {
      */
     public ResponseEntity<String> render(String component) {
         return render(component, null, requestSupplier.get().getRequestURI());
+    }
+
+    /**
+     * Renders the page described by a props object annotated with
+     * {@link io.github.inertia4j.annotations.InertiaPage}, using its component name and properties.
+     *
+     * @param pageProps page props object.
+     * @return A Spring {@link ResponseEntity} containing the Inertia response.
+     * @throws IllegalArgumentException if the class is not annotated with {@code @InertiaPage}.
+     */
+    public ResponseEntity<String> render(Object pageProps) {
+        return render(pageProps, defaultOptions);
+    }
+
+    /**
+     * Renders the page described by a props object annotated with
+     * {@link io.github.inertia4j.annotations.InertiaPage}, with specific rendering options.
+     *
+     * @param pageProps page props object.
+     * @param options   Specific rendering options (e.g., history flags).
+     * @return A Spring {@link ResponseEntity} containing the Inertia response.
+     * @throws IllegalArgumentException if the class is not annotated with {@code @InertiaPage}.
+     */
+    public ResponseEntity<String> render(Object pageProps, InertiaSpringRendererOptions options) {
+        return render(
+            PropsExtractor.componentName(pageProps),
+            PropsExtractor.toMap(pageProps, propertyNaming),
+            options
+        );
     }
 
     /**
@@ -292,7 +352,7 @@ public abstract class AbstractInertia {
     private Map<String, Object> withSharedProps(HttpServletRequest request, Map<String, Object> props) {
         Map<String, Object> allProps = new LinkedHashMap<>();
 
-        sharedDataProviders.forEach(provider -> allProps.putAll(provider.share(request)));
+        sharedDataProviders.forEach(provider -> allProps.putAll(sharedProps(provider, request)));
         allProps.putAll(requestSharedProps(request));
 
         if (props != null) {
@@ -300,6 +360,14 @@ public abstract class AbstractInertia {
         }
 
         return allProps;
+    }
+
+    private Map<String, Object> sharedProps(SharedDataProvider provider, HttpServletRequest request) {
+        if (provider instanceof TypedSharedDataProvider typedProvider) {
+            return PropsExtractor.toMap(typedProvider.shareTyped(request), propertyNaming);
+        }
+
+        return provider.share(request);
     }
 
     @SuppressWarnings("unchecked")

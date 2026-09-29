@@ -9,6 +9,10 @@ dependencies {
     api(project(":inertia4j.spi"))
 }
 
+tasks.withType<JavaCompile>().configureEach {
+    options.compilerArgs.add("-parameters")
+}
+
 dependencyManagement {
     imports {
         mavenBom(libs.spring.boot3.dependencies.get().toString())

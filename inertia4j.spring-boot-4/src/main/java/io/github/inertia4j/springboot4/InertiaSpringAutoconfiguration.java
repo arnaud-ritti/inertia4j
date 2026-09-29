@@ -37,7 +37,8 @@ public class InertiaSpringAutoconfiguration extends AbstractInertiaSpringAutocon
             versionProvider,
             pageObjectSerializer,
             templateRenderer,
-            sharedDataProviders.orderedStream().collect(Collectors.toList())
+            sharedDataProviders.orderedStream().collect(Collectors.toList()),
+            properties.getPropertyNaming()
         );
     }
 

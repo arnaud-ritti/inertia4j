@@ -1,5 +1,6 @@
 package io.github.inertia4j.springshared;
 
+import io.github.inertia4j.core.PropertyNaming;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.bind.ConstructorBinding;
 import org.springframework.context.annotation.Configuration;
@@ -13,6 +14,7 @@ import org.springframework.context.annotation.Configuration;
  * <pre>
  * inertia.template-path=templates/my-app.html
  * inertia.encrypt-history=true
+ * inertia.property-naming=snake
  * </pre>
  */
 @Configuration
@@ -32,16 +34,32 @@ public class InertiaConfigurationProperties {
      * @see <a href="https://inertiajs.com/history-encryption">Inertia History Encryption</a>
      */
     final boolean encryptHistory;
+    /**
+     * Naming strategy used when converting typed props objects.
+     * Corresponds to the `inertia.property-naming` property (`camel` or `snake`).
+     */
+    final PropertyNaming propertyNaming;
 
     /**
      * Constructor used by Spring Boot for property binding.
      * @param templatePath Value of `inertia.template-path`.
      * @param encryptHistory Value of `inertia.encrypt-history`.
+     * @param propertyNaming Value of `inertia.property-naming`, defaults to camel case.
      */
     @ConstructorBinding
-    public InertiaConfigurationProperties(String templatePath, boolean encryptHistory) {
+    public InertiaConfigurationProperties(String templatePath, boolean encryptHistory, PropertyNaming propertyNaming) {
         this.templatePath = templatePath;
         this.encryptHistory = encryptHistory;
+        this.propertyNaming = propertyNaming == null ? PropertyNaming.Camel : propertyNaming;
+    }
+
+    /**
+     * Constructor using default `propertyNaming`.
+     * @param templatePath Value of `inertia.template-path`.
+     * @param encryptHistory Value of `inertia.encrypt-history`.
+     */
+    public InertiaConfigurationProperties(String templatePath, boolean encryptHistory) {
+        this(templatePath, encryptHistory, PropertyNaming.Camel);
     }
 
     /**
@@ -65,5 +83,12 @@ public class InertiaConfigurationProperties {
      */
     public InertiaConfigurationProperties() {
         this(defaultTemplatePath, defaultEncryptHistory);
+    }
+
+    /**
+     * @return naming strategy used when converting typed props objects.
+     */
+    public PropertyNaming getPropertyNaming() {
+        return propertyNaming;
     }
 }
