@@ -86,6 +86,10 @@ final class TypeScriptWriter {
             out.append("    sharedPageProps: ").append(String.join(" & ", model.sharedTypes())).append('\n');
         }
 
+        if (!model.flashTypes().isEmpty()) {
+            out.append("    flashDataType: ").append(String.join(" & ", model.flashTypes())).append('\n');
+        }
+
         out.append("    errorValueType: ").append(model.errorValueType().typeScript()).append('\n');
         out.append("  }\n");
         out.append("}\n");

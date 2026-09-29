@@ -1,5 +1,6 @@
 package dev.arkoder.inertia4j.springboot3;
 
+import dev.arkoder.inertia4j.annotations.InertiaFlash;
 import dev.arkoder.inertia4j.core.InertiaRenderer;
 import dev.arkoder.inertia4j.core.ScrollMetadata;
 import dev.arkoder.inertia4j.spi.PageObjectSerializer;
@@ -187,6 +188,25 @@ public class InertiaTest {
         assertEquals(
             "{\"component\":\"TestComponent\",\"props\":{\"errors\":{}},\"url\":\"/test-url\",\"version\":\"1\",\"sharedProps\":[\"errors\"]}",
             secondResponse.getBody()
+        );
+    }
+
+    @InertiaFlash
+    record SavedFlash(String message, String warning) {}
+
+    @Test
+    void typedFlash_sendsItsNonNullPropertiesWithTheNextPage() {
+        request.setMethod("POST");
+        inertia.flash(new SavedFlash("Saved", null));
+
+        request = newRequest("GET", "/test-url");
+        inertiaRequest();
+        ResponseEntity<String> response = inertia.render(testComponent, Map.of());
+
+        assertEquals(
+            "{\"component\":\"TestComponent\",\"props\":{\"errors\":{}},\"url\":\"/test-url\",\"version\":\"1\","
+                + "\"sharedProps\":[\"errors\"],\"flash\":{\"message\":\"Saved\"}}",
+            response.getBody()
         );
     }
 

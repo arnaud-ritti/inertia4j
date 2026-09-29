@@ -2,6 +2,7 @@
 
 package dev.arkoder.inertia4j.ktor
 
+import dev.arkoder.inertia4j.annotations.InertiaFlash
 import dev.arkoder.inertia4j.core.InertiaProps
 import io.ktor.client.plugins.cookies.*
 import io.ktor.client.request.*
@@ -237,6 +238,34 @@ class InertiaKtorTest {
         assertEquals(
             """{"component":"Records","props":{"errors":{}},"url":"/records","version":"1","encryptHistory":true,"sharedProps":["errors"]}""",
             secondResponse.bodyAsText(),
+        )
+    }
+
+    @InertiaFlash
+    data class SavedFlash(val message: String, val warning: String? = null)
+
+    @Test
+    fun `typed flash sends its non-null properties with the next page`() = testApp {
+        val client = createClient {
+            install(HttpCookies)
+            followRedirects = false
+        }
+        routing {
+            post("/records") {
+                inertia.flash(SavedFlash("Created"))
+                inertia.redirect("/records")
+            }
+            get("/records") {
+                inertia.render("Records")
+            }
+        }
+
+        client.post("/records") { inertia() }
+        val response = client.get("/records") { inertia() }
+
+        assertEquals(
+            """{"component":"Records","props":{"errors":{}},"url":"/records","version":"1","encryptHistory":true,"sharedProps":["errors"],"flash":{"message":"Created"}}""",
+            response.bodyAsText(),
         )
     }
 

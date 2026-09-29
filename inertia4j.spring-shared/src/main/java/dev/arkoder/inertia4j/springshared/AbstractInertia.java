@@ -345,6 +345,22 @@ public abstract class AbstractInertia {
     }
 
     /**
+     * Flashes the properties of an object, typically a class annotated with
+     * {@link dev.arkoder.inertia4j.annotations.InertiaFlash}, to the next rendered page. Properties that are
+     * {@code null} are not flashed, matching the optional properties of the generated {@code flashDataType}.
+     *
+     * @param flashData flash data object.
+     */
+    public void flash(Object flashData) {
+        if (flashData instanceof Map<?, ?> map) {
+            flash(stringKeys(map));
+            return;
+        }
+
+        flash(nonNullValues(PropsExtractor.toMap(flashData, propertyNaming)));
+    }
+
+    /**
      * Sets validation errors sent with the next rendered page, typically after redirecting back to a form.
      * Each value is a message or a list of messages.
      *
@@ -713,4 +729,23 @@ public abstract class AbstractInertia {
             return new InertiaSpringRendererOptions().status(status);
         }
     }
+
+    private static Map<String, Object> nonNullValues(Map<String, Object> values) {
+        Map<String, Object> nonNull = new LinkedHashMap<>();
+        values.forEach((key, value) -> {
+            if (value != null) {
+                nonNull.put(key, value);
+            }
+        });
+
+        return nonNull;
+    }
+
+    private static Map<String, Object> stringKeys(Map<?, ?> map) {
+        Map<String, Object> result = new LinkedHashMap<>();
+        map.forEach((key, value) -> result.put(String.valueOf(key), value));
+
+        return result;
+    }
+
 }

@@ -12,5 +12,9 @@ sealed interface TsDeclaration {
 
     record Enum(String name, List<String> values) implements TsDeclaration {}
 
-    record Property(String name, TsType type, boolean optional) {}
+    record Property(String name, TsType type, boolean optional) {
+        Property asOptional() {
+            return new Property(name, type, true);
+        }
+    }
 }

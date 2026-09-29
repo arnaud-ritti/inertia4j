@@ -14,14 +14,15 @@ import java.util.jar.JarFile;
 import java.util.stream.Stream;
 
 /**
- * Finds classes annotated with {@code @InertiaPage}, {@code @InertiaShared} or {@code @InertiaForm}
+ * Finds classes annotated with {@code @InertiaPage}, {@code @InertiaShared}, {@code @InertiaForm} or {@code @InertiaFlash}
  * under the configured packages of a classpath.
  */
 final class ClassScanner {
     private static final Set<String> RoleAnnotations = Set.of(
         Annotations.InertiaPage,
         Annotations.InertiaShared,
-        Annotations.InertiaForm
+        Annotations.InertiaForm,
+        Annotations.InertiaFlash
     );
 
     record Result(List<Class<?>> annotatedClasses, List<String> warnings) {}

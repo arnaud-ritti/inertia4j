@@ -53,7 +53,13 @@ final class TypeModelBuilder {
             declarations.add(declare(pending.poll()));
         }
 
-        return new TsModel(declarations, pages(roleClasses), sharedTypes(roleClasses), options.errorValueType());
+        return new TsModel(
+            declarations,
+            pages(roleClasses),
+            typesAnnotatedWith(roleClasses, Annotations.InertiaShared),
+            typesAnnotatedWith(roleClasses, Annotations.InertiaFlash),
+            options.errorValueType()
+        );
     }
 
     private String register(Class<?> type) {
@@ -101,8 +107,12 @@ final class TypeModelBuilder {
         List<String> typeParameters = Arrays.stream(type.getTypeParameters()).map(TypeVariable::getName).toList();
         List<TsDeclaration.Property> properties = new ArrayList<>();
 
+        boolean flash = Annotations.has(type, Annotations.InertiaFlash);
+
         for (Property property : PropertyIntrospector.properties(type, options.propertyNaming())) {
-            properties.add(declareProperty(type, property));
+            TsDeclaration.Property declared = declareProperty(type, property);
+
+            properties.add(flash ? declared.asOptional() : declared);
         }
 
         return new TsDeclaration.Interface(name, typeParameters, properties);
@@ -232,9 +242,9 @@ final class TypeModelBuilder {
         return pages;
     }
 
-    private List<String> sharedTypes(List<Class<?>> roleClasses) {
+    private List<String> typesAnnotatedWith(List<Class<?>> roleClasses, String annotation) {
         return roleClasses.stream()
-            .filter(type -> Annotations.has(type, Annotations.InertiaShared))
+            .filter(type -> Annotations.has(type, annotation))
             .map(namesByClass::get)
             .sorted()
             .toList();

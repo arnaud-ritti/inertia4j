@@ -44,7 +44,8 @@ post("/records") {
 }
 ```
 
-`flash(Map)` sets several entries at once. The client exposes flash data through the `inertia:flash` event. See the [Inertia documentation](https://inertiajs.com/docs/v3/data-props/flash-data).
+`flash(Map)` sets several entries at once, and `flash(object)` flashes the non-null properties of an object, such as
+a class annotated with `@InertiaFlash`, which also [types the flash data](typescript.md#flash-data) on the frontend. The client exposes flash data on `page.flash` (`usePage()`) and through the `flash` router event. See the [Inertia documentation](https://inertiajs.com/docs/v3/data-props/flash-data).
 
 ## Validation errors
 

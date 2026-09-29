@@ -162,6 +162,21 @@ class InertiaKtorRenderer internal constructor(
         }
 
         /**
+         * Flashes the properties of an object, typically a class annotated with
+         * [dev.arkoder.inertia4j.annotations.InertiaFlash], to the next rendered page. Properties that are `null` are
+         * not flashed, matching the optional properties of the generated `flashDataType`.
+         *
+         * @param flashData flash data object.
+         */
+        suspend fun flash(flashData: Any) {
+            if (flashData is Map<*, *>) {
+                return flash(flashData.entries.associate { (key, value) -> key.toString() to value })
+            }
+
+            flash(PropsExtractor.toMap(flashData, configuration.propertyNaming).filterValues { it != null })
+        }
+
+        /**
          * Sets validation errors sent with the next rendered page. Each value is a message or a list of messages.
          *
          * @param errors validation errors, by field.

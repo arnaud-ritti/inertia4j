@@ -12,6 +12,7 @@ Add the annotations (already included by the Spring and Ktor adapters):
 | `@InertiaPage("Users/Show")` | the props of a page | an interface + an entry in `InertiaPages` |
 | `@InertiaShared` | the props shared with every page | `InertiaConfig.sharedPageProps` |
 | `@InertiaForm` | a request body sent by the frontend | an interface |
+| `@InertiaFlash` | the flash data sent after a redirect | `InertiaConfig.flashDataType`, every property optional |
 | `@TypeScriptName("UserDto")` | any class | renames its TypeScript type |
 
 ```java
@@ -108,16 +109,33 @@ export default function Index({ users, stats }: UsersIndexProps) {
 }
 ```
 
-Flash data is an untyped map on the server, so no `flashDataType` is generated. Declare it in your own file; it merges
-with the generated `InertiaConfig`:
+### Flash data
+
+Describe your flash entries with a class annotated with `@InertiaFlash`. It becomes `InertiaConfig.flashDataType`,
+with every property optional, since an entry is only present on the page after it was flashed:
+
+```java
+@InertiaFlash
+public record AppFlash(String message, @Nullable Toast toast) {}
+
+inertia.flash(new AppFlash("User created", null)); // null properties are not flashed
+```
+
+```kotlin
+@InertiaFlash
+data class AppFlash(val message: String? = null, val toast: Toast? = null)
+
+inertia.flash(AppFlash(message = "User created"))
+```
 
 ```ts
-declare module '@inertiajs/core' {
-  interface InertiaConfig {
-    flashDataType: { message?: string }
-  }
-}
+router.on('flash', (event) => {
+  event.detail.flash.message // string | undefined
+})
 ```
+
+`inertia.flash(key, value)` keeps working for untyped entries; keep their keys in the `@InertiaFlash` class so the
+generated type covers them.
 
 With pnpm, hoist `@inertiajs/core` so the module augmentation resolves:
 

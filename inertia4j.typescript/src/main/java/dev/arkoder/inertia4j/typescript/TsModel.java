@@ -9,11 +9,13 @@ import java.util.SortedMap;
  * @param declarations   exported interfaces and types.
  * @param pages          component name to page props type name.
  * @param sharedTypes    shared props type names, sorted.
+ * @param flashTypes     flash data type names, sorted.
  * @param errorValueType type of validation error values.
  */
 record TsModel(
     List<TsDeclaration> declarations,
     SortedMap<String, String> pages,
     List<String> sharedTypes,
+    List<String> flashTypes,
     ErrorValueType errorValueType
 ) {}

@@ -12,6 +12,7 @@ final class Annotations {
     static final String InertiaPage = "dev.arkoder.inertia4j.annotations.InertiaPage";
     static final String InertiaShared = "dev.arkoder.inertia4j.annotations.InertiaShared";
     static final String InertiaForm = "dev.arkoder.inertia4j.annotations.InertiaForm";
+    static final String InertiaFlash = "dev.arkoder.inertia4j.annotations.InertiaFlash";
     static final String TypeScriptName = "dev.arkoder.inertia4j.annotations.TypeScriptName";
     static final String InertiaProp = "dev.arkoder.inertia4j.core.InertiaProp";
 

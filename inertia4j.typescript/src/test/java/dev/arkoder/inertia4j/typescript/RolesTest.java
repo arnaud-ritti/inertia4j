@@ -43,6 +43,30 @@ class RolesTest {
     }
 
     @Test
+    void flashClasses_typeFlashDataWithOptionalProperties() {
+        String content = generate("flash").content();
+
+        assertContains(content, """
+            export interface AppFlash {
+              message?: string
+              toast?: Toast
+            }
+            """);
+        assertContains(content, """
+            export interface Toast {
+              type: string
+              message: string
+            }
+            """);
+        assertContains(content, "    flashDataType: AppFlash & NotificationFlash\n");
+    }
+
+    @Test
+    void withoutFlashClasses_flashDataTypeIsOmitted() {
+        assertFalse(generate("roles").content().contains("flashDataType"));
+    }
+
+    @Test
     void duplicateComponent_isRejected() {
         GenerationException exception = assertThrows(GenerationException.class, () -> generate("duplicatepage"));
 
