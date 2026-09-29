@@ -27,7 +27,7 @@ import java.util.Optional;
  * <ul>
  *     <li>a {@code GET} request sent with an outdated asset version receives a 409 Conflict with
  *     {@code X-Inertia-Location} before reaching its handler, keeping the flash data of the session;</li>
- *     <li>a 200 OK response without a body redirects back to the {@code Referer}, or to {@code /};</li>
+ *     <li>a 200 OK response without a body redirects back to the {@code Referer} of the same host, or to {@code /};</li>
  *     <li>a 302 Found answering a PUT, PATCH or DELETE request becomes a 303 See Other;</li>
  *     <li>a redirect to a location with a URL fragment becomes a 409 Conflict with {@code X-Inertia-Redirect}.</li>
  * </ul>
@@ -95,10 +95,8 @@ public class InertiaFilter extends OncePerRequestFilter {
     }
 
     private static void redirectBack(HttpServletRequest request, HttpRequest inertiaRequest, HttpServletResponse response) {
-        String referer = request.getHeader("Referer");
-
         response.setStatus(InertiaRedirects.status(inertiaRequest, HttpServletResponse.SC_FOUND));
-        response.setHeader("Location", referer != null ? referer : "/");
+        response.setHeader("Location", InertiaRedirects.backLocation(inertiaRequest));
     }
 
     private static void write(HttpResponse source, HttpServletResponse target) {

@@ -3,11 +3,14 @@ package dev.arkoder.inertia4j.typescript;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 import static dev.arkoder.inertia4j.typescript.GeneratorTestSupport.generate;
@@ -41,7 +44,7 @@ class GoldenFileTest {
             """);
 
         Process process = new ProcessBuilder(
-            "npx", "--yes", "-p", "typescript@5.6.3", "tsc",
+            npx().orElseThrow().toString(), "--yes", "-p", "typescript@5.6.3", "tsc",
             "--noEmit", "--strict", "--module", "esnext", "--moduleResolution", "node", "--target", "es2020",
             "inertia.d.ts", "usage.ts"
         ).directory(directory.toFile()).redirectErrorStream(true).start();
@@ -57,9 +60,23 @@ class GoldenFileTest {
         }
     }
 
+    private static Optional<Path> npx() {
+        String executable = System.getProperty("os.name").startsWith("Windows") ? "npx.cmd" : "npx";
+
+        return Arrays.stream(System.getenv().getOrDefault("PATH", "").split(File.pathSeparator))
+            .filter(directory -> !directory.isBlank())
+            .map(directory -> Path.of(directory, executable).toAbsolutePath())
+            .filter(Files::isExecutable)
+            .findFirst();
+    }
+
     private static boolean npxAvailable() {
+        if (npx().isEmpty()) {
+            return false;
+        }
+
         try {
-            Process process = new ProcessBuilder("npx", "--version").redirectErrorStream(true).start();
+            Process process = new ProcessBuilder(npx().get().toString(), "--version").redirectErrorStream(true).start();
             return process.waitFor(30, TimeUnit.SECONDS) && process.exitValue() == 0;
         } catch (IOException | InterruptedException e) {
             return false;

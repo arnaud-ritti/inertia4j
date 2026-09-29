@@ -23,12 +23,14 @@ sealed interface TsType {
     }
 
     record Keyword(String keyword) implements TsType {
+        @Override
         public String render() {
             return keyword;
         }
     }
 
     record Array(TsType element) implements TsType {
+        @Override
         public String render() {
             if (element instanceof Nullable) {
                 return "(" + element.render() + ")[]";
@@ -39,30 +41,35 @@ sealed interface TsType {
     }
 
     record StringMap(TsType value) implements TsType {
+        @Override
         public String render() {
             return "{ [key: string]: " + value.render() + " }";
         }
     }
 
     record NumberMap(TsType value) implements TsType {
+        @Override
         public String render() {
             return "{ [key: number]: " + value.render() + " }";
         }
     }
 
     record EnumMap(TsType key, TsType value) implements TsType {
+        @Override
         public String render() {
             return "{ [key in " + key.render() + "]?: " + value.render() + " }";
         }
     }
 
     record Nullable(TsType inner) implements TsType {
+        @Override
         public String render() {
             return inner.render() + " | null";
         }
     }
 
     record Reference(String name, List<TsType> arguments) implements TsType {
+        @Override
         public String render() {
             if (arguments.isEmpty()) {
                 return name;
@@ -73,6 +80,7 @@ sealed interface TsType {
     }
 
     record Variable(String name) implements TsType {
+        @Override
         public String render() {
             return name;
         }

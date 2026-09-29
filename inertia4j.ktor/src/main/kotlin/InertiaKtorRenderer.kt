@@ -2,6 +2,7 @@ package dev.arkoder.inertia4j.ktor
 
 import dev.arkoder.inertia4j.core.HttpResponse
 import dev.arkoder.inertia4j.core.InertiaProps
+import dev.arkoder.inertia4j.core.InertiaRedirects
 import dev.arkoder.inertia4j.core.InertiaRenderer
 import dev.arkoder.inertia4j.core.InertiaRenderingOptions
 import dev.arkoder.inertia4j.core.PropsExtractor
@@ -210,10 +211,11 @@ class InertiaKtorRenderer internal constructor(
         }
 
         /**
-         * Redirects back to the page the request was sent from, as told by the `Referer` header, or to `/`.
+         * Redirects back to the page the request was sent from, as told by the `Referer` header, or to `/` when it is
+         * missing or points to another host.
          */
         suspend fun back() {
-            redirect(call.request.header(HttpHeaders.Referrer) ?: "/")
+            redirect(InertiaRedirects.backLocation(request))
         }
 
         /**

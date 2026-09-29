@@ -79,7 +79,7 @@ val Inertia = createApplicationPlugin(
 
             if (isEmptyResponse(call, content, status)) {
                 val redirectStatus = HttpStatusCode.fromValue(InertiaRedirects.status(request, HttpStatusCode.Found.value))
-                call.response.header(HttpHeaders.Location, call.request.header(HttpHeaders.Referrer) ?: "/")
+                call.response.header(HttpHeaders.Location, InertiaRedirects.backLocation(request))
                 call.response.status(redirectStatus)
                 transformBodyTo(object : OutgoingContent.NoContent() {
                     override val status: HttpStatusCode = redirectStatus

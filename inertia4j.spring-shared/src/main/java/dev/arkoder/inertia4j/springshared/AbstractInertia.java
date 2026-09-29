@@ -2,6 +2,7 @@ package dev.arkoder.inertia4j.springshared;
 
 import dev.arkoder.inertia4j.core.InertiaProp;
 import dev.arkoder.inertia4j.core.InertiaProps;
+import dev.arkoder.inertia4j.core.InertiaRedirects;
 import dev.arkoder.inertia4j.core.InertiaHeaders;
 import dev.arkoder.inertia4j.core.InertiaRenderingOptions;
 import dev.arkoder.inertia4j.core.Precognition;
@@ -579,14 +580,12 @@ public abstract class AbstractInertia {
 
     /**
      * Redirects back to the page the current request was sent from, as told by the {@code Referer} header,
-     * or to {@code /} when it is missing.
+     * or to {@code /} when it is missing or points to another host.
      *
      * @return a {@link ResponseEntity} representing the redirect.
      */
     public ResponseEntity<String> back() {
-        String referer = requestSupplier.get().getHeader("Referer");
-
-        return redirect(referer != null ? referer : "/");
+        return redirect(InertiaRedirects.backLocation(new InertiaHttpServletRequest(requestSupplier.get())));
     }
 
     /**

@@ -1,5 +1,8 @@
 package dev.arkoder.inertia4j.core;
 
+import java.net.URI;
+import java.net.URISyntaxException;
+
 /**
  * Redirect rules of the Inertia protocol, shared by {@link InertiaRenderer#redirect} and the middleware of the
  * adapters, which apply them to redirects issued by any handler.
@@ -57,4 +60,50 @@ public final class InertiaRedirects {
             || method.equalsIgnoreCase("PATCH")
             || method.equalsIgnoreCase("DELETE");
     }
+
+    /**
+     * Returns the location to redirect back to: the {@code Referer} of the request when it is a path or points to the
+     * host of the request, and {@code /} otherwise, so a forged {@code Referer} can't redirect users to another site. The scheme
+     * is not compared, since a proxy terminating TLS makes the request look like plain HTTP.
+     *
+     * @param request incoming request.
+     * @return the {@code Referer} of the request, or {@code /}.
+     */
+    public static String backLocation(HttpRequest request) {
+        String referer = request.getHeader("Referer");
+
+        if (referer == null) {
+            return "/";
+        }
+
+        if (isRelativePath(referer)) {
+            return referer;
+        }
+
+        if (!sameHost(referer, request.getFullUrl())) {
+            return "/";
+        }
+
+        return referer;
+    }
+
+    private static boolean isRelativePath(String location) {
+        return location.startsWith("/") && !location.startsWith("//") && !location.startsWith("/\\");
+    }
+
+    private static boolean sameHost(String first, String second) {
+        try {
+            URI firstUri = new URI(first);
+            URI secondUri = new URI(second);
+
+            if (firstUri.getHost() == null) {
+                return false;
+            }
+
+            return firstUri.getHost().equalsIgnoreCase(secondUri.getHost()) && firstUri.getPort() == secondUri.getPort();
+        } catch (URISyntaxException e) {
+            return false;
+        }
+    }
+
 }

@@ -85,7 +85,11 @@ final class JsonValues {
             }
         }
 
-        return Integer.parseInt(segment);
+        try {
+            return Integer.parseInt(segment);
+        } catch (NumberFormatException e) {
+            return -1;
+        }
     }
 
     /**

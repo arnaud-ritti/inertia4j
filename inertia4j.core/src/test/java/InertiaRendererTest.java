@@ -838,6 +838,10 @@ public class InertiaRendererTest {
     }
 
     private static Map<String, Object> props(Object... keysAndValues) {
+        if (keysAndValues.length % 2 != 0) {
+            throw new IllegalArgumentException("props() takes keys and values in pairs");
+        }
+
         Map<String, Object> props = new LinkedHashMap<>();
         for (int i = 0; i < keysAndValues.length; i += 2) {
             props.put((String) keysAndValues[i], keysAndValues[i + 1]);
