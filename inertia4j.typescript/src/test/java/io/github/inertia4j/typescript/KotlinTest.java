@@ -20,4 +20,30 @@ class KotlinTest {
             }
             """);
     }
+
+    @Test
+    void kotlinNullability_ofPropertiesInheritedFromKotlinBase_isReadFromBaseMetadata() {
+        GenerationResult result = generate("kotlininheritance");
+
+        assertContains(result.content(), """
+            export interface KotlinChild {
+              nickname: string | null
+              label: string
+              age: number | null
+            }
+            """);
+    }
+
+    @Test
+    void nullability_ofPropertiesInheritedFromJavaBase_followsJavaAnnotations() {
+        GenerationResult result = generate("kotlininheritance");
+
+        assertContains(result.content(), """
+            export interface KotlinChildOfJava {
+              nickname: string | null
+              title: string
+              score: number | null
+            }
+            """);
+    }
 }

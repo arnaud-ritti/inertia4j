@@ -33,6 +33,7 @@ final class TypeModelBuilder {
     private final Map<String, Class<?>> classesByName = new HashMap<>();
     private final Map<Class<?>, String> namesByClass = new HashMap<>();
     private final Deque<Class<?>> pending = new ArrayDeque<>();
+    private final Map<Class<?>, Optional<Set<String>>> kotlinNullableAccessorsByClass = new HashMap<>();
     private final TypeMapper mapper;
 
     TypeModelBuilder(GeneratorOptions options) {
@@ -98,17 +99,16 @@ final class TypeModelBuilder {
         }
 
         List<String> typeParameters = Arrays.stream(type.getTypeParameters()).map(TypeVariable::getName).toList();
-        Set<String> kotlinNullable = kotlinNullableAccessors(type);
         List<TsDeclaration.Property> properties = new ArrayList<>();
 
         for (Property property : PropertyIntrospector.properties(type, options.propertyNaming())) {
-            properties.add(declareProperty(type, property, kotlinNullable));
+            properties.add(declareProperty(type, property));
         }
 
         return new TsDeclaration.Interface(name, typeParameters, properties);
     }
 
-    private TsDeclaration.Property declareProperty(Class<?> owner, Property property, Set<String> kotlinNullable) {
+    private TsDeclaration.Property declareProperty(Class<?> owner, Property property) {
         mapper.setOwner(owner);
         mapper.setContext(owner.getSimpleName() + "." + property.getName());
 
@@ -116,7 +116,7 @@ final class TypeModelBuilder {
         TsType tsType = mapper.map(type);
         boolean optional = TypeMapper.isDeferred(type);
 
-        if (isPrimitive(type) || !isNullable(owner, property, kotlinNullable)) {
+        if (isPrimitive(type) || !isNullable(property)) {
             return new TsDeclaration.Property(property.getName(), tsType, optional);
         }
 
@@ -127,9 +127,11 @@ final class TypeModelBuilder {
         return new TsDeclaration.Property(property.getName(), TsType.nullable(tsType), optional);
     }
 
-    private boolean isNullable(Class<?> owner, Property property, Set<String> kotlinNullable) {
-        if (kotlinNullable != null) {
-            return kotlinNullable.contains(property.getAccessorName());
+    private boolean isNullable(Property property) {
+        Class<?> declaringClass = property.getDeclaringClass();
+        Optional<Set<String>> kotlinNullable = kotlinNullableAccessors(declaringClass);
+        if (kotlinNullable.isPresent()) {
+            return kotlinNullable.get().contains(property.getAccessorName());
         }
 
         if (property.hasAnnotation("Nullable")) {
@@ -144,7 +146,7 @@ final class TypeModelBuilder {
             return false;
         }
 
-        return !isNullMarked(owner);
+        return !isNullMarked(declaringClass);
     }
 
     private static boolean isNullMarked(Class<?> owner) {
@@ -231,7 +233,10 @@ final class TypeModelBuilder {
             .toList();
     }
 
-    private Set<String> kotlinNullableAccessors(Class<?> type) {
-        return KotlinNullability.nullableAccessors(type);
+    private Optional<Set<String>> kotlinNullableAccessors(Class<?> type) {
+        return kotlinNullableAccessorsByClass.computeIfAbsent(
+            type,
+            key -> Optional.ofNullable(KotlinNullability.nullableAccessors(key))
+        );
     }
 }

@@ -47,6 +47,13 @@ public final class Property {
     }
 
     /**
+     * @return class declaring the method reading the property, e.g. a superclass for inherited properties.
+     */
+    public Class<?> getDeclaringClass() {
+        return accessor.getDeclaringClass();
+    }
+
+    /**
      * @return generic type of the property.
      */
     public Type getGenericType() {
