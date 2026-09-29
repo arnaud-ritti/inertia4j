@@ -3,6 +3,7 @@ package io.github.inertia4j.springshared;
 import io.github.inertia4j.core.HttpSsrGateway;
 import io.github.inertia4j.core.InertiaRenderer;
 import io.github.inertia4j.core.PropertyNaming;
+import io.github.inertia4j.core.SsrServerProcess;
 import io.github.inertia4j.core.vite.ViteConfig;
 import org.jspecify.annotations.Nullable;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -10,7 +11,9 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Configuration properties for Inertia4j integration with Spring Boot.
@@ -168,6 +171,28 @@ public class InertiaConfigurationProperties {
          */
         private List<String> except = new ArrayList<>();
 
+        /**
+         * Path of the server-side rendering bundle, such as {@code build/ssr/ssr.mjs}. While it is missing, pages are
+         * rendered client-side without contacting the server, unless the Vite dev server renders them.
+         */
+        private @Nullable String bundle;
+
+        /**
+         * Whether pages are rendered client-side while the configured bundle is missing.
+         */
+        private boolean ensureBundleExists = true;
+
+        /**
+         * Whether a warning is logged on startup when the server-side rendering server is unreachable. Skipped while
+         * the Vite dev server renders pages.
+         */
+        private boolean checkOnStartup = false;
+
+        /**
+         * Settings of the server-side rendering server run by the application.
+         */
+        private final Process process = new Process();
+
         public boolean isEnabled() {
             return enabled;
         }
@@ -214,6 +239,135 @@ public class InertiaConfigurationProperties {
 
         public void setExcept(List<String> except) {
             this.except = except;
+        }
+
+        public @Nullable String getBundle() {
+            return bundle;
+        }
+
+        public void setBundle(@Nullable String bundle) {
+            this.bundle = bundle;
+        }
+
+        public boolean isEnsureBundleExists() {
+            return ensureBundleExists;
+        }
+
+        public void setEnsureBundleExists(boolean ensureBundleExists) {
+            this.ensureBundleExists = ensureBundleExists;
+        }
+
+        public boolean isCheckOnStartup() {
+            return checkOnStartup;
+        }
+
+        public void setCheckOnStartup(boolean checkOnStartup) {
+            this.checkOnStartup = checkOnStartup;
+        }
+
+        /**
+         * @return settings of the server-side rendering server run by the application, prefixed with
+         * `inertia.ssr.process`.
+         */
+        public Process getProcess() {
+            return process;
+        }
+
+        /**
+         * Settings of the server-side rendering server run by the application, prefixed with `inertia.ssr.process`.
+         */
+        public static class Process {
+            /**
+             * Whether the application runs the bundle with the runtime on startup and stops it on shutdown. Not
+             * started while the Vite dev server renders pages.
+             */
+            private boolean enabled = false;
+
+            /**
+             * Program running the bundle, such as {@code node}, {@code bun} or an absolute path.
+             */
+            private String runtime = SsrServerProcess.DefaultRuntime;
+
+            /**
+             * Arguments passed to the runtime before the bundle.
+             */
+            private List<String> arguments = new ArrayList<>();
+
+            /**
+             * Working directory of the process, the one of the application when unset.
+             */
+            private @Nullable String workingDirectory;
+
+            /**
+             * Environment variables added to the environment of the process.
+             */
+            private Map<String, String> environment = new HashMap<>();
+
+            /**
+             * Time given to the server to become healthy on startup.
+             */
+            private Duration startupTimeout = SsrServerProcess.DefaultStartupTimeout;
+
+            /**
+             * Time given to the server to exit after a shutdown request before its process is destroyed.
+             */
+            private Duration shutdownTimeout = SsrServerProcess.DefaultShutdownTimeout;
+
+            public boolean isEnabled() {
+                return enabled;
+            }
+
+            public void setEnabled(boolean enabled) {
+                this.enabled = enabled;
+            }
+
+            public String getRuntime() {
+                return runtime;
+            }
+
+            public void setRuntime(String runtime) {
+                this.runtime = runtime;
+            }
+
+            public List<String> getArguments() {
+                return arguments;
+            }
+
+            public void setArguments(List<String> arguments) {
+                this.arguments = arguments;
+            }
+
+            public @Nullable String getWorkingDirectory() {
+                return workingDirectory;
+            }
+
+            public void setWorkingDirectory(@Nullable String workingDirectory) {
+                this.workingDirectory = workingDirectory;
+            }
+
+            public Map<String, String> getEnvironment() {
+                return environment;
+            }
+
+            public void setEnvironment(Map<String, String> environment) {
+                this.environment = environment;
+            }
+
+            public Duration getStartupTimeout() {
+                return startupTimeout;
+            }
+
+            public void setStartupTimeout(Duration startupTimeout) {
+                this.startupTimeout = startupTimeout;
+            }
+
+            public Duration getShutdownTimeout() {
+                return shutdownTimeout;
+            }
+
+            public void setShutdownTimeout(Duration shutdownTimeout) {
+                this.shutdownTimeout = shutdownTimeout;
+            }
         }
     }
 

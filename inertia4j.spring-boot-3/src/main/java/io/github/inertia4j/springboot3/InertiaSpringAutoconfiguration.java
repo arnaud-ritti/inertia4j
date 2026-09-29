@@ -22,7 +22,7 @@ import java.util.stream.Collectors;
  * Spring Boot 3 autoconfiguration for Inertia4j.
  */
 @Configuration
-@Import({ViteAssetsConfiguration.class, InertiaFilterConfiguration.class})
+@Import({ViteAssetsConfiguration.class, InertiaFilterConfiguration.class, InertiaSsrHealthConfiguration.class})
 public class InertiaSpringAutoconfiguration extends AbstractInertiaSpringAutoconfiguration {
     @Override
     @Bean

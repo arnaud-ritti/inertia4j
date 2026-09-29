@@ -7,10 +7,14 @@ import io.github.inertia4j.spi.SerializationException;
 import io.github.inertia4j.spi.SsrGateway;
 
 import java.io.IOException;
+import java.net.ConnectException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
+import java.net.http.HttpConnectTimeoutException;
 import java.net.http.HttpResponse;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
@@ -22,7 +26,8 @@ import java.util.stream.Collectors;
  * {@link SsrGateway} rendering pages with the Inertia Node.js server-side rendering server.
  * <p>
  * Failed renders are reported to the failure listener, then fall back to client-side rendering unless the gateway
- * is configured to throw an {@link SsrException}.
+ * is configured to throw an {@link SsrException}. When a bundle is configured and missing, pages are rendered
+ * client-side without contacting the server, unless the Vite dev server renders them.
  *
  * @see <a href="https://inertiajs.com/docs/v3/core-concepts/the-protocol#server-side-rendering">Inertia SSR protocol</a>
  */
@@ -39,6 +44,8 @@ public class HttpSsrGateway implements SsrGateway {
 
     private final String url;
     private final Supplier<String> hotUrl;
+    private final Path bundle;
+    private final boolean ensureBundleExists;
     private final Duration timeout;
     private final boolean throwOnError;
     private final Consumer<SsrRenderFailure> failureListener;
@@ -48,11 +55,13 @@ public class HttpSsrGateway implements SsrGateway {
     private HttpSsrGateway(Builder builder) {
         this.url = stripTrailingSlash(builder.url);
         this.hotUrl = builder.hotUrl;
+        this.bundle = builder.bundle;
+        this.ensureBundleExists = builder.ensureBundleExists;
         this.timeout = builder.timeout;
         this.throwOnError = builder.throwOnError;
         this.failureListener = builder.failureListener;
         this.jsonReader = builder.jsonReader != null ? builder.jsonReader : new DefaultJsonReader();
-        this.httpClient = builder.httpClient != null ? builder.httpClient : HttpClient.newHttpClient();
+        this.httpClient = builder.httpClient != null ? builder.httpClient : defaultHttpClient();
     }
 
     /**
@@ -69,11 +78,17 @@ public class HttpSsrGateway implements SsrGateway {
      */
     @Override
     public RenderedPage render(PageObject pageObject, String pageObjectJson) {
+        String currentHotUrl = hotUrl.get();
+
+        if (currentHotUrl == null && ensureBundleExists && !bundleExists()) {
+            return null;
+        }
+
         HttpResponse<String> response;
         try {
-            response = httpClient.send(renderRequest(pageObjectJson), HttpResponse.BodyHandlers.ofString());
+            response = httpClient.send(renderRequest(currentHotUrl, pageObjectJson), HttpResponse.BodyHandlers.ofString());
         } catch (IOException | IllegalArgumentException exception) {
-            return fail(pageObject, Map.of("error", String.valueOf(exception.getMessage()), "type", SsrErrorType.CONNECTION.getValue()));
+            return fail(pageObject, Map.of("error", errorMessage(exception), "type", SsrErrorType.CONNECTION.getValue()));
         } catch (InterruptedException exception) {
             Thread.currentThread().interrupt();
             return fail(pageObject, Map.of("error", "Interrupted", "type", SsrErrorType.CONNECTION.getValue()));
@@ -125,8 +140,61 @@ public class HttpSsrGateway implements SsrGateway {
         }
     }
 
-    private HttpRequest renderRequest(String pageObjectJson) {
-        String currentHotUrl = hotUrl.get();
+    /**
+     * Asks the server-side rendering server to exit through its {@code /shutdown} endpoint.
+     *
+     * @return {@code true} if the server was reached, {@code false} if it is not running.
+     */
+    public boolean shutdown() {
+        try {
+            HttpRequest request = requestBuilder(url + "/shutdown").GET().build();
+            httpClient.send(request, HttpResponse.BodyHandlers.discarding());
+
+            return true;
+        } catch (ConnectException | HttpConnectTimeoutException | IllegalArgumentException exception) {
+            return false;
+        } catch (IOException exception) {
+            // The server exits before answering, closing the connection.
+            return true;
+        } catch (InterruptedException exception) {
+            Thread.currentThread().interrupt();
+            return false;
+        }
+    }
+
+    /**
+     * @return URL of the server-side rendering server, without trailing slash.
+     */
+    public String getUrl() {
+        return url;
+    }
+
+    /**
+     * Gets the URL of the Vite development server currently rendering pages.
+     *
+     * @return Vite development server URL, or {@code null} when pages are rendered by the server-side rendering server.
+     */
+    public String getHotUrl() {
+        return hotUrl.get();
+    }
+
+    /**
+     * @return path of the server-side rendering bundle, or {@code null} when none is configured.
+     */
+    public Path getBundle() {
+        return bundle;
+    }
+
+    /**
+     * Checks whether the server-side rendering bundle exists.
+     *
+     * @return {@code true} if no bundle is configured or the configured bundle is a file.
+     */
+    public boolean bundleExists() {
+        return bundle == null || Files.isRegularFile(bundle);
+    }
+
+    private HttpRequest renderRequest(String currentHotUrl, String pageObjectJson) {
         String endpoint = currentHotUrl != null ? stripTrailingSlash(currentHotUrl) + "/__inertia_ssr" : url + "/render";
 
         return requestBuilder(endpoint)
@@ -175,6 +243,17 @@ public class HttpSsrGateway implements SsrGateway {
         return null;
     }
 
+    // HTTP/2 would send an h2c upgrade on cleartext requests, which the Vite dev server never answers.
+    private static HttpClient defaultHttpClient() {
+        return HttpClient.newBuilder().version(HttpClient.Version.HTTP_1_1).build();
+    }
+
+    private static String errorMessage(Exception exception) {
+        String message = exception.getMessage();
+
+        return message != null && !message.isEmpty() ? message : exception.getClass().getName();
+    }
+
     private static String head(Object head) {
         if (!(head instanceof List)) {
             return "";
@@ -210,6 +289,8 @@ public class HttpSsrGateway implements SsrGateway {
     public static class Builder {
         private String url = DefaultUrl;
         private Supplier<String> hotUrl = () -> null;
+        private Path bundle = null;
+        private boolean ensureBundleExists = true;
         private Duration timeout = DefaultTimeout;
         private boolean throwOnError = false;
         private Consumer<SsrRenderFailure> failureListener = failure -> {};
@@ -251,6 +332,31 @@ public class HttpSsrGateway implements SsrGateway {
          */
         public Builder hotUrl(Supplier<String> hotUrl) {
             this.hotUrl = hotUrl;
+            return this;
+        }
+
+        /**
+         * Sets the server-side rendering bundle, i.e. the script run by Node.js to start the server-side rendering
+         * server. While it is missing, pages are rendered client-side without contacting the server, unless the
+         * Vite development server renders them or {@link #ensureBundleExists(boolean)} is disabled.
+         *
+         * @param bundle bundle path, or {@code null} to skip the check.
+         * @return this builder.
+         */
+        public Builder bundle(Path bundle) {
+            this.bundle = bundle;
+            return this;
+        }
+
+        /**
+         * Sets whether pages are rendered client-side while the configured bundle is missing. Defaults to
+         * {@code true}; has no effect without a {@link #bundle(Path)}.
+         *
+         * @param ensureBundleExists whether to check that the bundle exists before rendering.
+         * @return this builder.
+         */
+        public Builder ensureBundleExists(boolean ensureBundleExists) {
+            this.ensureBundleExists = ensureBundleExists;
             return this;
         }
 
@@ -299,7 +405,8 @@ public class HttpSsrGateway implements SsrGateway {
         }
 
         /**
-         * Sets the HTTP client sending requests to the server.
+         * Sets the HTTP client sending requests to the server. Defaults to an HTTP/1.1 client, since the Vite dev
+         * server does not answer HTTP/2 cleartext upgrades.
          *
          * @param httpClient HTTP client.
          * @return this builder.

@@ -43,9 +43,10 @@ export default defineConfig(({ command }) => ({
     rollupOptions: { input: 'src/main/frontend/main.tsx' },
   },
   server: {
+    host: '127.0.0.1',
     port: 5173,
     strictPort: true,
-    origin: 'http://localhost:5173',
+    origin: 'http://127.0.0.1:5173',
     cors: { origin: 'http://localhost:8080' },
   },
 }))
@@ -56,6 +57,8 @@ export default defineConfig(({ command }) => ({
 - `base` applies to the build only, matching the URL prefix under which Inertia4J serves built files.
 - `server.cors.origin` must be the origin of your backend.
 - `strictPort` makes Vite fail instead of moving to another port, since `server.origin` must match the dev server URL; change `server.port` and `server.origin` together.
+- `server.host` binds the dev server to an IPv4 address, which the backend reaches when it renders pages through the
+  dev server (see [Troubleshooting](#troubleshooting)).
 
 ### 2. Start the entry with the module preload polyfill
 
@@ -166,7 +169,15 @@ as described in the [official guide](https://inertiajs.com/docs/v3/advanced/serv
   otherwise every render falls back to client-side rendering and reports a failure. While the dev server warms up it
   answers without markup, and pages are rendered on the client without reporting a failure.
 - **Production:** build the SSR bundle with `vite build --ssr` after `vite build`, and run it with `node` next to your
-  application. Inertia4J posts pages to `http://127.0.0.1:13714/render` by default (`inertia.ssr.url` / `url`).
+  application, or let the application run it (`inertia.ssr.process.enabled=true` in Spring,
+  `ssr { process { enabled = true } }` in Ktor), like `php artisan inertia:start-ssr`. Inertia4J posts pages to
+  `http://127.0.0.1:13714/render` by default (`inertia.ssr.url` / `url`).
+- **Missing bundle:** point `inertia.ssr.bundle` (Spring) or `bundle` (Ktor) at the file written by `vite build --ssr`.
+  While it is missing, pages are rendered client-side without contacting the SSR server nor reporting a failure, so
+  an application started without the SSR build keeps working; the check is disabled with
+  `inertia.ssr.ensure-bundle-exists=false` / `ensureBundleExists = false`, and skipped while `vite.hot` exists.
+- **Health:** `inertia.ssr.check-on-startup=true` / `checkOnStartup = true` logs a warning when the SSR server is
+  unreachable on startup, and Spring Boot Actuator reports it as the `inertiaSsr` health indicator.
 
 Setting `inertia.ssr.hot-url` (Spring) or `hotUrl` (Ktor) replaces the URL read from `vite.hot`; it only applies
 while the hot file exists.
@@ -182,6 +193,11 @@ See [Advanced usage](advanced.md#vite-tags-in-a-custom-renderer).
 - **`Unable to locate '...' in the Vite manifest`** — the placeholder entry must match `build.rollupOptions.input`,
   relative to the Vite root.
 - **Scripts blocked by CORS in development** — set `server.cors.origin` to the backend origin.
+- **SSR renders time out or fail with `ConnectException` in development** — with Node.js 17+ (notably Node 24 on
+  macOS), Vite binds `localhost` to the IPv6 address `[::1]` only and writes `http://localhost:5173` to `vite.hot`,
+  while Java resolves `localhost` to `127.0.0.1`, so the backend cannot reach `/__inertia_ssr`. Set
+  `server.host: '127.0.0.1'` and `server.origin: 'http://127.0.0.1:5173'` as in the configuration above, or point
+  `inertia.ssr.hot-url` / `hotUrl` at an address the backend can reach.
 
 ## Upgrading
 

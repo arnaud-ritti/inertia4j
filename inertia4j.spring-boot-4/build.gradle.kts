@@ -8,9 +8,11 @@ dependencies {
     api(project(":inertia4j.spring-shared"))
 
     compileOnly(libs.jackson3.databind)
+    compileOnly("org.springframework.boot:spring-boot-health")
 
     testImplementation(libs.spring.boot.starter.webmvc.test)
     testImplementation(libs.jackson3.databind)
+    testImplementation("org.springframework.boot:spring-boot-health")
 }
 
 dependencyManagement {

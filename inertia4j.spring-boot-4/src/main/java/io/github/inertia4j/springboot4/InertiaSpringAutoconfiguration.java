@@ -22,7 +22,7 @@ import java.util.stream.Collectors;
  * Spring Boot 4 autoconfiguration for Inertia4j. Uses Jackson 3 when available, Jackson 2 otherwise.
  */
 @Configuration
-@Import({ViteAssetsConfiguration.class, InertiaFilterConfiguration.class})
+@Import({ViteAssetsConfiguration.class, InertiaFilterConfiguration.class, InertiaSsrHealthConfiguration.class})
 public class InertiaSpringAutoconfiguration extends AbstractInertiaSpringAutoconfiguration {
     @Override
     @Bean

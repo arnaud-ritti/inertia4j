@@ -3,6 +3,7 @@ package io.github.inertia4j.springshared;
 import io.github.inertia4j.core.HttpSsrGateway;
 import io.github.inertia4j.core.InertiaRenderer;
 import io.github.inertia4j.core.SimpleTemplateRenderer;
+import io.github.inertia4j.core.SsrServerProcess;
 import io.github.inertia4j.core.TemplateRenderingException;
 import io.github.inertia4j.core.vite.Vite;
 import io.github.inertia4j.spi.JsonReader;
@@ -19,11 +20,13 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
 
+import java.nio.file.Path;
+
 /**
  * Base Spring Boot autoconfiguration for Inertia4j.
  * Sets up default beans for {@link Vite}, {@link VersionProvider}, {@link PageObjectSerializer},
- * {@link TemplateRenderer}, {@link InertiaRenderer} and, when {@code inertia.ssr.enabled} is set, {@link SsrGateway},
- * unless they are already defined in the application context.
+ * {@link TemplateRenderer}, {@link InertiaRenderer} and, when {@code inertia.ssr.enabled} is set, {@link SsrGateway}
+ * and {@link InertiaSsrServer}, unless they are already defined in the application context.
  */
 @EnableConfigurationProperties(InertiaConfigurationProperties.class)
 public abstract class AbstractInertiaSpringAutoconfiguration {
@@ -101,7 +104,8 @@ public abstract class AbstractInertiaSpringAutoconfiguration {
      * {@link SsrRenderFailed} events.
      *
      * Pages are rendered by the Vite dev server while its hot file exists, at {@code inertia.ssr.hot-url} when set,
-     * or at the URL of the hot file otherwise.
+     * or at the URL of the hot file otherwise. Otherwise, pages are rendered client-side without contacting the server
+     * while the {@code inertia.ssr.bundle} is missing, unless {@code inertia.ssr.ensure-bundle-exists} is false.
      *
      * @param jsonReader     reader of the server responses.
      * @param eventPublisher publisher of failure events.
@@ -112,6 +116,67 @@ public abstract class AbstractInertiaSpringAutoconfiguration {
     @ConditionalOnMissingBean
     @ConditionalOnProperty(prefix = "inertia.ssr", name = "enabled", havingValue = "true")
     public SsrGateway ssrGateway(JsonReader jsonReader, ApplicationEventPublisher eventPublisher, Vite vite) {
+        return httpSsrGatewayBuilder(vite, jsonReader)
+            .throwOnError(properties.getSsr().isThrowOnError())
+            .onFailure(failure -> {
+                logger.warn(failure);
+                eventPublisher.publishEvent(new SsrRenderFailed(failure));
+            })
+            .build();
+    }
+
+    /**
+     * Provides the {@link InertiaSsrServer} bean when server-side rendering is enabled, running the server when
+     * {@code inertia.ssr.process.enabled} is set and checking it on startup when {@code inertia.ssr.check-on-startup}
+     * is set. Reaches the server with the {@link SsrGateway} bean when it is an {@link HttpSsrGateway}, or with a
+     * gateway built from the {@code inertia.ssr.*} properties otherwise.
+     *
+     * @param ssrGateway server-side rendering gateway.
+     * @param jsonReader reader of the server responses.
+     * @param vite       The Vite integration, followed unless disabled.
+     * @return an InertiaSsrServer instance.
+     * @throws IllegalStateException if the process is enabled without {@code inertia.ssr.bundle}.
+     */
+    @Bean
+    @ConditionalOnMissingBean
+    @ConditionalOnProperty(prefix = "inertia.ssr", name = "enabled", havingValue = "true")
+    public InertiaSsrServer inertiaSsrServer(SsrGateway ssrGateway, JsonReader jsonReader, Vite vite) {
+        InertiaConfigurationProperties.Ssr ssr = properties.getSsr();
+        HttpSsrGateway gateway = ssrGateway instanceof HttpSsrGateway
+            ? (HttpSsrGateway) ssrGateway
+            : httpSsrGatewayBuilder(vite, jsonReader).build();
+
+        if (!ssr.getProcess().isEnabled()) {
+            return new InertiaSsrServer(gateway, null, ssr.isCheckOnStartup());
+        }
+
+        if (ssr.getBundle() == null) {
+            throw new IllegalStateException("inertia.ssr.process.enabled requires inertia.ssr.bundle to be set");
+        }
+
+        InertiaConfigurationProperties.Ssr.Process process = ssr.getProcess();
+        String workingDirectory = process.getWorkingDirectory();
+        SsrServerProcess serverProcess = SsrServerProcess.builder(gateway, Path.of(ssr.getBundle()))
+            .runtime(process.getRuntime())
+            .arguments(process.getArguments())
+            .workingDirectory(workingDirectory != null ? Path.of(workingDirectory) : null)
+            .environment(process.getEnvironment())
+            .startupTimeout(process.getStartupTimeout())
+            .shutdownTimeout(process.getShutdownTimeout())
+            .build();
+
+        return new InertiaSsrServer(gateway, serverProcess, ssr.isCheckOnStartup());
+    }
+
+    /**
+     * Creates a builder of {@link HttpSsrGateway} configured from the {@code inertia.ssr.*} properties, following the
+     * Vite dev server unless the Vite integration is disabled.
+     *
+     * @param vite       The Vite integration.
+     * @param jsonReader reader of the server responses.
+     * @return a gateway builder.
+     */
+    protected HttpSsrGateway.Builder httpSsrGatewayBuilder(Vite vite, JsonReader jsonReader) {
         InertiaConfigurationProperties.Ssr ssr = properties.getSsr();
         HttpSsrGateway.Builder builder = HttpSsrGateway.builder();
 
@@ -125,16 +190,14 @@ public abstract class AbstractInertiaSpringAutoconfiguration {
             builder.hotUrl(vite::devServerUrlIfRunning);
         }
 
+        String bundle = ssr.getBundle();
+
         return builder
             .url(ssr.getUrl())
             .timeout(ssr.getTimeout())
-            .throwOnError(ssr.isThrowOnError())
             .jsonReader(jsonReader)
-            .onFailure(failure -> {
-                logger.warn(failure);
-                eventPublisher.publishEvent(new SsrRenderFailed(failure));
-            })
-            .build();
+            .bundle(bundle != null ? Path.of(bundle) : null)
+            .ensureBundleExists(ssr.isEnsureBundleExists());
     }
 
     /**

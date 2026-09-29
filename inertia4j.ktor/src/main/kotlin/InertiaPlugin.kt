@@ -33,9 +33,22 @@ val Inertia = createApplicationPlugin(
                 ?: { exception -> application.log.error("Rescued deferred prop failed to resolve", exception) }
         )
 
-    pluginConfig.ssr
+    val ssrGateway = pluginConfig.ssr
         .gatewayOrDefault(pluginConfig.viteInstance) { failure -> application.log.warn(failure.toString()) }
-        ?.let { builder.ssrGateway(it) }
+
+    if (ssrGateway != null) {
+        builder.ssrGateway(ssrGateway)
+
+        val serverGateway = pluginConfig.ssr.serverGateway(ssrGateway, pluginConfig.viteInstance)
+        val ssrServer = SsrServerOperator(
+            serverGateway,
+            pluginConfig.ssr.serverProcessOrNull(serverGateway),
+            pluginConfig.ssr.checkOnStartup
+        ) { message, cause -> application.log.warn(message, cause) }
+
+        application.monitor.subscribe(ApplicationStarted) { ssrServer.start() }
+        application.monitor.subscribe(ApplicationStopping) { ssrServer.stop() }
+    }
 
     val coreRenderer = builder.build()
 
