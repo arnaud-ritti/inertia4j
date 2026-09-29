@@ -118,6 +118,11 @@ public class ViteConfig {
          */
         public ViteConfig build() {
             String normalisedBuildDirectory = trimSlashes(buildDirectory);
+
+            if (normalisedBuildDirectory.isEmpty()) {
+                throw new ViteException("Vite build directory must not be empty");
+            }
+
             String normalisedManifestPath = manifestPath == null
                 ? normalisedBuildDirectory + "/.vite/manifest.json"
                 : trimSlashes(manifestPath);

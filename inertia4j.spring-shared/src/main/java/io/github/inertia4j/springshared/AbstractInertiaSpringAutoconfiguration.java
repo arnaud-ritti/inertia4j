@@ -3,25 +3,17 @@ package io.github.inertia4j.springshared;
 import io.github.inertia4j.core.SimpleTemplateRenderer;
 import io.github.inertia4j.core.TemplateRenderingException;
 import io.github.inertia4j.core.vite.Vite;
-import io.github.inertia4j.core.vite.ViteConfig;
 import io.github.inertia4j.spi.PageObjectSerializer;
 import io.github.inertia4j.spi.TemplateRenderer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
 import org.springframework.context.annotation.Bean;
-import org.springframework.http.CacheControl;
-import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
-import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
-
-import java.time.Duration;
 
 /**
  * Spring Boot auto-configuration for Inertia4j.
  * Sets up default beans for {@link AbstractInertia}, {@link VersionProvider},
  * {@link PageObjectSerializer}, {@link TemplateRenderer} and {@link Vite} if they are not
- * already present in the application context, and serves the Vite build output.
+ * already present in the application context.
  */
 public abstract class AbstractInertiaSpringAutoconfiguration {
     @Autowired
@@ -78,28 +70,5 @@ public abstract class AbstractInertiaSpringAutoconfiguration {
         Vite enabledVite = properties.vite.enabled ? vite : null;
 
         return new SimpleTemplateRenderer(properties.templatePath, enabledVite);
-    }
-
-    /**
-     * Serves the Vite build directory under the Vite public path with long-lived cache headers.
-     *
-     * @param vite The Vite integration.
-     * @return A WebMvcConfigurer registering the resource handler.
-     */
-    @Bean
-    @ConditionalOnWebApplication(type = ConditionalOnWebApplication.Type.SERVLET)
-    @ConditionalOnProperty(prefix = "inertia.vite", name = "enabled", havingValue = "true", matchIfMissing = true)
-    public WebMvcConfigurer inertiaViteAssets(Vite vite) {
-        ViteConfig config = vite.getConfig();
-        Duration cacheMaxAge = properties.vite.cacheMaxAge;
-
-        return new WebMvcConfigurer() {
-            @Override
-            public void addResourceHandlers(ResourceHandlerRegistry registry) {
-                registry.addResourceHandler(config.getPublicPath() + "**")
-                    .addResourceLocations("classpath:/" + config.getBuildDirectory() + "/")
-                    .setCacheControl(CacheControl.maxAge(cacheMaxAge).cachePublic().immutable());
-            }
-        };
     }
 }

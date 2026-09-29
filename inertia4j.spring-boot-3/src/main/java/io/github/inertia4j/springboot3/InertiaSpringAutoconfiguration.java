@@ -7,11 +7,13 @@ import io.github.inertia4j.spi.TemplateRenderer;
 import io.github.inertia4j.springshared.AbstractInertiaSpringAutoconfiguration;
 import io.github.inertia4j.springshared.InertiaConfigurationProperties;
 import io.github.inertia4j.springshared.SharedDataProvider;
+import io.github.inertia4j.springshared.ViteAssetsConfiguration;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Import;
 
 import java.util.stream.Collectors;
 
@@ -20,6 +22,7 @@ import java.util.stream.Collectors;
  */
 @Configuration
 @EnableConfigurationProperties(InertiaConfigurationProperties.class)
+@Import(ViteAssetsConfiguration.class)
 public class InertiaSpringAutoconfiguration extends AbstractInertiaSpringAutoconfiguration {
     @Override
     @Bean

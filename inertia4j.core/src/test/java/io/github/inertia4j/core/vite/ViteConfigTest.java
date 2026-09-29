@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 import java.nio.file.Path;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class ViteConfigTest {
     @Test
@@ -49,5 +50,17 @@ class ViteConfigTest {
         assertEquals("/build/", ViteConfig.builder().publicPath("/build").build().getPublicPath());
         assertEquals("/", ViteConfig.builder().publicPath("").build().getPublicPath());
         assertEquals("/", ViteConfig.builder().publicPath("/").build().getPublicPath());
+    }
+
+    @Test
+    void build_whenBuildDirectoryIsEmpty_throws() {
+        for (String buildDirectory : new String[] {"", "/", "//"}) {
+            ViteException exception = assertThrows(
+                ViteException.class,
+                () -> ViteConfig.builder().buildDirectory(buildDirectory).build()
+            );
+
+            assertEquals("Vite build directory must not be empty", exception.getMessage());
+        }
     }
 }
