@@ -1,4 +1,4 @@
-# Advanced Usage
+# Extending Inertia4J
 
 This is a guide meant to help users extend Inertia4J and customize it.
 

@@ -67,7 +67,8 @@ Useful commands:
   pick up automatically.
 - Keep the public API small. Prefer package-private types and document every public type and method with Javadoc.
 - Every behavior change needs a test. Bug fixes should come with a test that fails without the fix.
-- Update the relevant documentation (module `README.md`, `docs/`) in the same pull request as the code.
+- Update the matching guide in [`docs/`](docs/README.md) in the same pull request as the code, with a Java and a Kotlin
+  example when the feature exists in both adapters.
 - Avoid new runtime dependencies in `inertia4j.core` and `inertia4j.spi`; users pull them into every application.
 
 ## Commits and pull requests

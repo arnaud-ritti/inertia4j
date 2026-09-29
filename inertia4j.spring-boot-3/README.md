@@ -1,539 +1,71 @@
-# Inertia4J Spring Boot 3
+# Inertia4J for Spring Boot 3
 
-This document describes how to install and use Inertia4J with Spring Boot 3.
-
-For a complete example, see the [Spring Boot and React example](../examples/spring-boot-react).
+Inertia.js adapter for Spring Boot 3 (Spring MVC, Java 17+). For a complete application, see the [Spring Boot + React example](../examples/spring-boot-react).
 
 ## Installation
-
-### Backend
-
-Add the Inertia4J dependency to your project, via Gradle or Maven:
 
 ```kotlin
 // build.gradle.kts
 dependencies {
-  implementation("io.github.inertia4j:inertia4j-spring-boot-3:2.0.0")
+    implementation("io.github.inertia4j:inertia4j-spring-boot-3:2.0.0")
 }
 ```
 
 ```xml
 <!-- pom.xml -->
-<dependencies>
-    <dependency>
-        <groupId>io.github.inertia4j</groupId>
-        <artifactId>inertia4j-spring-boot-3</artifactId>
-        <version>2.0.0</version>
-    </dependency>
-</dependencies>
+<dependency>
+    <groupId>io.github.inertia4j</groupId>
+    <artifactId>inertia4j-spring-boot-3</artifactId>
+    <version>2.0.0</version>
+</dependency>
 ```
 
-### Frontend
+The module is auto-configured. It registers:
 
-Follow Inertia's [Client-side setup](https://inertiajs.com/docs/v3/installation/client-side-setup) guide for the client-side
-configuration steps. Inertia4J 2.x implements the [Inertia.js v3 protocol](https://inertiajs.com/docs/v3/core-concepts/the-protocol);
-use Inertia4J 1.x with older clients. Upgrading from 1.x? Read the [migration guide](../docs/migration-2.0.md).
+- the `Inertia` bean (`io.github.inertia4j.springboot3.Inertia`) used by controllers;
+- the `InertiaFilter`, which applies the protocol to every request;
+- the Vite integration, serving the frontend build under `/build/`;
+- the `inertiaSsr` health indicator when Spring Boot Actuator and SSR are enabled.
 
 ## Usage
 
-### Responses
-
-In your controller, the simplest way to use Inertia4J is to inject the `Inertia` bean. This bean will give you access to
-the Inertia4J methods. To respond with an Inertia response in your controller method, you can call `inertia.render`.
-The `render` method takes two arguments. The first argument is the name of the component to be rendered client-side, and
-the second argument is a map, which will be converted to a JSON object and sent to the client. This method returns a
-`ResponseEntity<String>` instance, so when using Inertia4J in a route, the return type of your method should always be
-`ResponseEntity<String>`.
-
 ```java
-public class RecordController {
-    @Autowired
-    private Inertia inertia; // Inertia4J bean injection
+@RestController
+public class UsersController {
+    private final Inertia inertia;
 
-    @GetMapping("/records")
+    public UsersController(Inertia inertia) {
+        this.inertia = inertia;
+    }
+
+    @GetMapping("/users")
     public ResponseEntity<String> index() {
-        RecordRepository recordRepository = new RecordRepository();
-        Set<Record> records = recordRepository.getAllRecords();
-
-        return inertia.render("Records/Index", Map.of("records", records));
+        return inertia.render("Users/Index", Map.of(
+            "users", users.findAll(),
+            "permissions", Inertia.defer(() -> permissions.findAll())
+        ));
     }
-}
 
-```
+    @PostMapping("/users")
+    public ResponseEntity<String> store(@Valid @ModelAttribute UserForm form, BindingResult result) {
+        if (result.hasErrors()) {
+            inertia.errors(result);
+            return inertia.back();
+        }
 
-This will instruct the frontend to render the `Records/Index` component with a single prop called "records", which
-contains the list of records, as retrieved from `RecordRepository`.
-
-### The HTML Template
-
-The first time an Inertia request is made to the server, the server will respond with an HTML document. Inertia4J
-will automatically load the `resources/templates/app.html` file in your project and replace two placeholders:
-
-- `@InertiaApp@` is replaced with the page object script element followed by the application root element,
-  `<script data-page="app" type="application/json">…</script><div id="app"></div>`;
-- `@InertiaHead@` is replaced with the `<head>` elements rendered by the [SSR server](#server-side-rendering), and is
-  empty otherwise.
-
-Content placed between `@InertiaHead@` and `@EndInertiaHead@` is a fallback, rendered only when the page is not
-server-side rendered, and replaced by the SSR `<head>` elements otherwise, e.g.
-`@InertiaHead@<title>My app</title>@EndInertiaHead@`.
-
-```html
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <title>My app</title>
-    @InertiaHead@
-  </head>
-  <body>
-    @InertiaApp@
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
-</html>
-```
-
-The template path and the root element id can be changed with the `inertia.template-path` and `inertia.root-id`
-properties.
-
-To load your frontend, add `@Vite(src/main/frontend/main.tsx)@` to the template head (preceded by
-`@ViteReactRefresh@` for React). It renders the tags of the Vite dev server while it runs and of the production
-build otherwise. See the [Vite integration guide](../docs/vite.md).
-
-`@ViteAsset(src/images/logo.png)@` renders the URL of a file processed by Vite. Rendered tags carry the
-[CSP nonce](../docs/vite.md#content-security-policy-nonce) of the request and the
-[integrity hash](../docs/vite.md#subresource-integrity) of built files when available.
-
-### Options
-
-Inertia4J supports option passing on response. To enable option passing, first you need to import
-`io.github.inertia4j.springboot3.Inertia.Options`. After importing, you can now use the `Options` class to pass options as
-a third argument to `inertia.render`. The Inertia protocol defines two main flags which can be passed through options,
-those are the `encryptHistory` and `clearHistory` flags. If you need more information about their functionality
-you can read the [official Inertia docs](https://inertiajs.com/docs/v3/security/history-encryption). Here is an example of option
-passing in the Inertia response:
-
-```java
-import io.github.inertia4j.springboot3.Inertia.Options;
-
-@GetMapping("/records")
-public ResponseEntity<String> index() {
-    /* ... */
-    return inertia.render("Records/Index", records, Options.clearHistory().encryptHistory());
-}
-```
-
-This way, the response will be sent with the `encryptHistory` value set to `true`. Note that this is only applied for
-the next render call, after that, Inertia will revert the flags back to their default values.
-
-You may want to provide a default value to the `encryptHistory` flag, and this is also supported. All you need to do is
-to add the following line to your `application.properties` file:
-
-```text
-inertia.encrypt-history=true
-```
-
-In this case, if you wanted to set the flag to `false` for a specific response, you could then specify that in the options:
-
-```java
-inertia.render("Records/Index", records, Options.encryptHistory(false));
-```
-
-The `clearHistory` option works the same way, except it's not possible to set a default value for it. To clear the
-history on the page rendered after a redirect, call `inertia.clearHistory()` before redirecting.
-
-Options also set the response status, e.g. to render an error page with Inertia:
-
-```java
-return inertia.render("Errors/NotFound", Map.of(), Options.status(404));
-```
-
-### Asset Versioning
-
-The Inertia4J adapter fully supports asset versioning, and responds accordingly to requests with outdated assets. To provide a version
-to your assets, you will need to provide an implementation of the `VersionProvider` interface as a Spring Bean. This interface has only
-a single method, called `get`, which returns your asset version number as a `String`. You can implement the `get`
-method to suit your project's needs, be it a value that manually changes, or a dynamic hash of your asset folder.
-
-The `VersionProvider` bean is optional. The default implementation returns the SHA-256 of the Vite manifest, so
-clients reload after each deployment of a new frontend build (see the [Vite integration guide](../docs/vite.md)).
-Provide your own implementation if you don't build your frontend with Vite.
-
-Below is an example of a simple `VersionProvider` implementation in Spring:
-
-```java
-import io.github.inertia4j.springboot3.VersionProvider;
-import org.springframework.stereotype.Component;
-
-@Component
-public class MyCustomVersionProvider implements VersionProvider {
-    @Override
-    public String get() {
-        return "latest";
+        users.create(form);
+        inertia.flash("message", "User created");
+        return inertia.redirect("/users");
     }
 }
 ```
 
-### Redirecting
-
-Inertia4J supports redirecting, and as the Inertia docs specify, there are two kinds of redirects. The first
-is via the `redirect` method, and it is meant to redirect to other Inertia routes. The second kind of redirect is via
-the `location` method, which redirects the client to a non-Inertia route in your application, or to an external route.
-Both methods only receive a single parameter, which is the route to redirect to.
-
-Below is an example of both methods being used:
-
- ```java
-public class RecordController {
-    @Autowired
-    private Inertia inertia; // Inertia4J bean injection
-  
-    @GetMapping("/records")
-    public ResponseEntity<String> index() {
-        /* ... */
-    }
-  
-    @PostMapping("/records")
-    public ResponseEntity<String> create() {
-        /* ... */
-        return inertia.redirect("/records"); // This redirects to our index "/records" route.
-    }
-  
-    @GetMapping("/external-redirect")
-    public ResponseEntity<String> externalRedirect() {
-        return inertia.location("https://github.com/arnaud-ritti/inertia4j"); // Redirects to an external route.
-    }
-}
- ```
-
-`redirect` returns `303 See Other` after `PUT`, `PATCH` and `DELETE` requests, so the browser follows it with a `GET`.
-When the location contains a URL fragment (e.g. `/records/1#comments`), Inertia requests receive a `409 Conflict` with
-an `X-Inertia-Redirect` header instead, and the client visits the location with a fresh request. Call
-`inertia.preserveFragment()` before redirecting to keep the fragment of the original request. `inertia.back()`
-redirects to the `Referer` of the request.
-
-Note that in the example provided, we've defined a `POST` route as well. This is the most common use case for
-redirecting in a simple application, and the redirect methods (both `inertia.redirect` and `inertia.location`) work on
-routes that receive requests of any HTTP methods. If you need more information about redirects in Inertia, please read
-the [official docs](https://inertiajs.com/docs/v3/the-basics/redirects).
-
-The same rules apply to redirects that don't go through `inertia.redirect`, such as `redirect:` view names: the
-`InertiaFilter`, registered automatically, turns a `302 Found` answering a `PUT`, `PATCH` or `DELETE` Inertia request
-into a `303 See Other`, and a `sendRedirect` to a location with a URL fragment into a `409 Conflict` with
-`X-Inertia-Redirect`. It also answers `GET` Inertia requests sent with an outdated asset version before they reach
-your controller, keeping flash data in the session, redirects an Inertia request answered with an empty `200 OK` (e.g.
-`ResponseEntity.ok().build()`) back to its `Referer` (or `/`), and adds `Vary: X-Inertia` to every response. Disable it
-with `inertia.filter.enabled=false`.
-
-### Partial Reloads
-
-Inertia4J supports partial reloads, in case you don't need to return all the data to your client-side when the
-component loads, or in case you just need to reload a specific component in your page. Only the requested props are
-resolved; wrap expensive props in a `Supplier` so they are skipped when not requested. Nested props can be requested with
-dotted paths (e.g. `only: ['auth.user']`).
-
-```java
-return inertia.render("Users/Index", Map.of(
-    "users", (Supplier<Object>) () -> userRepository.findAll(), // lazy: only resolved when sent
-    "companies", Inertia.optional(() -> companyRepository.findAll()), // never sent on full visits, only when requested
-    "auth", Inertia.always(currentUser) // always sent, even when not requested
-));
-```
-
-See the [official docs](https://inertiajs.com/docs/v3/data-props/partial-reloads).
-
-### Shared Data
-
-Data needed by every page (the authenticated user, flash messages, the app name...) can be shared with all Inertia
-responses. Every `SharedDataProvider` bean is picked up automatically:
-
-```java
-@Component
-public class AppSharedData implements SharedDataProvider {
-    @Override
-    public Map<String, Object> share(HttpServletRequest request) {
-        return Map.of(
-            "appName", "My App",
-            "user", (Supplier<Object>) () -> currentUser(request) // lazy, evaluated only when sent
-        );
-    }
-}
-```
-
-Props can also be shared with the current request only, e.g. from a filter or interceptor:
-
-```java
-inertia.share("flash", "Record saved!");
-```
-
-Dotted keys set nested props (`inertia.share("auth.user", user)`), and `inertia.shareOnce(key, supplier)` shares a
-[once prop](#once-props). The top-level keys of shared props are listed in the page object, so the client carries them
-over during instant visits; set `inertia.expose-shared-prop-keys=false` to disable it.
-
-Props given to `render` take precedence over shared props when keys collide. Any `Supplier` prop value is lazy: it is only
-evaluated when the prop is included in the response. See the [official docs](https://inertiajs.com/docs/v3/data-props/shared-data).
-
-### Deferred Props
-
-Deferred props are left out of the initial page load, and fetched by the client right after the page renders. Props of
-the same group are fetched in the same request:
-
-```java
-return inertia.render("records/Index", Map.of(
-    "records", recordRepository.findAll(),
-    "permissions", Inertia.defer(() -> permissionRepository.findAll()),
-    "teams", Inertia.defer(() -> teamRepository.findAll(), "attributes"),
-    "projects", Inertia.defer(() -> projectRepository.findAll(), "attributes")
-));
-```
-
-A deferred prop that may fail can be rescued: the exception is logged, the other props are still sent, and the client
-renders the `rescue` slot of its `<Deferred>` component:
-
-```java
-"permissions", Inertia.defer(() -> permissionService.fetch()).rescue()
-```
-
-Rescuing only applies to deferred props: `rescue()` has no effect on other props, whose exceptions propagate.
-
-See the [official docs](https://inertiajs.com/docs/v3/data-props/deferred-props).
-
-### Merging Props
-
-By default, props returned by a partial reload replace the ones held by the client. Merge props are merged instead:
-
-```java
-return inertia.render("records/Index", Map.of(
-    "records", Inertia.merge(recordPage.getContent()),                  // append items
-    "notifications", Inertia.merge(notifications).prepend(),            // prepend items
-    "feed", Inertia.merge(feed).append("data").prepend("messages"),     // merge nested arrays
-    "posts", Inertia.merge(posts).matchOn("id"),                        // update existing items in place
-    "users", Inertia.merge(users).append("data", "id"),                 // append to data, match on data.id
-    "conversations", Inertia.deepMerge(conversations).matchOn("data.id") // merge nested objects recursively
-));
-```
-
-Merging also works with deferred props: `Inertia.defer(() -> ...).merge()` or `Inertia.defer(() -> ...).deepMerge()`.
-Props reset by the client (`router.reload({ reset: ['records'] })`) are sent without merge instructions. See the
-[official docs](https://inertiajs.com/docs/v3/data-props/merging-props).
-
-### Once Props
-
-Once props are resolved a single time and remembered by the client, which reuses them on subsequent pages including
-the same prop:
-
-```java
-return inertia.render("Billing/Plans", Map.of(
-    "plans", Inertia.once(() -> planRepository.findAll()),
-    "countries", Inertia.once(() -> countryRepository.findAll())
-        .key("countries")                   // share the remembered value across props of other pages
-        .expiresIn(Duration.ofHours(1))     // or .until(Instant)
-));
-```
-
-Use `.fresh()` to send a new value even when the client remembers the prop. Once also combines with other prop types,
-e.g. `Inertia.defer(() -> ...).once()`. See the [official docs](https://inertiajs.com/docs/v3/data-props/once-props).
-
-### Infinite Scroll
-
-Scroll props hold a page of items under a `data` key, merged with the items the client already holds, along with the
-pagination state used by the `<InfiniteScroll>` component:
-
-```java
-Page<Post> page = postRepository.findAll(pageable);
-
-return inertia.render("Posts/Index", Map.of(
-    "posts", Inertia.scroll(
-        Map.of("data", page.getContent()),
-        ScrollMetadata.forPage(page.getNumber() + 1, page.hasNext())
-    )
-));
-```
-
-Use `ScrollMetadata.of(pageName, previous, next, current)` for cursor pagination, `.wrapper("items")` when the items
-are held under another key, and `Inertia.scroll(() -> ..., page -> metadata).defer()` to load the first page after the
-initial render. See the [official docs](https://inertiajs.com/docs/v3/data-props/infinite-scroll).
-
-### Flash Data
-
-Flash data is sent with the next rendered page, typically after a redirect, and exposed by the client through the
-`inertia:flash` event:
-
-```java
-@PostMapping("/records")
-public ResponseEntity<String> create() {
-    /* ... */
-    inertia.flash("message", "Record created");
-    return inertia.redirect("/records");
-}
-```
-
-Flash data, validation errors and the `preserveFragment` and `clearHistory` flags are kept in the HTTP session until a
-page is rendered, including for a prefetch request, as in the Laravel adapter. See the [official docs](https://inertiajs.com/docs/v3/data-props/flash-data).
-
-### Validation Errors
-
-Every page has an `errors` prop, empty by default. Set errors before redirecting back to the form; they are sent with
-the next rendered page, namespaced under the error bag requested by the client, if any:
-
-```java
-@PostMapping("/users")
-public ResponseEntity<String> store(@Valid @ModelAttribute UserForm form, BindingResult result) {
-    if (result.hasErrors()) {
-        inertia.errors(result); // first message of each field
-        return inertia.back();
-    }
-    /* ... */
-}
-```
-
-`inertia.errors(Map)` accepts any messages, and `ValidationErrors.allMessages(result)` keeps every message of each
-field. Set `inertia.validation.all-errors=true` to make `inertia.errors(result)` send every message of each field as a
-list, and pair it with `errorValueType.set(ErrorValueType.StringArray)` in the [TypeScript types](../docs/typescript.md)
-configuration. See the [official docs](https://inertiajs.com/docs/v3/the-basics/validation).
-
-### Precognition
-
-Precognition requests ask the server to validate a form without executing the action. Validate, then respond with
-`inertia.precognition`, which returns `204 No Content` when the fields validated by the client have no errors and
-`422 Unprocessable Entity` with the errors otherwise:
-
-```java
-@PostMapping("/users")
-public ResponseEntity<String> store(@Valid @RequestBody UserForm form, BindingResult result) {
-    if (inertia.isPrecognitive()) {
-        return inertia.precognition(result);
-    }
-    /* ... */
-}
-```
-
-Register the `PrecognitionFilter` for these routes so their responses carry `Vary: Precognition`. See the
-[official docs](https://inertiajs.com/docs/v3/the-basics/forms#precognition).
-
-### CSRF Protection
-
-The Inertia client reads the `XSRF-TOKEN` cookie and sends it back in the `X-XSRF-TOKEN` header. With Spring
-Security, store the token in that cookie so the client can read it:
-
-```java
-http.csrf(csrf -> csrf
-    .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
-    .csrfTokenRequestHandler(new CsrfTokenRequestAttributeHandler()));
-```
-
-Spring Security 6 writes the cookie only once the token is used; follow its
-[single-page application guide](https://docs.spring.io/spring-security/reference/servlet/exploits/csrf.html#csrf-integration-javascript-spa)
-to load it on every request. See the [official docs](https://inertiajs.com/docs/v3/security/csrf-protection).
-
-### Server-Side Rendering
-
-Full page loads can be pre-rendered by the Inertia Node.js SSR server. Enable it in `application.properties`:
-
-```text
-inertia.ssr.enabled=true
-inertia.ssr.url=http://127.0.0.1:13714
-# Optional
-inertia.ssr.timeout=2s
-inertia.ssr.except=admin/*
-inertia.ssr.hot-url=http://127.0.0.1:5173
-inertia.ssr.throw-on-error=false
-inertia.ssr.bundle=ssr/ssr.js
-inertia.ssr.ensure-bundle-exists=true
-inertia.ssr.check-on-startup=false
-```
-
-When rendering fails, the page falls back to client-side rendering and an `SsrRenderFailed` application event is
-published. Render requests time out after 10 seconds unless `timeout` is set. While the Vite dev server runs (its hot
-file exists), pages are rendered through it instead, at `hot-url` when set. `except` paths are relative to the
-application, with or without leading slash. See the [Vite guide](../docs/vite.md#server-side-rendering) for the
-frontend setup and the
-[official docs](https://inertiajs.com/docs/v3/advanced/server-side-rendering).
-
-When `bundle` is set and the file is missing, pages are rendered client-side without contacting the SSR server and
-without failure event, unless the Vite dev server renders them or `ensure-bundle-exists` is `false`.
-`check-on-startup` logs a warning when the SSR server is unreachable on startup. With Spring Boot Actuator on the
-classpath, the `inertiaSsr` health indicator reports whether the SSR server answers on `/health` (disable it with
-`management.health.inertia-ssr.enabled=false`). While the Vite dev server renders pages, the startup check is
-skipped and the health indicator reports up.
-
-The application can also run the SSR server itself, like `php artisan inertia:start-ssr`: it starts
-`<runtime> [arguments...] <bundle>` when the context starts, waits until the server is healthy, and stops it through
-its `/shutdown` endpoint (destroying the process if it does not exit) when the context closes. The server is not
-started while the Vite dev server runs, nor when one already answers at `inertia.ssr.url`.
-
-```text
-inertia.ssr.bundle=ssr/ssr.js
-inertia.ssr.process.enabled=true
-# Optional
-inertia.ssr.process.runtime=node
-inertia.ssr.process.arguments=--enable-source-maps
-inertia.ssr.process.working-directory=.
-inertia.ssr.process.environment.NODE_ENV=production
-inertia.ssr.process.startup-timeout=10s
-inertia.ssr.process.shutdown-timeout=5s
-```
-
-### Testing
-
-`InertiaResultMatchers` asserts Inertia responses in MockMvc tests, much like Inertia Laravel's `assertInertia`. It
-reads both full page visits (the page object in the HTML document) and Inertia requests (the page object JSON). It
-needs `spring-test`, already brought by `spring-boot-starter-test`:
-
-```java
-import static io.github.inertia4j.springshared.testing.InertiaResultMatchers.inertia;
-import static io.github.inertia4j.springshared.testing.InertiaResultMatchers.inertiaPage;
-
-mockMvc.perform(get("/users"))
-    .andExpect(status().isOk())
-    .andExpect(inertia(page -> page
-        .component("Users/Index")
-        .url("/users")
-        .version("1")
-        .has("users", 3, user -> user
-            .where("id", 1)
-            .where("name", "Jane")
-            .missing("password"))
-        .where("filters.search", "")
-        .hasDeferredProp("permissions")
-        .hasFlash("message", "User created")
-        .hasNoErrors()));
-
-String name = (String) inertiaPage(mockMvc.perform(get("/users")).andReturn()).prop("users.0.name");
-```
-
-Paths are dotted, with numeric segments indexing arrays. Besides `has`, `missing`, `where` and `count`, the page offers
-`hasAll`, `hasAny`, `missingAll`, `whereNot`, `whereAll`, `whereContains`, `whereMatches`, `first`, `each`,
-`hasError`/`missingError`, `missingFlash`, `encryptHistory`/`clearHistory` and `hasMergeProp`, `hasPrependProp`,
-`hasDeepMergeProp`, `hasOnceProp`, `hasScrollProp` and `hasSharedProp` for the page object metadata. Numbers are
-compared by value, so `where("total", 3L)` matches `3`. Failures throw an `AssertionError`.
-
-Pass the `MockMvc` instance to reload the page: `reloadOnly` and `reloadExcept` send a partial reload and check the
-listed props are present or missing, and `loadDeferredProps` loads the deferred props (of all groups, or of the given
-ones) as the client does after the first visit. Reload requests carry over the session and cookies of the original
-request:
-
-```java
-mockMvc.perform(get("/users"))
-    .andExpect(inertia(mockMvc, page -> page
-        .missing("permissions")
-        .loadDeferredProps(deferred -> deferred.has("permissions", 2))
-        .reloadOnly("users", reloaded -> reloaded.missing("filters"))));
-```
-
-### Typed props
-
-Props can also be described by classes annotated with `@InertiaPage`, `@InertiaShared` and `@InertiaForm`, and turned
-into TypeScript types by the `io.github.inertia4j.typescript` Gradle plugin. `inertia.render(pageProps)` takes the
-component name from `@InertiaPage` and sends the properties of the object; `InertiaProp` fields (`Inertia.defer(...)`,
-`Inertia.merge(...)`, …) keep their behaviour:
-
-```java
-@InertiaPage("Records/Index")
-public record RecordsIndexProps(List<Record> records, InertiaProp<List<Stat>> stats) {}
-
-return inertia.render(new RecordsIndexProps(records, Inertia.defer(statsService::compute)));
-```
-
-A `TypedSharedDataProvider` bean shares a typed object with every response. Set `inertia.property-naming=snake` to
-send snake_case keys, matching the plugin's `propertyNaming` option. See [TypeScript types](/docs/typescript.md).
+## Documentation
+
+- [Getting started](../docs/getting-started.md)
+- Guides: [responses and templates](../docs/guides/responses.md), [redirects](../docs/guides/redirects.md),
+  [props](../docs/guides/props.md), [shared data](../docs/guides/shared-data.md),
+  [forms and validation](../docs/guides/forms-and-validation.md), [asset versioning](../docs/guides/asset-versioning.md),
+  [server-side rendering](../docs/guides/ssr.md), [testing](../docs/guides/testing.md)
+- [Vite integration](../docs/vite.md) and [TypeScript types](../docs/typescript.md)
+- [Configuration reference](../docs/reference/configuration.md#spring-boot-properties)

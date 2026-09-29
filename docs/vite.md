@@ -247,7 +247,7 @@ while the hot file exists.
 
 ## Custom template renderers
 
-See [Advanced usage](advanced.md#vite-tags-in-a-custom-renderer).
+See [Extending Inertia4J](advanced.md#vite-tags-in-a-custom-renderer).
 
 ## Troubleshooting
 
