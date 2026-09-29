@@ -68,11 +68,12 @@ Supports string escapes including `\uXXXX`. Errors throw `ViteException` with th
 Public facade, thread-safe, one instance per application.
 
 - `Vite(ViteConfig config)`.
-- `boolean isDevMode()` — `true` when the hot file exists and is readable. Checked on every call; the file content
+- `boolean isDevMode()` — `true` when the hot file exists, is readable and is not blank (Vite may be mid-write). Checked on every call; the file content
   is cached keyed by its last-modified time.
 - `String devServerUrl()` — trimmed hot file content without trailing `/`. Throws `ViteException` outside dev mode.
 - `String tags(String... entries)` — HTML for the given entries (manifest keys, i.e. paths relative to the Vite
-  root such as `src/main/frontend/main.tsx`):
+  root such as `src/main/frontend/main.tsx`; a leading `/` is ignored, so `/src/main.tsx` and `src/main.tsx` are
+  equivalent):
   - Dev mode: `<script type="module" src="{url}/@vite/client"></script>` once, then per entry
     `<script type="module" src="{url}/{entry}"></script>`, or `<link rel="stylesheet" href="{url}/{entry}">` when
     the entry is a stylesheet (`.css`, `.scss`, `.sass`, `.less`, `.styl`, `.stylus`, `.pcss`, `.postcss`).
@@ -98,7 +99,8 @@ instance. Nothing is read at construction, so an application starts even when th
 
 ### `ViteException`
 
-Unchecked, extends `RuntimeException`.
+Unchecked: extends `io.github.inertia4j.spi.InertiaException`, itself a `RuntimeException`, like the other
+Inertia4J exceptions.
 
 ### `SimpleTemplateRenderer` changes
 
@@ -142,9 +144,9 @@ function inertia4jHotFile(): Plugin {
   }
 }
 
-export default defineConfig({
+export default defineConfig(({ command }) => ({
   plugins: [react(), inertia4jHotFile()],
-  base: '/build/',
+  base: command === 'build' ? '/build/' : '/',
   build: {
     manifest: true,
     outDir: 'src/main/resources/static/build',
@@ -155,8 +157,11 @@ export default defineConfig({
     origin: 'http://localhost:5173',
     cors: { origin: 'http://localhost:8080' },
   },
-})
+}))
 ```
+
+`base` applies to the build only: with `/build/` the dev server would serve `/build/@vite/client`, while the
+backend requests `{url}/@vite/client`.
 
 The entry module starts with `import 'vite/modulepreload-polyfill'`. `vite.hot` and the build directory are added to
 `.gitignore`. The backend must run with the Vite project root as working directory, or configure `hotFile`
@@ -176,6 +181,14 @@ explicitly.
 | `inertia.vite.manifest` | `{build-directory}/.vite/manifest.json` |
 | `inertia.vite.public-path` | `/build/` |
 | `inertia.vite.cache-max-age` | `365d` (`Duration`) |
+
+### Binding
+
+Today `InertiaConfigurationProperties` is registered as a `@Configuration` bean with `final` fields, which JavaBean
+binding cannot populate, and no test sets an `inertia.*` property. It becomes a pure constructor-bound
+`@ConfigurationProperties` class (defaults through `@DefaultValue`), registered with
+`@EnableConfigurationProperties` on both Boot auto-configurations and removed from the `AutoConfiguration.imports`
+files. Tests set non-default properties to prove binding.
 
 ### Beans in `AbstractInertiaSpringAutoconfiguration`
 
@@ -216,7 +229,8 @@ install(Inertia) {
 - Standalone Gradle build with its own `settings.gradle.kts` using `includeBuild("../..")`, so it consumes the local
   `inertia4j-spring-boot-3` through dependency substitution; not part of the root build or `./gradlew test`.
 - Spring Boot 3 application with two controllers rendering `Home` and `About` pages with props and navigation.
-- Frontend in `src/main/frontend`: Vite, React, TypeScript, `@inertiajs/react`, the `vite.config.ts` above.
+- Frontend in `src/main/frontend`: Vite, React, TypeScript, `@inertiajs/react` 2.x (matching the protocol
+  version implemented on `main`), the `vite.config.ts` above.
 - Template `src/main/resources/templates/app.html` uses `@ViteReactRefresh@` and
   `@Vite(src/main/frontend/main.tsx)@`.
 - Gradle `Exec` tasks `npmInstall` (`npm ci`) and `npmBuild` (`npm run build`); `processResources` depends on
