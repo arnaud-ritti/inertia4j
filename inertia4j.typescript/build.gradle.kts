@@ -12,11 +12,11 @@ java {
 dependencies {
     api(project(":inertia4j.core"))
 
+    implementation(libs.jackson2.databind)
     implementation(libs.kotlin.metadata.jvm)
 
     testImplementation(project(":inertia4j.spi"))
     testImplementation(libs.junit.jupiter)
-    testImplementation(libs.jackson2.databind)
     testImplementation(libs.jspecify)
     testImplementation(platform(libs.spring.boot3.dependencies))
     testImplementation("org.springframework:spring-web")

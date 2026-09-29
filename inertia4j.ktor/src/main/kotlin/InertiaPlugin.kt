@@ -54,6 +54,10 @@ val Inertia = createApplicationPlugin(
 
     val coreRenderer = builder.build()
 
+    pluginConfig.routeManifest?.let { manifest ->
+        application.monitor.subscribe(ApplicationStarted) { started -> started.writeInertiaRouteManifest(manifest) }
+    }
+
     application.attributes.put(
         InertiaKtorRenderer.key,
         InertiaKtorRenderer(coreRenderer, pluginConfig),
@@ -117,7 +121,7 @@ val Inertia = createApplicationPlugin(
         application.routing {
             staticResources(viteConfig.publicPath.removeSuffix("/"), viteConfig.buildDirectory) {
                 modify { _, call -> call.response.header(HttpHeaders.CacheControl, cacheControl) }
-            }
+            }.attributes.put(InternalRouteKey, true)
         }
     }
 }

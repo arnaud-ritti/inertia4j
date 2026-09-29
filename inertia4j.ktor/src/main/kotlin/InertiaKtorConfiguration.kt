@@ -96,6 +96,12 @@ class InertiaKtorConfiguration {
      */
     var middleware: Boolean = true
 
+    /**
+     * File the route manifest is written to when the application starts, read by the Inertia4J route generator to
+     * build the frontend route helpers. Defaults to `null`, writing no manifest.
+     */
+    var routeManifest: Path? = null
+
     internal val ssr = SsrConfiguration()
 
     internal val viteConfiguration = ViteKtorConfiguration()
