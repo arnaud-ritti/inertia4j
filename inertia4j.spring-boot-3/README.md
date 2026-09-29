@@ -13,7 +13,7 @@ Add the Inertia4J dependency to your project, via Gradle or Maven:
 ```kotlin
 // build.gradle.kts
 dependencies {
-  implementation("io.github.inertia4j:inertia4j-spring:1.0.4")
+  implementation("io.github.inertia4j:inertia4j-spring-boot-3:1.0.4")
 }
 ```
 
@@ -22,7 +22,7 @@ dependencies {
 <dependencies>
     <dependency>
         <groupId>io.github.inertia4j</groupId>
-        <artifactId>inertia4j-spring</artifactId>
+        <artifactId>inertia4j-spring-boot-3</artifactId>
         <version>1.0.4</version>
     </dependency>
 </dependencies>
@@ -71,14 +71,14 @@ data you wish to send to the client. If you wish to customize this template, jus
 ### Options
 
 Inertia4J supports option passing on response. To enable option passing, first you need to import
-`io.github.inertia4j.spring.Inertia.Options`. After importing, you can now use the `Options` class to pass options as
+`io.github.inertia4j.springboot3.Inertia.Options`. After importing, you can now use the `Options` class to pass options as
 a third argument to `inertia.render`. The Inertia protocol defines two main flags which can be passed through options,
 those are the `encryptHistory` and `clearHistory` flags. If you need more information about their functionality
 you can read the [official Inertia docs](https://inertiajs.com/history-encryption). Here is an example of option
 passing in the Inertia response:
 
 ```java
-import io.github.inertia4j.spring.Inertia.Options;
+import io.github.inertia4j.springboot3.Inertia.Options;
 
 @GetMapping("/records")
 public ResponseEntity<String> index() {
@@ -117,7 +117,7 @@ The `VersionProvider` bean is optional, with the default implementation returnin
 Below is an example of a simple `VersionProvider` implementation in Spring:
 
 ```java
-import io.github.inertia4j.spring.VersionProvider;
+import io.github.inertia4j.springboot3.VersionProvider;
 import org.springframework.stereotype.Component;
 
 @Component

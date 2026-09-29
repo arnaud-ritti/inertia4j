@@ -1,4 +1,4 @@
-package io.github.inertia4j.spring;
+package io.github.inertia4j.springboot3;
 
 import io.github.inertia4j.spi.PageObjectSerializer;
 import io.github.inertia4j.spi.TemplateRenderer;
