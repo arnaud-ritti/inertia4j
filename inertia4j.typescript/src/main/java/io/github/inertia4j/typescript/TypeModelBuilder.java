@@ -232,6 +232,6 @@ final class TypeModelBuilder {
     }
 
     private Set<String> kotlinNullableAccessors(Class<?> type) {
-        return null;
+        return KotlinNullability.nullableAccessors(type);
     }
 }
