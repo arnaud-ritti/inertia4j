@@ -16,6 +16,7 @@ dependencies {
 
     implementation(libs.kotlin.metadata.jvm)
 
+    testImplementation(project(":inertia4j.spi"))
     testImplementation(libs.junit.jupiter)
     testImplementation(libs.jackson2.databind)
     testImplementation(libs.jspecify)
