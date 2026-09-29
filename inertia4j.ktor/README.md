@@ -216,8 +216,9 @@ the [official docs](https://inertiajs.com/docs/v3/the-basics/redirects).
 The same rules apply to redirects that don't go through `inertia.redirect`, such as `call.respondRedirect`: the plugin
 turns a `302 Found` answering a `PUT`, `PATCH` or `DELETE` Inertia request into a `303 See Other`, and a redirect to a
 location with a URL fragment into a `409 Conflict` with `X-Inertia-Redirect`. It also answers `GET` Inertia requests
-sent with an outdated asset version before they reach your route, keeping flash data in the session. Disable this with
-`middleware = false` in the plugin configuration.
+sent with an outdated asset version before they reach your route, keeping flash data in the session, redirects an
+Inertia request answered with an empty `200 OK` (e.g. `call.respond(HttpStatusCode.OK)`) back to its `Referer` (or `/`),
+and adds `Vary: X-Inertia` to every response. Disable this with `middleware = false` in the plugin configuration.
 
 ### Partial Reloads
 
@@ -290,6 +291,8 @@ A deferred prop that may fail can be rescued: the exception is reported (logged 
 "permissions" to InertiaProps.defer { permissionService.fetch() }.rescue()
 ```
 
+Rescuing only applies to deferred props: `rescue()` has no effect on other props, whose exceptions propagate.
+
 See the [official docs](https://inertiajs.com/docs/v3/data-props/deferred-props).
 
 ### Merging Props
@@ -303,6 +306,7 @@ inertia.render(
     "notifications" to InertiaProps.merge(notifications).prepend(),            // prepend items
     "feed" to InertiaProps.merge(feed).append("data").prepend("messages"),     // merge nested arrays
     "posts" to InertiaProps.merge(posts).matchOn("id"),                        // update existing items in place
+    "users" to InertiaProps.merge(users).append("data", "id"),                 // append to data, match on data.id
     "conversations" to InertiaProps.deepMerge(conversations).matchOn("data.id"), // merge nested objects recursively
 )
 ```
@@ -351,7 +355,7 @@ the initial render. See the [official docs](https://inertiajs.com/docs/v3/data-p
 ### Flash Data, Validation Errors and Redirect Flags
 
 Flash data, validation errors and the `preserveFragment` and `clearHistory` flags are sent with the next rendered page,
-typically after a redirect. They are kept by an `InertiaFlashStore`; the default one uses the Ktor `Sessions` plugin,
+typically after a redirect, including a page rendered for a prefetch request, as in the Laravel adapter. They are kept by an `InertiaFlashStore`; the default one uses the Ktor `Sessions` plugin,
 with an `InertiaSession` registered:
 
 ```kotlin
@@ -376,7 +380,9 @@ routing {
 ```
 
 Every page has an `errors` prop, empty by default, namespaced under the error bag requested by the client, if any. The
-client exposes flash data through the `inertia:flash` event. Set `flashStore` in the plugin configuration to keep this
+client exposes flash data through the `inertia:flash` event. Pass lists of messages to `inertia.errors` to send every
+message of each field, and pair them with `errorValueType.set(ErrorValueType.StringArray)` in the
+[TypeScript types](../docs/typescript.md) configuration. Set `flashStore` in the plugin configuration to keep this
 data elsewhere. See the [flash data](https://inertiajs.com/docs/v3/data-props/flash-data) and
 [validation](https://inertiajs.com/docs/v3/the-basics/validation) docs.
 

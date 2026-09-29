@@ -50,6 +50,7 @@ public class InertiaSpringAutoconfiguration extends AbstractInertiaSpringAutocon
             properties.getPropertyNaming()
         );
         inertia.setDefaultOptions(Inertia.Options.encryptHistory(properties.isEncryptHistory()));
+        inertia.setAllErrors(properties.getValidation().isAllErrors());
 
         return inertia;
     }

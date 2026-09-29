@@ -69,6 +69,11 @@ public class InertiaConfigurationProperties {
      */
     private final FilterProperties filter = new FilterProperties();
 
+    /**
+     * Validation error settings.
+     */
+    private final ValidationProperties validation = new ValidationProperties();
+
     public String getTemplatePath() {
         return templatePath;
     }
@@ -124,6 +129,13 @@ public class InertiaConfigurationProperties {
      */
     public FilterProperties getFilter() {
         return filter;
+    }
+
+    /**
+     * @return validation error settings, prefixed with `inertia.validation`.
+     */
+    public ValidationProperties getValidation() {
+        return validation;
     }
 
     /**
@@ -222,8 +234,9 @@ public class InertiaConfigurationProperties {
      */
     public static class FilterProperties {
         /**
-         * Whether the {@link InertiaFilter} is registered: asset version check before handlers, 303 See Other after
-         * PUT, PATCH and DELETE requests, and URL fragment redirects.
+         * Whether the {@link InertiaFilter} is registered: asset version check before handlers, redirect back on empty
+         * responses, 303 See Other after PUT, PATCH and DELETE requests, URL fragment redirects and
+         * {@code Vary: X-Inertia} on every response.
          */
         private boolean enabled = true;
 
@@ -233,6 +246,25 @@ public class InertiaConfigurationProperties {
 
         public void setEnabled(boolean enabled) {
             this.enabled = enabled;
+        }
+    }
+
+    /**
+     * Validation error settings, prefixed with `inertia.validation`.
+     */
+    public static class ValidationProperties {
+        /**
+         * Whether validation errors set from a Spring {@link org.springframework.validation.Errors} send every message
+         * of each field, as a list, instead of the first one.
+         */
+        private boolean allErrors = false;
+
+        public boolean isAllErrors() {
+            return allErrors;
+        }
+
+        public void setAllErrors(boolean allErrors) {
+            this.allErrors = allErrors;
         }
     }
 

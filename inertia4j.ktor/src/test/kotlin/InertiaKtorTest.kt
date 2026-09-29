@@ -319,6 +319,145 @@ class InertiaKtorTest {
     }
 
     @Test
+    fun `middleware rewrites redirects sent with a body and an explicit status`() = testApp {
+        val client = createClient { followRedirects = false }
+        routing {
+            put("/records") {
+                call.response.header(HttpHeaders.Location, "/target")
+                call.respondText("Redirecting", status = HttpStatusCode.Found)
+            }
+            post("/records") {
+                call.response.header(HttpHeaders.Location, "/target#comments")
+                call.respondText("Redirecting", status = HttpStatusCode.Found)
+            }
+        }
+
+        val putResponse = client.put("/records") { inertia() }
+        val fragmentResponse = client.post("/records") { inertia() }
+
+        assertEquals(HttpStatusCode.SeeOther, putResponse.status)
+        assertEquals("/target", putResponse.headers[HttpHeaders.Location])
+        assertEquals(HttpStatusCode.Conflict, fragmentResponse.status)
+        assertEquals("/target#comments", fragmentResponse.headers["X-Inertia-Redirect"])
+    }
+
+    @Test
+    fun `middleware redirects empty inertia responses back`() = testApp {
+        val client = createClient { followRedirects = false }
+        routing {
+            put("/records") {
+                call.respond(HttpStatusCode.OK)
+            }
+            get("/records") {
+                call.respondText("")
+            }
+            get("/no-content") {
+                call.respond(HttpStatusCode.NoContent)
+            }
+            get("/text") {
+                call.respondText("plain")
+            }
+        }
+
+        val putResponse = client.put("/records") {
+            inertia()
+            header(HttpHeaders.Referrer, "http://localhost/records/1/edit")
+        }
+        val getResponse = client.get("/records") { inertia() }
+        val plainResponse = client.get("/records")
+        val noContentResponse = client.get("/no-content") { inertia() }
+        val textResponse = client.get("/text") { inertia() }
+
+        assertEquals(HttpStatusCode.SeeOther, putResponse.status)
+        assertEquals("http://localhost/records/1/edit", putResponse.headers[HttpHeaders.Location])
+        assertEquals(HttpStatusCode.Found, getResponse.status)
+        assertEquals("/", getResponse.headers[HttpHeaders.Location])
+        assertEquals(HttpStatusCode.OK, plainResponse.status)
+        assertEquals(HttpStatusCode.NoContent, noContentResponse.status)
+        assertEquals(HttpStatusCode.OK, textResponse.status)
+        assertEquals("plain", textResponse.bodyAsText())
+    }
+
+    @Test
+    fun `middleware adds vary inertia to every response once`() = testApp {
+        routing {
+            get("/text") {
+                call.respondText("plain")
+            }
+            get("/page") {
+                inertia.render("Page")
+            }
+            get("/vary") {
+                call.response.header(HttpHeaders.Vary, "Accept-Language")
+                call.respondText("varied")
+            }
+        }
+
+        val textResponse = client.get("/text")
+        val pageResponse = client.get("/page")
+        val inertiaPageResponse = client.get("/page") { inertia() }
+        val conflictResponse = client.get("/page") {
+            header("X-Inertia", "true")
+            header("X-Inertia-Version", "old")
+        }
+        val variedResponse = client.get("/vary")
+
+        assertEquals(listOf("X-Inertia"), textResponse.headers.getAll(HttpHeaders.Vary))
+        assertEquals(listOf("X-Inertia"), pageResponse.headers.getAll(HttpHeaders.Vary))
+        assertEquals(listOf("X-Inertia"), inertiaPageResponse.headers.getAll(HttpHeaders.Vary))
+        assertEquals(HttpStatusCode.Conflict, conflictResponse.status)
+        assertEquals(listOf("X-Inertia"), conflictResponse.headers.getAll(HttpHeaders.Vary))
+        assertEquals(listOf("Accept-Language", "X-Inertia"), variedResponse.headers.getAll(HttpHeaders.Vary))
+    }
+
+    @Test
+    fun `disabled middleware keeps empty responses and adds no vary header`() = testApplication {
+        application {
+            install(Inertia) {
+                versionProvider = { "1" }
+                middleware = false
+            }
+            routing {
+                get("/records") {
+                    call.respond(HttpStatusCode.OK)
+                }
+            }
+        }
+
+        val response = client.get("/records") { inertia() }
+
+        assertEquals(HttpStatusCode.OK, response.status)
+        assertEquals(null, response.headers[HttpHeaders.Vary])
+    }
+
+    @Test
+    fun `prefetch requests consume flash data`() = testApp {
+        val client = createClient {
+            install(HttpCookies)
+            followRedirects = false
+        }
+        routing {
+            post("/records") {
+                inertia.flash("message", "Created")
+                inertia.redirect("/records")
+            }
+            get("/records") {
+                inertia.render("Records")
+            }
+        }
+
+        client.post("/records") { inertia() }
+        val prefetchResponse = client.get("/records") {
+            inertia()
+            header("Purpose", "prefetch")
+        }
+        val visitResponse = client.get("/records") { inertia() }
+
+        assertTrue(prefetchResponse.bodyAsText().contains("Created"))
+        assertFalse(visitResponse.bodyAsText().contains("Created"))
+    }
+
+    @Test
     fun `middleware can be disabled`() = testApplication {
         application {
             install(Inertia) {
