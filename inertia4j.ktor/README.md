@@ -237,3 +237,9 @@ Merging also works with deferred props: `InertiaProps.defer { ... }.merge()` or 
 To make the value of a merge prop lazy, wrap it in a `Supplier { ... }`. Props reset by the client
 (`router.reload({ reset: ['records'] })`) are sent without merge instructions. See the
 [official docs](https://inertiajs.com/merging-props).
+
+### Typed props
+
+Props can be described by classes annotated with `@InertiaPage`, `@InertiaShared` and `@InertiaForm`, rendered with
+`inertia.render(pageProps)`, and turned into TypeScript types by the `io.github.inertia4j.typescript` Gradle plugin.
+See [TypeScript types](/docs/typescript.md).

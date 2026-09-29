@@ -19,6 +19,7 @@ Inertia provides a protocol to render components written in modern frontend fram
 * [Using with Spring Boot 3 (Java / Kotlin)](/inertia4j.spring-boot-3/README.md)
 * [Using with Spring Boot 4 (Java / Kotlin)](/inertia4j.spring-boot-4/README.md)
 * [Using with Ktor (Kotlin)](/inertia4j.ktor/README.md)
+* [Generating TypeScript types for props](/docs/typescript.md)
 * [Advanced Usage and Extending Inertia4J](#advanced-usage-and-extending-inertia4j)
 * [Roadmap](/docs/roadmap.md)
 * [Contributing](#contributing)
