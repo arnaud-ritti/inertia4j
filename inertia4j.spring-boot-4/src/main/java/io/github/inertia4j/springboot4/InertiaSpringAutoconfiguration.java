@@ -41,7 +41,8 @@ public class InertiaSpringAutoconfiguration extends AbstractInertiaSpringAutocon
     ) {
         Inertia inertia = new Inertia(
             inertiaRenderer,
-            sharedDataProviders.orderedStream().collect(Collectors.toList())
+            sharedDataProviders.orderedStream().collect(Collectors.toList()),
+            properties.getPropertyNaming()
         );
         inertia.setDefaultOptions(Inertia.Options.encryptHistory(properties.isEncryptHistory()));
 
@@ -53,10 +54,10 @@ public class InertiaSpringAutoconfiguration extends AbstractInertiaSpringAutocon
     @ConditionalOnMissingBean
     public PageObjectSerializer pageObjectSerializer() {
         if (isJackson3Present()) {
-            return new Jackson3PageObjectSerializer();
+            return new Jackson3PageObjectSerializer(properties.getPropertyNaming());
         }
 
-        return new DefaultPageObjectSerializer();
+        return new DefaultPageObjectSerializer(properties.getPropertyNaming());
     }
 
     @Override

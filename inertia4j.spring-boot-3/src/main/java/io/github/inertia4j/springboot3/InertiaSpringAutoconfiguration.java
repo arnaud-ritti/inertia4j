@@ -41,7 +41,8 @@ public class InertiaSpringAutoconfiguration extends AbstractInertiaSpringAutocon
     ) {
         Inertia inertia = new Inertia(
             inertiaRenderer,
-            sharedDataProviders.orderedStream().collect(Collectors.toList())
+            sharedDataProviders.orderedStream().collect(Collectors.toList()),
+            properties.getPropertyNaming()
         );
         inertia.setDefaultOptions(Inertia.Options.encryptHistory(properties.isEncryptHistory()));
 
@@ -52,7 +53,7 @@ public class InertiaSpringAutoconfiguration extends AbstractInertiaSpringAutocon
     @Bean
     @ConditionalOnMissingBean
     public PageObjectSerializer pageObjectSerializer() {
-        return new DefaultPageObjectSerializer();
+        return new DefaultPageObjectSerializer(properties.getPropertyNaming());
     }
 
     @Override

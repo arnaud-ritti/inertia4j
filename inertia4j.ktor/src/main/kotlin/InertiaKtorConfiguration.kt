@@ -4,6 +4,8 @@ import io.github.inertia4j.core.DefaultJsonReader
 import io.github.inertia4j.core.DefaultPageObjectSerializer
 import io.github.inertia4j.core.HttpSsrGateway
 import io.github.inertia4j.core.InertiaRenderer
+import io.github.inertia4j.core.PropertyNaming
+import io.github.inertia4j.core.PropsExtractor
 import io.github.inertia4j.core.SimpleTemplateRenderer
 import io.github.inertia4j.core.SsrRenderFailure
 import io.github.inertia4j.spi.JsonReader
@@ -27,7 +29,7 @@ class InertiaKtorConfiguration {
 
     /**
      * The serializer used to convert the [io.github.inertia4j.spi.PageObject] into a JSON string.
-     * Defaults to `null`. If left `null`, [DefaultPageObjectSerializer] will be used,
+     * Defaults to `null`. If left `null`, [DefaultPageObjectSerializer] will be used with [propertyNaming],
      * which requires Jackson Databind on the classpath.
      */
     var serializer: PageObjectSerializer? = null
@@ -71,6 +73,13 @@ class InertiaKtorConfiguration {
      */
     var flashStore: InertiaFlashStore? = null
 
+    /**
+     * Naming strategy used when converting typed props objects. Defaults to [PropertyNaming.Camel].
+     * Also applied to the objects inside props by the default serializer; a custom [serializer] must use the same
+     * naming strategy.
+     */
+    var propertyNaming: PropertyNaming = PropertyNaming.Camel
+
     internal val ssr = SsrConfiguration()
 
     internal val sharedDataProviders = mutableListOf<suspend (ApplicationCall) -> Map<String, Any?>>()
@@ -82,6 +91,16 @@ class InertiaKtorConfiguration {
      */
     fun share(provider: suspend (ApplicationCall) -> Map<String, Any?>) {
         sharedDataProviders.add(provider)
+    }
+
+    /**
+     * Registers a provider of a typed object, typically a class annotated with
+     * [io.github.inertia4j.annotations.InertiaShared], whose properties are shared with every Inertia response.
+     *
+     * @param provider returns the shared props object for the given call.
+     */
+    fun shareTyped(provider: suspend (ApplicationCall) -> Any) {
+        sharedDataProviders.add { call -> PropsExtractor.toMap(provider(call), propertyNaming) }
     }
 
     /**
@@ -98,7 +117,7 @@ class InertiaKtorConfiguration {
     }
 
     internal val serializerOrDefault: PageObjectSerializer get() {
-        return serializer ?: DefaultPageObjectSerializer()
+        return serializer ?: DefaultPageObjectSerializer(propertyNaming)
     }
 
     internal val flashStoreOrDefault: InertiaFlashStore get() {

@@ -41,7 +41,7 @@
 - [x] Shared data
 - [x] Deferred props
 - [x] Merging props (shallow and deep)
-- [ ] Generate TypeScript types for props ([inspiration](https://www.youtube.com/watch?v=LeYF1NE3jQ4))
+- [x] Generate TypeScript types for props ([inspiration](https://www.youtube.com/watch?v=LeYF1NE3jQ4))
 
 ## 2.0 — Inertia.js v3 protocol
 

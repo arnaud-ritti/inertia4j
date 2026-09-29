@@ -5,6 +5,7 @@ import io.github.inertia4j.core.InertiaProps
 import io.github.inertia4j.core.InertiaRenderer
 import io.github.inertia4j.core.InertiaRenderingOptions
 import io.github.inertia4j.core.Precognition as CorePrecognition
+import io.github.inertia4j.core.PropsExtractor
 import io.ktor.http.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
@@ -75,6 +76,36 @@ class InertiaKtorRenderer internal constructor(
             }
 
             respond(response)
+        }
+
+        /**
+         * Renders the page described by a props object annotated with [io.github.inertia4j.annotations.InertiaPage],
+         * using its component name and properties converted with [InertiaKtorConfiguration.propertyNaming].
+         *
+         * @param pageProps page props object.
+         * @param url The URL for the page object. Defaults to the path and query string of the request.
+         * @param encryptHistory Whether to encrypt history state. Defaults to the plugin configuration.
+         * @param clearHistory Whether to clear history state. Defaults to `false`.
+         * @param status HTTP status of the response. Defaults to 200 OK.
+         * @throws IllegalArgumentException if the class is not annotated with `@InertiaPage`.
+         */
+        suspend fun render(
+            pageProps: Any,
+            url: String = request.url,
+            encryptHistory: Boolean = configuration.encryptHistory,
+            clearHistory: Boolean = false,
+            status: HttpStatusCode = HttpStatusCode.OK
+        ) {
+            val props = PropsExtractor.toMap(pageProps, configuration.propertyNaming)
+
+            render(
+                PropsExtractor.componentName(pageProps),
+                *props.toList().toTypedArray(),
+                url = url,
+                encryptHistory = encryptHistory,
+                clearHistory = clearHistory,
+                status = status
+            )
         }
 
         /**

@@ -411,3 +411,21 @@ install(Inertia) {
 When rendering fails, the page falls back to client-side rendering after notifying `onFailure`, unless `throwOnError`
 is set. `hotUrl` renders pages through the Vite development server instead. See the
 [official docs](https://inertiajs.com/docs/v3/advanced/server-side-rendering).
+
+### Typed props
+
+Props can also be described by classes annotated with `@InertiaPage`, `@InertiaShared` and `@InertiaForm`, and turned
+into TypeScript types by the `io.github.inertia4j.typescript` Gradle plugin. `inertia.render(pageProps)` takes the
+component name from `@InertiaPage` and sends the properties of the object; `InertiaProp` fields
+(`InertiaProps.defer { ... }`, `InertiaProps.merge(...)`, …) and `() -> T` lazy values keep their behaviour:
+
+```kotlin
+@InertiaPage("Records/Index")
+data class RecordsIndexProps(val records: List<Record>, val stats: InertiaProp<List<Stat>>)
+
+inertia.render(RecordsIndexProps(records, InertiaProps.defer { stats() }))
+```
+
+`shareTyped { call -> AppShared(...) }` shares a typed object with every response. Set
+`propertyNaming = PropertyNaming.Snake` in the plugin configuration to send snake_case keys, matching the Gradle
+plugin's `propertyNaming` option. See [TypeScript types](/docs/typescript.md).

@@ -2,8 +2,8 @@ package io.github.inertia4j.springshared;
 
 import io.github.inertia4j.core.HttpSsrGateway;
 import io.github.inertia4j.core.InertiaRenderer;
+import io.github.inertia4j.core.PropertyNaming;
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.context.annotation.Configuration;
 
 import java.time.Duration;
 import java.util.ArrayList;
@@ -19,9 +19,9 @@ import java.util.List;
  * inertia.encrypt-history=true
  * inertia.ssr.enabled=true
  * inertia.ssr.url=http://127.0.0.1:13714
+ * inertia.property-naming=snake
  * </pre>
  */
-@Configuration
 @ConfigurationProperties(prefix = "inertia")
 public class InertiaConfigurationProperties {
     /**
@@ -43,6 +43,12 @@ public class InertiaConfigurationProperties {
      * Whether page objects list the top-level keys of shared props in {@code sharedProps}.
      */
     private boolean exposeSharedPropKeys = true;
+
+    /**
+     * Naming strategy used when converting typed props objects, also applied to the objects inside props by the default
+     * {@link io.github.inertia4j.spi.PageObjectSerializer} ({@code camel} or {@code snake}).
+     */
+    private PropertyNaming propertyNaming = PropertyNaming.Camel;
 
     /**
      * Server-side rendering settings.
@@ -79,6 +85,20 @@ public class InertiaConfigurationProperties {
 
     public void setExposeSharedPropKeys(boolean exposeSharedPropKeys) {
         this.exposeSharedPropKeys = exposeSharedPropKeys;
+    }
+
+    /**
+     * @return naming strategy used when converting typed props objects.
+     */
+    public PropertyNaming getPropertyNaming() {
+        return propertyNaming;
+    }
+
+    /**
+     * @param propertyNaming naming strategy used when converting typed props objects.
+     */
+    public void setPropertyNaming(PropertyNaming propertyNaming) {
+        this.propertyNaming = propertyNaming;
     }
 
     public Ssr getSsr() {

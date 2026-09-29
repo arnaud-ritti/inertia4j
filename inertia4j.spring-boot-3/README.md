@@ -401,3 +401,20 @@ inertia.ssr.throw-on-error=false
 When rendering fails, the page falls back to client-side rendering and an `SsrRenderFailed` application event is
 published. `hot-url` renders pages through the Vite development server instead. See the
 [official docs](https://inertiajs.com/docs/v3/advanced/server-side-rendering).
+
+### Typed props
+
+Props can also be described by classes annotated with `@InertiaPage`, `@InertiaShared` and `@InertiaForm`, and turned
+into TypeScript types by the `io.github.inertia4j.typescript` Gradle plugin. `inertia.render(pageProps)` takes the
+component name from `@InertiaPage` and sends the properties of the object; `InertiaProp` fields (`Inertia.defer(...)`,
+`Inertia.merge(...)`, …) keep their behaviour:
+
+```java
+@InertiaPage("Records/Index")
+public record RecordsIndexProps(List<Record> records, InertiaProp<List<Stat>> stats) {}
+
+return inertia.render(new RecordsIndexProps(records, Inertia.defer(statsService::compute)));
+```
+
+A `TypedSharedDataProvider` bean shares a typed object with every response. Set `inertia.property-naming=snake` to
+send snake_case keys, matching the plugin's `propertyNaming` option. See [TypeScript types](/docs/typescript.md).

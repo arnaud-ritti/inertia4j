@@ -3,10 +3,14 @@ package io.github.inertia4j.core;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import io.github.inertia4j.spi.OncePropMetadata;
 import io.github.inertia4j.spi.PageObject;
 import io.github.inertia4j.spi.PageObjectSerializer;
+import io.github.inertia4j.spi.ScrollPropMetadata;
 import io.github.inertia4j.spi.SerializationException;
 import org.jspecify.annotations.NullMarked;
 
@@ -25,8 +29,35 @@ public class JacksonPageObjectSerializer implements PageObjectSerializer {
      * The Jackson ObjectMapper instance used for serialization.
      * Configured to order map entries by keys for consistent output.
      */
-    private final ObjectMapper objectMapper = new ObjectMapper()
-        .configure(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS, true);
+    private final ObjectMapper objectMapper;
+
+    /**
+     * Constructs a serializer keeping the Java property names of objects inside props ({@link PropertyNaming#Camel}).
+     */
+    public JacksonPageObjectSerializer() {
+        this(PropertyNaming.Camel);
+    }
+
+    /**
+     * Constructs a serializer applying a naming strategy to the properties of objects inside props.
+     * The keys of the page object itself ({@code component}, {@code props}, {@code encryptHistory}, …), of its
+     * metadata and the keys of maps are never renamed.
+     *
+     * @param propertyNaming naming strategy, matching the one used to convert typed props.
+     */
+    public JacksonPageObjectSerializer(PropertyNaming propertyNaming) {
+        ObjectMapper mapper = new ObjectMapper()
+            .configure(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS, true)
+            .addMixIn(PageObject.class, ProtocolKeys.class)
+            .addMixIn(ScrollPropMetadata.class, ProtocolKeys.class)
+            .addMixIn(OncePropMetadata.class, ProtocolKeys.class);
+
+        if (propertyNaming == PropertyNaming.Snake) {
+            mapper.setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE);
+        }
+
+        this.objectMapper = mapper;
+    }
 
     /**
      * {@inheritDoc}
@@ -41,6 +72,12 @@ public class JacksonPageObjectSerializer implements PageObjectSerializer {
             throw new SerializationException(e);
         }
     }
+
+    /**
+     * Keeps the Inertia protocol keys as-is whatever the global naming strategy.
+     */
+    @JsonNaming(PropertyNamingStrategies.LowerCamelCaseStrategy.class)
+    private abstract static class ProtocolKeys {}
 
     private static void removeEmptyMetadata(ObjectNode tree) {
         List<String> fields = new ArrayList<>();

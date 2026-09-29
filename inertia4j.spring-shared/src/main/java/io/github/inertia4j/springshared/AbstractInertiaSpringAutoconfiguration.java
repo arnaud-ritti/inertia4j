@@ -14,6 +14,7 @@ import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
 
@@ -23,6 +24,7 @@ import org.springframework.context.annotation.Bean;
  * {@link InertiaRenderer} and, when {@code inertia.ssr.enabled} is set, {@link SsrGateway},
  * unless they are already defined in the application context.
  */
+@EnableConfigurationProperties(InertiaConfigurationProperties.class)
 public abstract class AbstractInertiaSpringAutoconfiguration {
     private static final Log logger = LogFactory.getLog(AbstractInertiaSpringAutoconfiguration.class);
 
