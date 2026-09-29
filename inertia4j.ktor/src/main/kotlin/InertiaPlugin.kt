@@ -1,8 +1,8 @@
-package io.github.inertia4j.ktor
+package dev.arkoder.inertia4j.ktor
 
-import io.github.inertia4j.core.InertiaHeaders
-import io.github.inertia4j.core.InertiaRedirects
-import io.github.inertia4j.core.InertiaRenderer
+import dev.arkoder.inertia4j.core.InertiaHeaders
+import dev.arkoder.inertia4j.core.InertiaRedirects
+import dev.arkoder.inertia4j.core.InertiaRenderer
 import io.ktor.http.*
 import io.ktor.http.content.*
 import io.ktor.server.application.*

@@ -9,8 +9,8 @@ assertions work whatever the request headers.
 `InertiaResultMatchers` needs `spring-test`, which `spring-boot-starter-test` already brings:
 
 ```java
-import static io.github.inertia4j.springshared.testing.InertiaResultMatchers.inertia;
-import static io.github.inertia4j.springshared.testing.InertiaResultMatchers.inertiaPage;
+import static dev.arkoder.inertia4j.springshared.testing.InertiaResultMatchers.inertia;
+import static dev.arkoder.inertia4j.springshared.testing.InertiaResultMatchers.inertiaPage;
 
 @WebMvcTest(UsersController.class)
 class UsersControllerTest {
@@ -55,8 +55,8 @@ mockMvc.perform(get("/users"))
 ## Ktor (testApplication)
 
 ```kotlin
-import io.github.inertia4j.ktor.testing.assertInertia
-import io.github.inertia4j.ktor.testing.inertiaPage
+import dev.arkoder.inertia4j.ktor.testing.assertInertia
+import dev.arkoder.inertia4j.ktor.testing.inertiaPage
 
 class UsersTest {
     @Test
@@ -99,5 +99,5 @@ Paths are dotted, with numeric segments indexing arrays (`users.0.name`). Number
 
 ## Other test clients
 
-Both adapters wrap `io.github.inertia4j.core.testing.AssertableInertia`, which works with any HTTP client. See
+Both adapters wrap `dev.arkoder.inertia4j.core.testing.AssertableInertia`, which works with any HTTP client. See
 [Extending Inertia4J](extending.md#testing).

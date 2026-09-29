@@ -1,8 +1,8 @@
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import io.github.inertia4j.core.Property;
-import io.github.inertia4j.core.PropertyIntrospector;
-import io.github.inertia4j.core.PropertyNaming;
+import dev.arkoder.inertia4j.core.Property;
+import dev.arkoder.inertia4j.core.PropertyIntrospector;
+import dev.arkoder.inertia4j.core.PropertyNaming;
 import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 

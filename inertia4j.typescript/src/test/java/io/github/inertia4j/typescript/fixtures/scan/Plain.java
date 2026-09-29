@@ -1,3 +1,0 @@
-package io.github.inertia4j.typescript.fixtures.scan;
-
-public record Plain(String value) {}

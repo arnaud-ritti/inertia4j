@@ -12,7 +12,10 @@ for Vue and Svelte; only the client adapter changes.
 | `inertia4j-ktor`                    | Java 11+                         | Ktor 3.x           |
 
 The frontend needs Node.js 20 or newer and an Inertia.js **v3** client adapter (`@inertiajs/react`, `@inertiajs/vue3`
-or `@inertiajs/svelte`). Inertia4J 1.x supports older clients; see the [migration guide](migration-2.0.md) to upgrade.
+or `@inertiajs/svelte`). Inertia4J 1.x supports older clients; see the [migration guide](migration-3.0.md) to upgrade.
+
+Artifacts are published to GitHub Packages. Add the repository to your build first: see
+[Installation](installation.md).
 
 ## 1. Add the dependency
 
@@ -21,7 +24,7 @@ or `@inertiajs/svelte`). Inertia4J 1.x supports older clients; see the [migratio
 ```kotlin
 // build.gradle.kts
 dependencies {
-    implementation("io.github.inertia4j:inertia4j-spring-boot-3:2.0.0") // or inertia4j-spring-boot-4
+    implementation("dev.arkoder:inertia4j-spring-boot-3:3.0.0") // or inertia4j-spring-boot-4
     implementation("org.springframework.boot:spring-boot-starter-web")
 }
 ```
@@ -29,9 +32,9 @@ dependencies {
 ```xml
 <!-- pom.xml -->
 <dependency>
-    <groupId>io.github.inertia4j</groupId>
+    <groupId>dev.arkoder</groupId>
     <artifactId>inertia4j-spring-boot-3</artifactId> <!-- or inertia4j-spring-boot-4 -->
-    <version>2.0.0</version>
+    <version>3.0.0</version>
 </dependency>
 ```
 
@@ -43,7 +46,7 @@ registered.
 ```kotlin
 // build.gradle.kts
 dependencies {
-    implementation("io.github.inertia4j:inertia4j-ktor:2.0.0")
+    implementation("dev.arkoder:inertia4j-ktor:3.0.0")
     implementation("io.ktor:ktor-server-netty:3.0.0")
     implementation("io.ktor:ktor-server-sessions:3.0.0")          // flash data and validation errors
     implementation("com.fasterxml.jackson.core:jackson-databind:2.17.2") // default JSON serializer
@@ -53,7 +56,7 @@ dependencies {
 Install the plugin in your application module:
 
 ```kotlin
-import io.github.inertia4j.ktor.Inertia
+import dev.arkoder.inertia4j.ktor.Inertia
 
 fun Application.module() {
     install(Inertia)
@@ -141,7 +144,7 @@ Add `vite.hot` and `src/main/resources/static/build/` to `.gitignore`.
 ### Spring Boot
 
 ```java
-import io.github.inertia4j.springboot3.Inertia;
+import dev.arkoder.inertia4j.springboot3.Inertia;
 
 @RestController
 public class PagesController {
@@ -161,8 +164,8 @@ public class PagesController {
 ### Ktor
 
 ```kotlin
-import io.github.inertia4j.ktor.Inertia
-import io.github.inertia4j.ktor.inertia
+import dev.arkoder.inertia4j.ktor.Inertia
+import dev.arkoder.inertia4j.ktor.inertia
 
 fun Application.module() {
     install(Inertia)

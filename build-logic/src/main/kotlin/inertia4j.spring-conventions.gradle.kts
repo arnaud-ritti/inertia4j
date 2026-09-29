@@ -23,9 +23,3 @@ dependencies {
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
-
-publishing {
-    repositories.named<MavenArtifactRepository>("maven") {
-        url = layout.buildDirectory.dir("deploy").get().asFile.toURI()
-    }
-}

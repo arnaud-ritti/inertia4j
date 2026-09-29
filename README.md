@@ -46,28 +46,30 @@ export default function Index({ users }: { users: User[] }) {
 
 | Framework                 | Artifact                                        | Requires |
 |---------------------------|-------------------------------------------------|----------|
-| Spring Boot 3 (MVC)       | `io.github.inertia4j:inertia4j-spring-boot-3`   | Java 17  |
-| Spring Boot 4 (MVC)       | `io.github.inertia4j:inertia4j-spring-boot-4`   | Java 17  |
-| Ktor 3                    | `io.github.inertia4j:inertia4j-ktor`            | Java 11  |
+| Spring Boot 3 (MVC)       | `dev.arkoder:inertia4j-spring-boot-3`   | Java 17  |
+| Spring Boot 4 (MVC)       | `dev.arkoder:inertia4j-spring-boot-4`   | Java 17  |
+| Ktor 3                    | `dev.arkoder:inertia4j-ktor`            | Java 11  |
 
 ```kotlin
 dependencies {
-    implementation("io.github.inertia4j:inertia4j-spring-boot-3:2.0.0")
+    implementation("dev.arkoder:inertia4j-spring-boot-3:3.0.0")
 }
 ```
 
 ```xml
 <dependency>
-    <groupId>io.github.inertia4j</groupId>
+    <groupId>dev.arkoder</groupId>
     <artifactId>inertia4j-spring-boot-3</artifactId>
-    <version>2.0.0</version>
+    <version>3.0.0</version>
 </dependency>
 ```
 
-Gradle and Maven are both supported; see the [Maven guide](docs/guides/maven.md) for building the frontend and generating
-TypeScript types with Maven.
+Artifacts are published to GitHub Packages, which needs the repository and a token in your build: see
+[Installation](docs/installation.md). Gradle and Maven are both supported; the [Maven guide](docs/guides/maven.md)
+covers building the frontend and generating TypeScript types with Maven.
 
-Inertia4J 2.x works with Inertia.js v3 clients. Coming from 1.x? Read the [migration guide](docs/migration-2.0.md).
+Inertia4J versions follow the Inertia.js protocol: 3.x works with Inertia.js v3 clients. Coming from 1.x? Read the
+[migration guide](docs/migration-3.0.md).
 
 Follow [Getting started](docs/getting-started.md) for the frontend setup and your first page.
 

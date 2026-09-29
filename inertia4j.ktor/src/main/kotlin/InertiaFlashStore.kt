@@ -1,4 +1,4 @@
-package io.github.inertia4j.ktor
+package dev.arkoder.inertia4j.ktor
 
 import io.ktor.server.application.*
 

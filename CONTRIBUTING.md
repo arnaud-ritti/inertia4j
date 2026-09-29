@@ -82,6 +82,24 @@ Useful commands:
 A maintainer will review your pull request. Expect questions and change requests; they are part of the process, not a
 rejection.
 
+## Versioning and releases
+
+The major version follows the Inertia.js protocol: 3.x implements Inertia.js v3. Minor and patch versions follow
+[semantic versioning](https://semver.org/) within that line. The build version is `3.0.0-SNAPSHOT` in
+`gradle.properties`; release versions come from the git tag.
+
+Maintainers release by pushing a tag:
+
+```shell
+git tag -a v3.1.0 -m "v3.1.0"
+git push origin v3.1.0
+```
+
+The [release workflow](.github/workflows/release.yml) builds and tests that commit, publishes every module to GitHub
+Packages with the tag's version, and creates a GitHub release with generated notes. Tags with a suffix, such as
+`v3.1.0-rc.1`, are marked as pre-releases. A version can't be published twice, so fix a broken release with a new
+patch version.
+
 ## License
 
 Inertia4J is licensed under the [Apache License 2.0](LICENSE). By submitting a contribution you agree that it is

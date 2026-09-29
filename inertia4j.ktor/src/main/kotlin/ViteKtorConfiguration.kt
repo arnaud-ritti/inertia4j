@@ -1,6 +1,6 @@
-package io.github.inertia4j.ktor
+package dev.arkoder.inertia4j.ktor
 
-import io.github.inertia4j.core.vite.ViteConfig
+import dev.arkoder.inertia4j.core.vite.ViteConfig
 import io.ktor.server.application.*
 import java.nio.file.Path
 import java.util.function.Supplier

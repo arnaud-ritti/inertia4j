@@ -1,10 +1,10 @@
-package io.github.inertia4j.ktor
+package dev.arkoder.inertia4j.ktor
 
-import io.github.inertia4j.annotations.InertiaPage
-import io.github.inertia4j.annotations.InertiaShared
-import io.github.inertia4j.core.InertiaProp
-import io.github.inertia4j.core.InertiaProps
-import io.github.inertia4j.core.PropertyNaming
+import dev.arkoder.inertia4j.annotations.InertiaPage
+import dev.arkoder.inertia4j.annotations.InertiaShared
+import dev.arkoder.inertia4j.core.InertiaProp
+import dev.arkoder.inertia4j.core.InertiaProps
+import dev.arkoder.inertia4j.core.PropertyNaming
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.server.application.*

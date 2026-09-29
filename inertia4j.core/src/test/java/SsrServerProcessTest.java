@@ -1,6 +1,6 @@
 import com.sun.net.httpserver.HttpServer;
-import io.github.inertia4j.core.HttpSsrGateway;
-import io.github.inertia4j.core.SsrServerProcess;
+import dev.arkoder.inertia4j.core.HttpSsrGateway;
+import dev.arkoder.inertia4j.core.SsrServerProcess;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

@@ -1,4 +1,4 @@
-import io.github.inertia4j.core.HttpRequest;
+import dev.arkoder.inertia4j.core.HttpRequest;
 
 import java.util.Map;
 

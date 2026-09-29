@@ -40,10 +40,21 @@ fun MavenPom.inertia4jMetadata() {
 }
 
 /**
- * Local repository the artifacts are staged to before JReleaser deploys them.
+ * GitHub Packages repository of this project. Credentials come from the `GITHUB_ACTOR` and `GITHUB_TOKEN` environment
+ * variables, set by GitHub Actions, or from the `gpr.user` and `gpr.key` Gradle properties.
  */
-fun RepositoryHandler.inertia4jStagingDeploy(project: Project) {
+fun RepositoryHandler.inertia4jGitHubPackages(project: Project) {
     maven {
-        url = project.layout.buildDirectory.dir("staging-deploy").get().asFile.toURI()
+        name = "GitHubPackages"
+        url = project.uri("https://maven.pkg.github.com/arnaud-ritti/inertia4j")
+
+        credentials {
+            username = project.providers.environmentVariable("GITHUB_ACTOR")
+                .orElse(project.providers.gradleProperty("gpr.user"))
+                .orNull
+            password = project.providers.environmentVariable("GITHUB_TOKEN")
+                .orElse(project.providers.gradleProperty("gpr.key"))
+                .orNull
+        }
     }
 }

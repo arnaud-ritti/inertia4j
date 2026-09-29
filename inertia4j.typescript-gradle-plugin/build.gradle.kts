@@ -2,10 +2,7 @@ plugins {
     id("inertia4j.java-conventions")
     `java-gradle-plugin`
     `maven-publish`
-    signing
 }
-
-version = "2.0.0"
 
 java {
     toolchain {
@@ -24,8 +21,8 @@ dependencies {
 gradlePlugin {
     plugins {
         create("inertiaTypes") {
-            id = "io.github.inertia4j.typescript"
-            implementationClass = "io.github.inertia4j.typescript.gradle.InertiaTypesPlugin"
+            id = "dev.arkoder.inertia4j.typescript"
+            implementationClass = "dev.arkoder.inertia4j.typescript.gradle.InertiaTypesPlugin"
             displayName = "Inertia4J TypeScript types"
             description = "Generates TypeScript types for Inertia4J props classes"
         }
@@ -48,10 +45,6 @@ publishing {
     }
 
     repositories {
-        inertia4jStagingDeploy(project) // used by JReleaser
+        inertia4jGitHubPackages(project)
     }
-}
-
-signing {
-    useGpgCmd()
 }

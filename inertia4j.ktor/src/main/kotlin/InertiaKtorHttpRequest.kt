@@ -1,6 +1,6 @@
-package io.github.inertia4j.ktor
+package dev.arkoder.inertia4j.ktor
 
-import io.github.inertia4j.core.HttpRequest
+import dev.arkoder.inertia4j.core.HttpRequest
 import io.ktor.server.application.*
 import io.ktor.server.plugins.*
 import io.ktor.server.request.*

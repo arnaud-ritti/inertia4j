@@ -4,25 +4,28 @@ Inertia.js adapter for Spring Boot 4 (Spring MVC, Java 17+). The [Spring Boot + 
 
 ## Installation
 
+Artifacts are published to GitHub Packages; add the repository first, see
+[Installation](../docs/installation.md).
+
 ```kotlin
 // build.gradle.kts
 dependencies {
-    implementation("io.github.inertia4j:inertia4j-spring-boot-4:2.0.0")
+    implementation("dev.arkoder:inertia4j-spring-boot-4:3.0.0")
 }
 ```
 
 ```xml
 <!-- pom.xml -->
 <dependency>
-    <groupId>io.github.inertia4j</groupId>
+    <groupId>dev.arkoder</groupId>
     <artifactId>inertia4j-spring-boot-4</artifactId>
-    <version>2.0.0</version>
+    <version>3.0.0</version>
 </dependency>
 ```
 
 The module is auto-configured. It registers:
 
-- the `Inertia` bean (`io.github.inertia4j.springboot4.Inertia`) used by controllers;
+- the `Inertia` bean (`dev.arkoder.inertia4j.springboot4.Inertia`) used by controllers;
 - the `InertiaFilter`, which applies the protocol to every request;
 - the Vite integration, serving the frontend build under `/build/`;
 - the `inertiaSsr` health indicator when Spring Boot Actuator and SSR are enabled.

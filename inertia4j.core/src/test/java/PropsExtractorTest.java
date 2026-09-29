@@ -1,9 +1,9 @@
 import com.fasterxml.jackson.annotation.JsonInclude;
-import io.github.inertia4j.annotations.InertiaPage;
-import io.github.inertia4j.core.InertiaProp;
-import io.github.inertia4j.core.InertiaProps;
-import io.github.inertia4j.core.PropertyNaming;
-import io.github.inertia4j.core.PropsExtractor;
+import dev.arkoder.inertia4j.annotations.InertiaPage;
+import dev.arkoder.inertia4j.core.InertiaProp;
+import dev.arkoder.inertia4j.core.InertiaProps;
+import dev.arkoder.inertia4j.core.PropertyNaming;
+import dev.arkoder.inertia4j.core.PropsExtractor;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;

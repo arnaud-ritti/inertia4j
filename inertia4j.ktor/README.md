@@ -4,10 +4,13 @@ Inertia.js adapter for Ktor 3 (Java 11+), provided as an application plugin.
 
 ## Installation
 
+Artifacts are published to GitHub Packages; add the repository first, see
+[Installation](../docs/installation.md).
+
 ```kotlin
 // build.gradle.kts
 dependencies {
-    implementation("io.github.inertia4j:inertia4j-ktor:2.0.0")
+    implementation("dev.arkoder:inertia4j-ktor:3.0.0")
     implementation("io.ktor:ktor-server-sessions:3.0.0")                  // flash data and validation errors
     implementation("com.fasterxml.jackson.core:jackson-databind:2.17.2") // default JSON serializer
 }
@@ -16,9 +19,9 @@ dependencies {
 ```xml
 <!-- pom.xml: Ktor artifacts need the -jvm suffix with Maven -->
 <dependency>
-    <groupId>io.github.inertia4j</groupId>
+    <groupId>dev.arkoder</groupId>
     <artifactId>inertia4j-ktor</artifactId>
-    <version>2.0.0</version>
+    <version>3.0.0</version>
 </dependency>
 <dependency>
     <groupId>io.ktor</groupId>
@@ -37,10 +40,10 @@ See the [Maven guide](../docs/guides/maven.md) for the frontend build and TypeSc
 ## Usage
 
 ```kotlin
-import io.github.inertia4j.core.InertiaProps
-import io.github.inertia4j.ktor.Inertia
-import io.github.inertia4j.ktor.InertiaSession
-import io.github.inertia4j.ktor.inertia
+import dev.arkoder.inertia4j.core.InertiaProps
+import dev.arkoder.inertia4j.ktor.Inertia
+import dev.arkoder.inertia4j.ktor.InertiaSession
+import dev.arkoder.inertia4j.ktor.inertia
 
 fun Application.module() {
     install(Sessions) {

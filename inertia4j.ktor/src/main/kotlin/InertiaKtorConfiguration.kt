@@ -1,19 +1,19 @@
-package io.github.inertia4j.ktor
+package dev.arkoder.inertia4j.ktor
 
-import io.github.inertia4j.core.DefaultJsonReader
-import io.github.inertia4j.core.DefaultPageObjectSerializer
-import io.github.inertia4j.core.HttpSsrGateway
-import io.github.inertia4j.core.InertiaRenderer
-import io.github.inertia4j.core.PropertyNaming
-import io.github.inertia4j.core.PropsExtractor
-import io.github.inertia4j.core.SimpleTemplateRenderer
-import io.github.inertia4j.core.SsrRenderFailure
-import io.github.inertia4j.core.SsrServerProcess
-import io.github.inertia4j.core.vite.Vite
-import io.github.inertia4j.spi.JsonReader
-import io.github.inertia4j.spi.PageObjectSerializer
-import io.github.inertia4j.spi.SsrGateway
-import io.github.inertia4j.spi.TemplateRenderer
+import dev.arkoder.inertia4j.core.DefaultJsonReader
+import dev.arkoder.inertia4j.core.DefaultPageObjectSerializer
+import dev.arkoder.inertia4j.core.HttpSsrGateway
+import dev.arkoder.inertia4j.core.InertiaRenderer
+import dev.arkoder.inertia4j.core.PropertyNaming
+import dev.arkoder.inertia4j.core.PropsExtractor
+import dev.arkoder.inertia4j.core.SimpleTemplateRenderer
+import dev.arkoder.inertia4j.core.SsrRenderFailure
+import dev.arkoder.inertia4j.core.SsrServerProcess
+import dev.arkoder.inertia4j.core.vite.Vite
+import dev.arkoder.inertia4j.spi.JsonReader
+import dev.arkoder.inertia4j.spi.PageObjectSerializer
+import dev.arkoder.inertia4j.spi.SsrGateway
+import dev.arkoder.inertia4j.spi.TemplateRenderer
 import io.ktor.server.application.*
 import java.nio.file.Path
 import java.time.Duration
@@ -33,7 +33,7 @@ class InertiaKtorConfiguration {
     var versionProvider: (() -> String)? = null
 
     /**
-     * The serializer used to convert the [io.github.inertia4j.spi.PageObject] into a JSON string.
+     * The serializer used to convert the [dev.arkoder.inertia4j.spi.PageObject] into a JSON string.
      * Defaults to `null`. If left `null`, [DefaultPageObjectSerializer] will be used with [propertyNaming],
      * which requires Jackson Databind on the classpath.
      */
@@ -128,7 +128,7 @@ class InertiaKtorConfiguration {
 
     /**
      * Registers a provider of a typed object, typically a class annotated with
-     * [io.github.inertia4j.annotations.InertiaShared], whose properties are shared with every Inertia response.
+     * [dev.arkoder.inertia4j.annotations.InertiaShared], whose properties are shared with every Inertia response.
      *
      * @param provider returns the shared props object for the given call.
      */

@@ -3,8 +3,6 @@ plugins {
     id("inertia4j.publishing-conventions")
 }
 
-version = "2.0.0"
-
 java {
     toolchain {
         languageVersion = JavaLanguageVersion.of(17)

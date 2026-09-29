@@ -5,7 +5,7 @@
 `render` takes the name of the component to render on the client and its props. It returns a full HTML document on
 the first visit and the page object as JSON on Inertia visits.
 
-**Spring Boot.** Inject the `Inertia` bean (`io.github.inertia4j.springboot3.Inertia`, or `springboot4`) and return
+**Spring Boot.** Inject the `Inertia` bean (`dev.arkoder.inertia4j.springboot3.Inertia`, or `springboot4`) and return
 the `ResponseEntity<String>` it builds:
 
 ```java
@@ -63,7 +63,7 @@ with the backend.
 **Spring Boot** takes an `Inertia.Options` value as the last argument:
 
 ```java
-import io.github.inertia4j.springboot3.Inertia.Options;
+import dev.arkoder.inertia4j.springboot3.Inertia.Options;
 
 return inertia.render("Errors/NotFound", Map.of(), Options.status(404));
 return inertia.render("Account/Show", props, Options.encryptHistory().clearHistory());
@@ -106,7 +106,7 @@ The id of the root element is `app` by default (`inertia.root-id` / `rootId`). C
 same `id` to `createInertiaApp`.
 
 The template is loaded once, when the application starts, so restart after editing it. Templates still containing the 1.x `@PageObject@` placeholder are rejected at
-startup; see the [migration guide](../migration-2.0.md#html-template).
+startup; see the [migration guide](../migration-3.0.md#html-template).
 
 To use a template engine such as Thymeleaf or Pebble instead, implement a
 [custom `TemplateRenderer`](extending.md#html-template).

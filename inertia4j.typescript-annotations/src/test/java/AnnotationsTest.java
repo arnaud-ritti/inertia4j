@@ -1,7 +1,7 @@
-import io.github.inertia4j.annotations.InertiaForm;
-import io.github.inertia4j.annotations.InertiaPage;
-import io.github.inertia4j.annotations.InertiaShared;
-import io.github.inertia4j.annotations.TypeScriptName;
+import dev.arkoder.inertia4j.annotations.InertiaForm;
+import dev.arkoder.inertia4j.annotations.InertiaPage;
+import dev.arkoder.inertia4j.annotations.InertiaShared;
+import dev.arkoder.inertia4j.annotations.TypeScriptName;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;

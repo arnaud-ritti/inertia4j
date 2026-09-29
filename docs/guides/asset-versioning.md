@@ -21,7 +21,7 @@ Each `vite build` changes the manifest, so each deployment of a new frontend cha
 
 If you don't build with Vite, provide the version yourself, for example a hash computed at build time.
 
-**Spring Boot.** Define a `VersionProvider` bean (`io.github.inertia4j.springboot3.VersionProvider`, or
+**Spring Boot.** Define a `VersionProvider` bean (`dev.arkoder.inertia4j.springboot3.VersionProvider`, or
 `springboot4`):
 
 ```java

@@ -1,0 +1,35 @@
+package dev.arkoder.inertia4j.springboot3;
+
+import dev.arkoder.inertia4j.core.HttpResponse;
+import dev.arkoder.inertia4j.core.InertiaRenderer;
+import dev.arkoder.inertia4j.spi.PageObjectSerializer;
+import dev.arkoder.inertia4j.spi.TemplateRenderer;
+import dev.arkoder.inertia4j.springshared.AbstractInertiaSpringRenderer;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseEntity;
+import org.springframework.util.CollectionUtils;
+
+/**
+ * Spring Boot 3 implementation of {@link AbstractInertiaSpringRenderer}.
+ */
+class InertiaSpringRenderer extends AbstractInertiaSpringRenderer {
+    InertiaSpringRenderer(InertiaRenderer coreRenderer) {
+        super(coreRenderer);
+    }
+
+    public InertiaSpringRenderer(
+        PageObjectSerializer serializer,
+        VersionProvider versionProvider,
+        TemplateRenderer templateRenderer
+    ) {
+        super(serializer, versionProvider, templateRenderer);
+    }
+
+    @Override
+    protected ResponseEntity<String> convertToResponseEntity(HttpResponse response) {
+        HttpHeaders responseHeaders = new HttpHeaders(
+            CollectionUtils.toMultiValueMap(response.getHeaders())
+        );
+        return new ResponseEntity<>(response.getBody(), responseHeaders, response.getCode());
+    }
+}

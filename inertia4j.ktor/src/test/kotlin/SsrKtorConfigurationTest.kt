@@ -1,10 +1,10 @@
-package io.github.inertia4j.ktor
+package dev.arkoder.inertia4j.ktor
 
 import com.sun.net.httpserver.HttpServer
-import io.github.inertia4j.core.HttpSsrGateway
-import io.github.inertia4j.core.vite.Vite
-import io.github.inertia4j.core.vite.ViteConfig
-import io.github.inertia4j.spi.PageObject
+import dev.arkoder.inertia4j.core.HttpSsrGateway
+import dev.arkoder.inertia4j.core.vite.Vite
+import dev.arkoder.inertia4j.core.vite.ViteConfig
+import dev.arkoder.inertia4j.spi.PageObject
 import io.ktor.server.application.*
 import io.ktor.server.testing.*
 import org.junit.jupiter.api.AfterEach
@@ -109,7 +109,7 @@ class SsrKtorConfigurationTest {
 
     @Test
     fun `server gateway reaches the configured url with a custom gateway`() {
-        val configuration = ssrConfiguration { gateway = io.github.inertia4j.spi.SsrGateway { _, _ -> null } }
+        val configuration = ssrConfiguration { gateway = dev.arkoder.inertia4j.spi.SsrGateway { _, _ -> null } }
         val serverGateway = configuration.serverGateway(configuration.gatewayOrDefault(vite()) {}!!, vite())
 
         assertEquals(serverUrl, serverGateway.url)

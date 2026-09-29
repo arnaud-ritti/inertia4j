@@ -2,7 +2,7 @@ plugins {
     `java-library`
 }
 
-group = "io.github.inertia4j"
+group = "dev.arkoder"
 
 java {
     toolchain {

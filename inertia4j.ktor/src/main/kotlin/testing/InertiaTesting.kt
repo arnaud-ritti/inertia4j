@@ -1,11 +1,11 @@
-package io.github.inertia4j.ktor.testing
+package dev.arkoder.inertia4j.ktor.testing
 
-import io.github.inertia4j.core.DefaultJsonReader
-import io.github.inertia4j.core.InertiaHeaders
-import io.github.inertia4j.core.testing.AssertableInertia
-import io.github.inertia4j.core.testing.InertiaReloader
-import io.github.inertia4j.core.testing.ReloadRequest
-import io.github.inertia4j.spi.JsonReader
+import dev.arkoder.inertia4j.core.DefaultJsonReader
+import dev.arkoder.inertia4j.core.InertiaHeaders
+import dev.arkoder.inertia4j.core.testing.AssertableInertia
+import dev.arkoder.inertia4j.core.testing.InertiaReloader
+import dev.arkoder.inertia4j.core.testing.ReloadRequest
+import dev.arkoder.inertia4j.spi.JsonReader
 import io.ktor.client.plugins.cookies.HttpCookies
 import io.ktor.client.plugins.pluginOrNull
 import io.ktor.client.request.get

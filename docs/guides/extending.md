@@ -17,7 +17,7 @@ called a Page Object. The Inertia specification provides a
 to understand more about the Page Object, you can read the Inertia docs. Inertia4J serializes this page object
 internally in order to provide it as a JSON to the client, with the correct object representation of any data
 type used in your project. In order to facilitate extending this serialization functionality, we've provided an
-[interface](https://github.com/arnaud-ritti/inertia4j/blob/main/inertia4j.spi/src/main/java/io/github/inertia4j/spi/PageObjectSerializer.java),
+[interface](https://github.com/arnaud-ritti/inertia4j/blob/main/inertia4j.spi/src/main/java/dev/arkoder/inertia4j/spi/PageObjectSerializer.java),
 which can be implemented according to your project needs, and will work out of the box when plugged into Inertia4J.
 
 This interface defines only a single method, which is the `serialize` method. The function of this method is (as you
@@ -25,7 +25,7 @@ might expect) to take a `PageObject` and return a
 `String` that represents the data in that object. If the serialization fails, it should throw a
 `SerializationException`. If you need to know more about the internal representation of the Page Object in Inertia4J,
 please read its
-[implementation](https://github.com/arnaud-ritti/inertia4j/blob/main/inertia4j.spi/src/main/java/io/github/inertia4j/spi/PageObject.java).
+[implementation](https://github.com/arnaud-ritti/inertia4j/blob/main/inertia4j.spi/src/main/java/dev/arkoder/inertia4j/spi/PageObject.java).
 
 Props are already resolved and filtered for partial reloads when the page object reaches the serializer. The
 serializer must omit top-level metadata fields that are empty or `false` (e.g. `mergeProps`, `encryptHistory`), as the
@@ -36,8 +36,8 @@ In Spring, you can achieve this by implementing the `PageObjectSerializer` inter
 into your Inertia4J Spring project. The interface implementation could be achieved through something like this:
 
 ```java
-import io.github.inertia4j.spi.PageObject;
-import io.github.inertia4j.spi.PageObjectSerializer;
+import dev.arkoder.inertia4j.spi.PageObject;
+import dev.arkoder.inertia4j.spi.PageObjectSerializer;
 import org.springframework.stereotype.Component;
 import org.springframework.context.annotation.Primary;
 
@@ -96,8 +96,8 @@ In Spring, you can achieve this by implementing the `TemplateRenderer` interface
 into your Inertia4J Spring project. The interface implementation could be achieved through something like this:
 
 ```java
-import io.github.inertia4j.spi.RenderedPage;
-import io.github.inertia4j.spi.TemplateRenderer;
+import dev.arkoder.inertia4j.spi.RenderedPage;
+import dev.arkoder.inertia4j.spi.TemplateRenderer;
 import org.springframework.stereotype.Component;
 import org.springframework.context.annotation.Primary;
 
@@ -125,9 +125,9 @@ Custom renderers render the Vite tags through the `Vite` instance, available as 
 `ViteConfig`:
 
 ```java
-import io.github.inertia4j.core.vite.Vite;
-import io.github.inertia4j.spi.RenderedPage;
-import io.github.inertia4j.spi.TemplateRenderer;
+import dev.arkoder.inertia4j.core.vite.Vite;
+import dev.arkoder.inertia4j.spi.RenderedPage;
+import dev.arkoder.inertia4j.spi.TemplateRenderer;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
 
@@ -198,7 +198,7 @@ To support another framework, see [writing an adapter](../architecture.md#writin
 
 ## Testing
 
-The Spring and Ktor adapters wrap `io.github.inertia4j.core.testing.AssertableInertia`, which works with any test
+The Spring and Ktor adapters wrap `dev.arkoder.inertia4j.core.testing.AssertableInertia`, which works with any test
 client. Build it from a response body, either the page object JSON or the HTML document holding it:
 
 ```java

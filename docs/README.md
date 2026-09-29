@@ -4,10 +4,11 @@ Inertia4J is a server-side adapter for [Inertia.js](https://inertiajs.com/) on t
 applications render React, Vue or Svelte pages without building a separate API: controllers return a component name
 and its props, and the Inertia client takes care of the rest.
 
-Inertia4J 2.x implements the [Inertia.js v3 protocol](https://inertiajs.com/docs/v3/core-concepts/the-protocol).
+Inertia4J 3.x implements the [Inertia.js v3 protocol](https://inertiajs.com/docs/v3/core-concepts/the-protocol).
 
 ## Start here
 
+- [Installation](installation.md): add the GitHub Packages repository and pick your artifacts.
 - [Getting started](getting-started.md): install the adapter, set up the frontend and render your first page.
 - [Core concepts](core-concepts.md): how a request flows through Inertia4J, and the vocabulary used in these docs.
 
@@ -34,7 +35,14 @@ Each guide shows both the Spring Boot (Java) and the Ktor (Kotlin) API.
 
 - [Configuration](reference/configuration.md): every Spring Boot property and Ktor plugin setting, with defaults.
 - [Architecture](architecture.md): modules, request lifecycle and extension points, for contributors.
-- [Migrating from 1.x to 2.0](migration-2.0.md)
+- [Versioning](#versioning)
+- [Migrating from 1.x to 3.0](migration-3.0.md)
+
+## Versioning
+
+The major version of Inertia4J follows the major version of the Inertia.js protocol it implements: Inertia4J 3.x
+speaks the Inertia.js v3 protocol and works with the v3 client adapters. Minor and patch versions are Inertia4J's own
+and follow [semantic versioning](https://semver.org/). Releases are tagged `v3.MINOR.PATCH`.
 
 ## Examples
 

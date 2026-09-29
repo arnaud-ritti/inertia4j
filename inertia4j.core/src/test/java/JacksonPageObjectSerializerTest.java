@@ -1,10 +1,10 @@
-import io.github.inertia4j.core.DefaultPageObjectSerializer;
-import io.github.inertia4j.core.JacksonPageObjectSerializer;
-import io.github.inertia4j.core.PropertyNaming;
-import io.github.inertia4j.spi.OncePropMetadata;
-import io.github.inertia4j.spi.PageObject;
-import io.github.inertia4j.spi.PageObjectSerializer;
-import io.github.inertia4j.spi.ScrollPropMetadata;
+import dev.arkoder.inertia4j.core.DefaultPageObjectSerializer;
+import dev.arkoder.inertia4j.core.JacksonPageObjectSerializer;
+import dev.arkoder.inertia4j.core.PropertyNaming;
+import dev.arkoder.inertia4j.spi.OncePropMetadata;
+import dev.arkoder.inertia4j.spi.PageObject;
+import dev.arkoder.inertia4j.spi.PageObjectSerializer;
+import dev.arkoder.inertia4j.spi.ScrollPropMetadata;
 import org.junit.jupiter.api.Test;
 
 import java.util.LinkedHashMap;

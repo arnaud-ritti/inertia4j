@@ -76,7 +76,7 @@ sequenceDiagram
     A->>A: rewrite redirects (303, fragment 409), add Vary
 ```
 
-Key classes in `io.github.inertia4j.core`:
+Key classes in `dev.arkoder.inertia4j.core`:
 
 | Class                     | Role                                                                                         |
 |---------------------------|----------------------------------------------------------------------------------------------|
@@ -121,7 +121,8 @@ The Ktor module is the smallest complete example to read.
 The build uses Gradle with convention plugins in `build-logic`:
 
 - `inertia4j.java-conventions`: Java 11 toolchain, sources and Javadoc jars, JUnit Platform.
-- `inertia4j.publishing-conventions`: Maven publication with shared POM metadata (`Inertia4jPublishing.kt`).
+- `inertia4j.publishing-conventions`: Maven publication to GitHub Packages with shared POM metadata
+  (`Inertia4jPublishing.kt`).
 - `inertia4j.spring-conventions`: Java 17, Spring dependency management, `-parameters`.
 
-Versions live in `gradle/libs.versions.toml`. See [CONTRIBUTING.md](../CONTRIBUTING.md) for the development workflow.
+Dependency versions live in `gradle/libs.versions.toml`, the project version in `gradle.properties`. See [CONTRIBUTING.md](../CONTRIBUTING.md) for the development workflow.

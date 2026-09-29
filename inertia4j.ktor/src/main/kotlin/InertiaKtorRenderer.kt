@@ -1,12 +1,12 @@
-package io.github.inertia4j.ktor
+package dev.arkoder.inertia4j.ktor
 
-import io.github.inertia4j.core.HttpResponse
-import io.github.inertia4j.core.InertiaProps
-import io.github.inertia4j.core.InertiaRenderer
-import io.github.inertia4j.core.InertiaRenderingOptions
-import io.github.inertia4j.core.Precognition as CorePrecognition
-import io.github.inertia4j.core.PropsExtractor
-import io.github.inertia4j.core.vite.Vite
+import dev.arkoder.inertia4j.core.HttpResponse
+import dev.arkoder.inertia4j.core.InertiaProps
+import dev.arkoder.inertia4j.core.InertiaRenderer
+import dev.arkoder.inertia4j.core.InertiaRenderingOptions
+import dev.arkoder.inertia4j.core.Precognition as CorePrecognition
+import dev.arkoder.inertia4j.core.PropsExtractor
+import dev.arkoder.inertia4j.core.vite.Vite
 import io.ktor.http.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
@@ -93,7 +93,7 @@ class InertiaKtorRenderer internal constructor(
         }
 
         /**
-         * Renders the page described by a props object annotated with [io.github.inertia4j.annotations.InertiaPage],
+         * Renders the page described by a props object annotated with [dev.arkoder.inertia4j.annotations.InertiaPage],
          * using its component name and properties converted with [InertiaKtorConfiguration.propertyNaming].
          *
          * @param pageProps page props object.

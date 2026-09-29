@@ -1,5 +1,5 @@
-import io.github.inertia4j.core.HttpResponse;
-import io.github.inertia4j.core.Precognition;
+import dev.arkoder.inertia4j.core.HttpResponse;
+import dev.arkoder.inertia4j.core.Precognition;
 import org.junit.jupiter.api.Test;
 
 import java.util.LinkedHashMap;

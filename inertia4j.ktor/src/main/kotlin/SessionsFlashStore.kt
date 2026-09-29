@@ -1,7 +1,7 @@
-package io.github.inertia4j.ktor
+package dev.arkoder.inertia4j.ktor
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import io.github.inertia4j.spi.InertiaException
+import dev.arkoder.inertia4j.spi.InertiaException
 import io.ktor.server.application.*
 import io.ktor.server.sessions.*
 

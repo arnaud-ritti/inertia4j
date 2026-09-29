@@ -1,8 +1,8 @@
-package io.github.inertia4j.ktor
+package dev.arkoder.inertia4j.ktor
 
-import io.github.inertia4j.core.InertiaProps
-import io.github.inertia4j.ktor.testing.assertInertia
-import io.github.inertia4j.ktor.testing.inertiaPage
+import dev.arkoder.inertia4j.core.InertiaProps
+import dev.arkoder.inertia4j.ktor.testing.assertInertia
+import dev.arkoder.inertia4j.ktor.testing.inertiaPage
 import io.ktor.client.plugins.cookies.*
 import io.ktor.client.request.*
 import io.ktor.server.application.*

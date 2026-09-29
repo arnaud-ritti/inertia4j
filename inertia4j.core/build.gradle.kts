@@ -2,8 +2,6 @@ plugins {
     id("inertia4j.publishing-conventions")
 }
 
-version = "2.0.0"
-
 dependencies {
     api(project(":inertia4j.typescript-annotations"))
     implementation(project(":inertia4j.spi"))

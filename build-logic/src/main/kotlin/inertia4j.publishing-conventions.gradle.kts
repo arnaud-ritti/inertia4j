@@ -1,7 +1,6 @@
 plugins {
     id("inertia4j.java-conventions")
     `maven-publish`
-    signing
 }
 
 publishing {
@@ -18,10 +17,6 @@ publishing {
     }
 
     repositories {
-        inertia4jStagingDeploy(project) // used by JReleaser
+        inertia4jGitHubPackages(project)
     }
-}
-
-signing {
-    useGpgCmd()
 }

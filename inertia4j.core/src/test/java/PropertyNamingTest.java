@@ -1,4 +1,4 @@
-import io.github.inertia4j.core.PropertyNaming;
+import dev.arkoder.inertia4j.core.PropertyNaming;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;

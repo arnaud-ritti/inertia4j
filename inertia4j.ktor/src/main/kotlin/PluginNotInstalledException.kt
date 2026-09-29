@@ -1,6 +1,6 @@
-package io.github.inertia4j.ktor
+package dev.arkoder.inertia4j.ktor
 
-import io.github.inertia4j.spi.InertiaException
+import dev.arkoder.inertia4j.spi.InertiaException
 
 /**
  * Exception thrown when attempting to use the `inertia` extension property on [io.ktor.server.routing.RoutingContext]

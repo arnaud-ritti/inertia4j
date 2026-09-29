@@ -5,7 +5,7 @@ passed to `render` take precedence when keys collide.
 
 ## Sharing with every response
 
-**Spring Boot.** Every `SharedDataProvider` bean (`io.github.inertia4j.springshared`) is picked up automatically:
+**Spring Boot.** Every `SharedDataProvider` bean (`dev.arkoder.inertia4j.springshared`) is picked up automatically:
 
 ```java
 @Component

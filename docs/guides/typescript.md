@@ -52,22 +52,14 @@ install(Inertia) {
 
 ## 2. Generate the types with Gradle
 
-The plugin is published to Maven Central, so let Gradle resolve plugins from there in `settings.gradle.kts`:
-
-```kotlin
-pluginManagement {
-    repositories {
-        mavenCentral()
-        gradlePluginPortal()
-    }
-}
-```
+The plugin is published to GitHub Packages with the libraries. Add that repository to the `pluginManagement` block of
+`settings.gradle.kts`, as described in [Installation](../installation.md#typescript-gradle-plugin).
 
 Then apply it in `build.gradle.kts`:
 
 ```kotlin
 plugins {
-    id("io.github.inertia4j.typescript") version "2.0.0"
+    id("dev.arkoder.inertia4j.typescript") version "3.0.0"
 }
 
 inertiaTypes {
@@ -79,7 +71,7 @@ inertiaTypes {
 }
 ```
 
-Import `io.github.inertia4j.typescript.ErrorValueType` and `io.github.inertia4j.core.PropertyNaming` at the top of the
+Import `dev.arkoder.inertia4j.typescript.ErrorValueType` and `dev.arkoder.inertia4j.core.PropertyNaming` at the top of the
 build script when you set these options.
 
 Use `ErrorValueType.StringArray` when the server sends every validation message of each field: with

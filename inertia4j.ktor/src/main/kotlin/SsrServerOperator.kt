@@ -1,7 +1,7 @@
-package io.github.inertia4j.ktor
+package dev.arkoder.inertia4j.ktor
 
-import io.github.inertia4j.core.HttpSsrGateway
-import io.github.inertia4j.core.SsrServerProcess
+import dev.arkoder.inertia4j.core.HttpSsrGateway
+import dev.arkoder.inertia4j.core.SsrServerProcess
 
 /**
  * Starts the server-side rendering server and checks that it is reachable when the application starts, unless the

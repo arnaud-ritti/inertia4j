@@ -10,7 +10,7 @@ Prop types are created with static factories:
 | `Inertia.defer(...)`         | `InertiaProps.defer { ... }`                         |
 | `Inertia.optional(...)`, …   | `InertiaProps.optional { ... }`, …                   |
 
-`InertiaProps` lives in `io.github.inertia4j.core`; the `Inertia` bean methods delegate to it. Each factory returns an
+`InertiaProps` lives in `dev.arkoder.inertia4j.core`; the `Inertia` bean methods delegate to it. Each factory returns an
 `InertiaProp<T>`, whose modifiers compose (`Inertia.defer(...).merge().once()`).
 
 ## Lazy props

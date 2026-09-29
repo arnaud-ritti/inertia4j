@@ -2,8 +2,6 @@ plugins {
     id("inertia4j.spring-conventions")
 }
 
-version = "2.0.0"
-
 dependencies {
     api(project(":inertia4j.spring-shared"))
 

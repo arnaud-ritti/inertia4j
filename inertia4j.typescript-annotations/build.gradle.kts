@@ -2,8 +2,6 @@ plugins {
     id("inertia4j.publishing-conventions")
 }
 
-version = "2.0.0"
-
 dependencies {
     testImplementation(libs.junit.jupiter)
     testRuntimeOnly(libs.junit.platform.launcher)

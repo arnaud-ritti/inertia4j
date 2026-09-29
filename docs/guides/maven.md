@@ -1,6 +1,7 @@
 # Using Inertia4J with Maven
 
-Inertia4J is built with Gradle, but its artifacts are plain Maven artifacts. This guide covers what differs for a Maven
+Inertia4J is built with Gradle, but its artifacts are plain Maven artifacts, published to GitHub Packages: first
+add that repository and your token as described in [Installation](../installation.md#maven). This guide covers what differs for a Maven
 build: declaring the dependencies, building the frontend during the Maven lifecycle, and generating TypeScript types
 without the Gradle plugin.
 
@@ -20,12 +21,12 @@ With the Spring Boot parent, only the Inertia4J version needs to be set:
 
 <properties>
     <java.version>17</java.version>
-    <inertia4j.version>2.0.0</inertia4j.version>
+    <inertia4j.version>3.0.0</inertia4j.version>
 </properties>
 
 <dependencies>
     <dependency>
-        <groupId>io.github.inertia4j</groupId>
+        <groupId>dev.arkoder</groupId>
         <artifactId>inertia4j-spring-boot-3</artifactId> <!-- inertia4j-spring-boot-4 for Boot 4 -->
         <version>${inertia4j.version}</version>
     </dependency>
@@ -51,12 +52,12 @@ Maven doesn't read Gradle module metadata, so Ktor artifacts must be declared wi
 ```xml
 <properties>
     <ktor.version>3.0.0</ktor.version>
-    <inertia4j.version>2.0.0</inertia4j.version>
+    <inertia4j.version>3.0.0</inertia4j.version>
 </properties>
 
 <dependencies>
     <dependency>
-        <groupId>io.github.inertia4j</groupId>
+        <groupId>dev.arkoder</groupId>
         <artifactId>inertia4j-ktor</artifactId>
         <version>${inertia4j.version}</version>
     </dependency>
@@ -159,12 +160,12 @@ The commands use the [Maven wrapper](https://maven.apache.org/wrapper/); use `mv
 
 ## TypeScript types
 
-The `io.github.inertia4j.typescript` plugin is Gradle-only. With Maven, call the generator from a small class run by
+The `dev.arkoder.inertia4j.typescript` plugin is Gradle-only. With Maven, call the generator from a small class run by
 the `exec-maven-plugin`. Add the generator as a test dependency, so it stays out of your application:
 
 ```xml
 <dependency>
-    <groupId>io.github.inertia4j</groupId>
+    <groupId>dev.arkoder</groupId>
     <artifactId>inertia4j-typescript</artifactId>
     <version>${inertia4j.version}</version>
     <scope>test</scope>
@@ -177,11 +178,11 @@ declaration file, or, with `--check`, fails when the file is out of date:
 ```java
 package com.example.app;
 
-import io.github.inertia4j.core.PropertyNaming;
-import io.github.inertia4j.typescript.ErrorValueType;
-import io.github.inertia4j.typescript.GenerationResult;
-import io.github.inertia4j.typescript.GeneratorOptions;
-import io.github.inertia4j.typescript.TypeScriptGenerator;
+import dev.arkoder.inertia4j.core.PropertyNaming;
+import dev.arkoder.inertia4j.typescript.ErrorValueType;
+import dev.arkoder.inertia4j.typescript.GenerationResult;
+import dev.arkoder.inertia4j.typescript.GeneratorOptions;
+import dev.arkoder.inertia4j.typescript.TypeScriptGenerator;
 
 import java.io.File;
 import java.nio.file.Files;

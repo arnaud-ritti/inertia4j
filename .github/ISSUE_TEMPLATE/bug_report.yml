@@ -64,7 +64,7 @@ body:
     id: inertia4j-version
     attributes:
       label: Inertia4J version
-      placeholder: "2.0.0"
+      placeholder: "3.0.0"
     validations:
       required: true
 

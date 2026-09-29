@@ -1,5 +1,5 @@
-import io.github.inertia4j.core.JacksonJsonReader;
-import io.github.inertia4j.spi.SerializationException;
+import dev.arkoder.inertia4j.core.JacksonJsonReader;
+import dev.arkoder.inertia4j.spi.SerializationException;
 import org.junit.jupiter.api.Test;
 
 import java.util.Map;

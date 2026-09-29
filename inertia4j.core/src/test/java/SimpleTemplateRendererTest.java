@@ -1,6 +1,6 @@
-import io.github.inertia4j.core.SimpleTemplateRenderer;
-import io.github.inertia4j.core.TemplateRenderingException;
-import io.github.inertia4j.spi.RenderedPage;
+import dev.arkoder.inertia4j.core.SimpleTemplateRenderer;
+import dev.arkoder.inertia4j.core.TemplateRenderingException;
+import dev.arkoder.inertia4j.spi.RenderedPage;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
