@@ -162,3 +162,20 @@ and exposure of shared prop keys. In Spring, define an `InertiaRenderer` bean to
 Adapters for other frameworks should also run `InertiaRenderer.checkVersion(request)` before handling each request, and
 pass the status and location of every redirect through `InertiaRedirects`, as the Spring `InertiaFilter` and the Ktor
 plugin do.
+
+## Testing
+
+The Spring and Ktor adapters wrap `io.github.inertia4j.core.testing.AssertableInertia`, which works with any test
+client. Build it from a response body, either the page object JSON or the HTML document holding it:
+
+```java
+AssertableInertia.fromResponseBody(body)
+    .component("Users/Index")
+    .has("users", 3, user -> user.where("name", "Jane"))
+    .hasDeferredProp("permissions");
+```
+
+The body is parsed with `DefaultJsonReader` (Jackson 2), or with the `JsonReader` passed to
+`fromResponseBody(body, jsonReader)`. To use `reload`, `reloadOnly`, `reloadExcept` and `loadDeferredProps`, also pass
+an `InertiaReloader`: it sends a `GET` request to `ReloadRequest.getUrl()` with `ReloadRequest.getHeaders()` (the
+`X-Inertia`, version and partial reload headers) and returns the response body.

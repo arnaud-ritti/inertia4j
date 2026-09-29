@@ -432,6 +432,53 @@ application, with or without leading slash. See the [Vite guide](../docs/vite.md
 frontend setup and the
 [official docs](https://inertiajs.com/docs/v3/advanced/server-side-rendering).
 
+### Testing
+
+`InertiaResultMatchers` asserts Inertia responses in MockMvc tests, much like Inertia Laravel's `assertInertia`. It
+reads both full page visits (the page object in the HTML document) and Inertia requests (the page object JSON). It
+needs `spring-test`, already brought by `spring-boot-starter-test`:
+
+```java
+import static io.github.inertia4j.springshared.testing.InertiaResultMatchers.inertia;
+import static io.github.inertia4j.springshared.testing.InertiaResultMatchers.inertiaPage;
+
+mockMvc.perform(get("/users"))
+    .andExpect(status().isOk())
+    .andExpect(inertia(page -> page
+        .component("Users/Index")
+        .url("/users")
+        .version("1")
+        .has("users", 3, user -> user
+            .where("id", 1)
+            .where("name", "Jane")
+            .missing("password"))
+        .where("filters.search", "")
+        .hasDeferredProp("permissions")
+        .hasFlash("message", "User created")
+        .hasNoErrors()));
+
+String name = (String) inertiaPage(mockMvc.perform(get("/users")).andReturn()).prop("users.0.name");
+```
+
+Paths are dotted, with numeric segments indexing arrays. Besides `has`, `missing`, `where` and `count`, the page offers
+`hasAll`, `hasAny`, `missingAll`, `whereNot`, `whereAll`, `whereContains`, `whereMatches`, `first`, `each`,
+`hasError`/`missingError`, `missingFlash`, `encryptHistory`/`clearHistory` and `hasMergeProp`, `hasPrependProp`,
+`hasDeepMergeProp`, `hasOnceProp`, `hasScrollProp` and `hasSharedProp` for the page object metadata. Numbers are
+compared by value, so `where("total", 3L)` matches `3`. Failures throw an `AssertionError`.
+
+Pass the `MockMvc` instance to reload the page: `reloadOnly` and `reloadExcept` send a partial reload and check the
+listed props are present or missing, and `loadDeferredProps` loads the deferred props (of all groups, or of the given
+ones) as the client does after the first visit. Reload requests carry over the session and cookies of the original
+request:
+
+```java
+mockMvc.perform(get("/users"))
+    .andExpect(inertia(mockMvc, page -> page
+        .missing("permissions")
+        .loadDeferredProps(deferred -> deferred.has("permissions", 2))
+        .reloadOnly("users", reloaded -> reloaded.missing("filters"))));
+```
+
 ### Typed props
 
 Props can also be described by classes annotated with `@InertiaPage`, `@InertiaShared` and `@InertiaForm`, and turned

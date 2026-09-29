@@ -9,6 +9,7 @@ dependencies {
     api(project(":inertia4j.core"))
     api(project(":inertia4j.spi"))
 
+    compileOnly(libs.ktor.client.core)
     compileOnly(libs.ktor.server.core)
     compileOnly(libs.ktor.server.netty)
     compileOnly(libs.ktor.server.sessions)

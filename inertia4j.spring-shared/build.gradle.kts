@@ -7,6 +7,8 @@ version = "2.0.0"
 dependencies {
     api(project(":inertia4j.core"))
     api(project(":inertia4j.spi"))
+
+    compileOnly("org.springframework:spring-test")
 }
 
 dependencyManagement {
