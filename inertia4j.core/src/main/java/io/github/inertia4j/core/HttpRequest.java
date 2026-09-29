@@ -18,4 +18,20 @@ public interface HttpRequest {
      * @return The HTTP method as a String.
      */
     String getMethod();
+
+    /**
+     * Returns the path and query string of the request, e.g. {@code /events?page=2}.
+     * It is used as the default page object URL.
+     *
+     * @return path and query string of the request.
+     */
+    String getUrl();
+
+    /**
+     * Returns the absolute URL of the request, including its query string, e.g. {@code https://example.com/events?page=2}.
+     * It is used as the location of asset version mismatch reloads.
+     *
+     * @return absolute URL of the request.
+     */
+    String getFullUrl();
 }

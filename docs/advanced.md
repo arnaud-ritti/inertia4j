@@ -13,7 +13,7 @@ In order to understand how to implement your own serializer, it's important to u
 
 In Inertia, the entity we respond with to the client (as JSON) in order to render the correct component with its data, is
 called a Page Object. The Inertia specification provides a
-[page object specification](https://inertiajs.com/the-protocol#the-page-object) in their documentation, so if you need
+[page object specification](https://inertiajs.com/docs/v3/core-concepts/the-protocol#the-page-object) in their documentation, so if you need
 to understand more about the Page Object, you can read the Inertia docs. Inertia4J serializes this page object
 internally in order to provide it as a JSON to the client, with the correct object representation of any data
 type used in your project. In order to facilitate extending this serialization functionality, we've provided an
@@ -27,10 +27,10 @@ might expect) to take a `PageObject` and return a
 please read its
 [implementation](https://github.com/Inertia4J/inertia4j/blob/main/inertia4j.spi/src/main/java/io/github/inertia4j/spi/PageObject.java).
 
-In Inertia4J, it is also the serializer's role to support [partial reloads](https://inertiajs.com/partial-reloads).
-Your serializer should only respond to partial reloads with the correct properties, as specified by the
-`partialDataProps` parameter, which is passed to the `serialize` method along with your Page Object. Once you do
-implement your own serializer, you can plug it into Inertia4J.
+Props are already resolved and filtered for partial reloads when the page object reaches the serializer. The
+serializer must omit top-level metadata fields that are empty or `false` (e.g. `mergeProps`, `encryptHistory`), as the
+client defaults absent fields, and must always write `component`, `props`, `url` and `version`. Once you do implement
+your own serializer, you can plug it into Inertia4J.
 
 In Spring, you can achieve this by implementing the `PageObjectSerializer` interface in a Spring Bean, which can be injected
 into your Inertia4J Spring project. The interface implementation could be achieved through something like this:
@@ -38,7 +38,6 @@ into your Inertia4J Spring project. The interface implementation could be achiev
 ```java
 import io.github.inertia4j.spi.PageObject;
 import io.github.inertia4j.spi.PageObjectSerializer;
-import java.util.List;
 import org.springframework.stereotype.Component;
 import org.springframework.context.annotation.Primary;
 
@@ -46,7 +45,7 @@ import org.springframework.context.annotation.Primary;
 @Primary
 public class MyCustomPageObjectSerializer implements PageObjectSerializer {
     @Override
-    public String serialize(PageObject pageObject, List<String> partialDataProps) {
+    public String serialize(PageObject pageObject) {
         /* ... */
     }
 }
@@ -62,21 +61,26 @@ install(Inertia) {
 
 ## HTML template
 
-When an Inertia page is first fetched, the server provides an HTML document with the data for the current route in
-its `div#app` element's `data-page` attribute. To achieve this, Inertia4J provides a `TemplateRenderer` interface, to which
-we implement a default template renderer. You may also implement your own renderer.
+When an Inertia page is first fetched, the server provides an HTML document embedding the page object in a
+`<script data-page="app" type="application/json">` element, followed by the `<div id="app">` element the client-side
+application is mounted on. To achieve this, Inertia4J provides a `TemplateRenderer` interface, to which we implement a
+default template renderer replacing the `@InertiaHead@` and `@InertiaApp@` placeholders of a template file. You may also
+implement your own renderer, e.g. to use a template engine.
 
-The renderer interface also specifies a single method, `render`, in which it receives a `String pageObjectJson`, which
-is the JSON representation of the Page Object (provided by your JSON Serializer), and it returns another String, which
-represents the HTML with the serialized Page Object.
+The renderer interface also specifies a single method, `render`, in which it receives a `RenderedPage`, and returns the
+HTML document. `RenderedPage.getBody()` holds the page object script element and the root element (or the markup
+rendered by the SSR server replacing both), to insert in the `<body>`, and `RenderedPage.getHead()` holds the elements
+rendered by the SSR server for the `<head>`, empty otherwise. Insert both as-is: the page object JSON is already escaped
+so it cannot close the script element early.
 
 When implementing a new Template Renderer, just make sure that it complies with the
-[Inertia protocol specification](https://inertiajs.com/the-protocol).
+[Inertia protocol specification](https://inertiajs.com/docs/v3/core-concepts/the-protocol).
 
 In Spring, you can achieve this by implementing the `TemplateRenderer` interface in a Spring Bean, which can be injected
 into your Inertia4J Spring project. The interface implementation could be achieved through something like this:
 
 ```java
+import io.github.inertia4j.spi.RenderedPage;
 import io.github.inertia4j.spi.TemplateRenderer;
 import org.springframework.stereotype.Component;
 import org.springframework.context.annotation.Primary;
@@ -85,7 +89,7 @@ import org.springframework.context.annotation.Primary;
 @Primary
 public class MyCustomTemplateRenderer implements TemplateRenderer {
     @Override
-    public String render(String pageObjectJson) {
+    public String render(RenderedPage page) {
         /* ... */
     }
 }
@@ -98,3 +102,28 @@ install(Inertia) {
     templateRenderer = MyCustomTemplateRenderer()
 }
 ```
+
+## Server-side rendering
+
+Server-side rendering goes through the `SsrGateway` interface, whose `render` method receives the page object and its
+JSON, and returns the rendered `RenderedPage`, or `null` to fall back to client-side rendering. The default
+`HttpSsrGateway` calls the Inertia Node.js SSR server, and parses its responses with a `JsonReader` (Jackson by default).
+
+In Spring, define an `SsrGateway` bean to replace the default one, or a `JsonReader` bean to parse responses without
+Jackson. In Ktor, set it in the plugin configuration:
+
+```kotlin
+install(Inertia) {
+    ssr {
+        enabled = true
+        gateway = MyCustomSsrGateway()
+    }
+}
+```
+
+## Core renderer
+
+Adapters delegate to the framework-agnostic `InertiaRenderer`, configured with `InertiaRenderer.builder(...)`: root
+element id, SSR gateway and excluded paths, reporter of rescued deferred prop exceptions, clock of once prop expirations,
+and exposure of shared prop keys. In Spring, define an `InertiaRenderer` bean to replace the one built from the
+`inertia.*` properties.

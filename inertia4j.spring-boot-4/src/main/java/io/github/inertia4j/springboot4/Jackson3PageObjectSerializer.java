@@ -4,7 +4,6 @@ import io.github.inertia4j.spi.PageObject;
 import io.github.inertia4j.spi.PageObjectSerializer;
 import io.github.inertia4j.spi.SerializationException;
 import org.jspecify.annotations.NullMarked;
-import org.jspecify.annotations.Nullable;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.MapperFeature;
@@ -13,56 +12,52 @@ import tools.jackson.databind.SerializationFeature;
 import tools.jackson.databind.json.JsonMapper;
 import tools.jackson.databind.node.ObjectNode;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 /**
  * {@link PageObjectSerializer} implementation using Jackson 3 for JSON serialization.
  */
 @NullMarked
 class Jackson3PageObjectSerializer implements PageObjectSerializer {
-    private static final List<String> OptionalFields = List.of(
-        "mergeProps",
-        "prependProps",
-        "deepMergeProps",
-        "matchPropsOn",
-        "deferredProps"
-    );
+    private static final Set<String> RequiredFields = Set.of("component", "props", "url", "version");
 
     private final ObjectMapper objectMapper = JsonMapper.builder()
         .configure(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS, true)
         .configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, false)
         .build();
 
-    /**
-     * {@inheritDoc}
-     * <p>
-     * If {@code partialDataProps} is provided, only the properties specified
-     * in the list will be included under the "props" key in the resulting JSON.
-     */
     @Override
-    public String serialize(
-        PageObject pageObject,
-        @Nullable List<String> partialDataProps
-    ) throws SerializationException {
+    public String serialize(PageObject pageObject) throws SerializationException {
         try {
             ObjectNode tree = objectMapper.valueToTree(pageObject);
-            removeNullOptionalFields(tree);
-            if (partialDataProps != null) {
-                ObjectNode propsNode = (ObjectNode) tree.get("props");
-                propsNode.retain(partialDataProps);
-            }
+            removeEmptyMetadata(tree);
             return objectMapper.writeValueAsString(tree);
-        } catch (JacksonException e) {
+        } catch (JacksonException | IllegalArgumentException e) {
             throw new SerializationException(e);
         }
     }
 
-    private static void removeNullOptionalFields(ObjectNode tree) {
-        for (String field : OptionalFields) {
-            JsonNode node = tree.get(field);
-            if (node != null && node.isNull()) {
+    private static void removeEmptyMetadata(ObjectNode tree) {
+        List<String> fields = new ArrayList<>(tree.propertyNames());
+
+        for (String field : fields) {
+            if (!RequiredFields.contains(field) && isEmpty(tree.get(field))) {
                 tree.remove(field);
             }
         }
+    }
+
+    private static boolean isEmpty(JsonNode node) {
+        if (node.isNull()) {
+            return true;
+        }
+
+        if (node.isBoolean()) {
+            return !node.booleanValue();
+        }
+
+        return node.isContainer() && node.isEmpty();
     }
 }

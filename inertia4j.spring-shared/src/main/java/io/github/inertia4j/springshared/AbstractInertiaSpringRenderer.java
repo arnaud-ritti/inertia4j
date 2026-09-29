@@ -4,9 +4,13 @@ import io.github.inertia4j.core.HttpRequest;
 import io.github.inertia4j.core.HttpResponse;
 import io.github.inertia4j.core.InertiaRenderer;
 import io.github.inertia4j.core.InertiaRenderingOptions;
+import io.github.inertia4j.core.Precognition;
 import io.github.inertia4j.spi.PageObjectSerializer;
 import io.github.inertia4j.spi.TemplateRenderer;
 import org.springframework.http.ResponseEntity;
+
+import java.util.List;
+import java.util.Map;
 
 /**
  * Spring-specific renderer that wraps the core {@link InertiaRenderer}.
@@ -15,6 +19,15 @@ import org.springframework.http.ResponseEntity;
  */
 public abstract class AbstractInertiaSpringRenderer {
     private final InertiaRenderer coreRenderer;
+
+    /**
+     * Constructs an InertiaSpringRenderer wrapping a configured core renderer.
+     *
+     * @param coreRenderer core renderer.
+     */
+    public AbstractInertiaSpringRenderer(InertiaRenderer coreRenderer) {
+        this.coreRenderer = coreRenderer;
+    }
 
     /**
      * Constructs an InertiaSpringRenderer with explicit dependencies.
@@ -28,32 +41,30 @@ public abstract class AbstractInertiaSpringRenderer {
         VersionProvider versionProvider,
         TemplateRenderer templateRenderer
     ) {
-        this.coreRenderer = new InertiaRenderer(serializer, versionProvider::get, templateRenderer);
+        this(new InertiaRenderer(serializer, versionProvider::get, templateRenderer));
     }
 
     /**
-     * Constructs an InertiaSpringRenderer using the default {@link io.github.inertia4j.core.SimpleTemplateRenderer}.
+     * Constructs an InertiaSpringRenderer using a template path for the default template renderer.
      *
-     * @param serializer       PageObjectSerializer implementation used to serialize the {@link io.github.inertia4j.spi.PageObject}.
+     * @param serializer      PageObjectSerializer implementation used to serialize the {@link io.github.inertia4j.spi.PageObject}.
      * @param versionProvider provider for the current Inertia asset version
-     * @param templatePath path to the HTML template to be rendered
-     * @throws io.github.inertia4j.core.TemplateRenderingException if the template file cannot be read.
+     * @param templatePath    classpath path to the HTML template.
      */
     public AbstractInertiaSpringRenderer(
         PageObjectSerializer serializer,
         VersionProvider versionProvider,
         String templatePath
     ) {
-        this.coreRenderer = new InertiaRenderer(serializer, versionProvider::get, templatePath);
+        this(new InertiaRenderer(serializer, versionProvider::get, templatePath));
     }
 
     /**
-     * Renders the response according to the Inertia protocol and converts it to a {@link ResponseEntity}.
-     * Handles full page loads, partial updates, and asset version conflicts.
+     * Renders an Inertia response.
      *
-     * @param request The incoming HTTP request wrapper.
-     * @param options Inertia flags and other Page Object data
-     * @return A Spring {@link ResponseEntity} containing the Inertia response.
+     * @param request the incoming request, wrapped as an Inertia {@link HttpRequest}.
+     * @param options rendering options.
+     * @return the response entity.
      */
     public ResponseEntity<String> render(
         HttpRequest request,
@@ -63,27 +74,43 @@ public abstract class AbstractInertiaSpringRenderer {
     }
 
     /**
-     * Creates an appropriate Inertia redirect response and converts it to a {@link ResponseEntity}.
-     * Uses a 303 See Other redirect for PUT/PATCH/DELETE requests and a 302 Found for others.
+     * Creates an Inertia redirect response.
      *
-     * @param request The incoming HTTP request wrapper.
-     * @param location URL to redirect to
-     * @return A Spring {@link ResponseEntity} configured for an Inertia redirect.
+     * @param request  the incoming request.
+     * @param location URL to redirect to.
+     * @return the response entity.
      */
     public ResponseEntity<String> redirect(HttpRequest request, String location) {
         return convertToResponseEntity(coreRenderer.redirect(request, location));
     }
 
     /**
-     * Creates an external redirect response (409 Conflict + X-Inertia-Location header)
-     * and converts it to a {@link ResponseEntity}.
+     * Creates a response making the client perform a full page visit to a URL.
      *
-     * @param url The external URL to redirect to.
-     * @return A Spring {@link ResponseEntity} configured for an external Inertia redirect.
+     * @param request the incoming request.
+     * @param url     URL to visit.
+     * @return the response entity.
      */
-    public ResponseEntity<String> location(String url) {
-        return convertToResponseEntity(coreRenderer.location(url));
+    public ResponseEntity<String> location(HttpRequest request, String url) {
+        return convertToResponseEntity(coreRenderer.location(request, url));
     }
 
+    /**
+     * Creates the response to a Precognition validation request.
+     *
+     * @param request the incoming request.
+     * @param errors  validation error messages, by field.
+     * @return the response entity.
+     */
+    public ResponseEntity<String> precognition(HttpRequest request, Map<String, List<String>> errors) {
+        return convertToResponseEntity(Precognition.respond(request, errors));
+    }
+
+    /**
+     * Converts the core {@link HttpResponse} into a Spring {@link ResponseEntity}.
+     *
+     * @param response the response from the core renderer.
+     * @return the response entity.
+     */
     protected abstract ResponseEntity<String> convertToResponseEntity(HttpResponse response);
 }

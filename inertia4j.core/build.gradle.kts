@@ -2,7 +2,7 @@ plugins {
     id("inertia4j.publishing-conventions")
 }
 
-version = "1.0.2"
+version = "2.0.0"
 
 dependencies {
     implementation(project(":inertia4j.spi"))
@@ -11,7 +11,7 @@ dependencies {
 
     testImplementation(libs.junit.jupiter)
     testRuntimeOnly(libs.junit.platform.launcher)
-    testRuntimeOnly(libs.jackson2.databind)
+    testImplementation(libs.jackson2.databind)
 }
 
 publishing.publications.named<MavenPublication>("mavenJava") {
