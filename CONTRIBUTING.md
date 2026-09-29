@@ -88,7 +88,10 @@ The major version follows the Inertia.js protocol: 3.x implements Inertia.js v3.
 [semantic versioning](https://semver.org/) within that line. The build version is `3.0.0-SNAPSHOT` in
 `gradle.properties`; release versions come from the git tag.
 
-Maintainers release by pushing a tag:
+Each major version has its own branch, named after it: `3.x` holds the Inertia.js v3 line and is the default branch.
+Open pull requests against it.
+
+Maintainers release by pushing a tag from that branch:
 
 ```shell
 git tag -a v3.1.0 -m "v3.1.0"

@@ -6,7 +6,7 @@
 
 <p>Server-side <a href="https://inertiajs.com/">Inertia.js</a> adapter for Spring Boot and Ktor.</p>
 
-<a href="https://github.com/arnaud-ritti/inertia4j/actions/workflows/ci.yml"><img src="https://github.com/arnaud-ritti/inertia4j/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI"/></a>
+<a href="https://github.com/arnaud-ritti/inertia4j/actions/workflows/ci.yml"><img src="https://github.com/arnaud-ritti/inertia4j/actions/workflows/ci.yml/badge.svg?branch=3.x" alt="CI"/></a>
 <a href="LICENSE"><img src="https://img.shields.io/github/license/arnaud-ritti/inertia4j.svg?style=flat" alt="License"/></a>
 
 </div>
