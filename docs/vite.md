@@ -81,6 +81,9 @@ import 'vite/modulepreload-polyfill'
 - `@ViteReactRefresh@` renders the React Fast Refresh preamble in dev mode; omit it for Vue, Svelte and other
   frameworks.
 
+Use a single `@Vite(...)@` placeholder listing all entries: each placeholder renders independently, so several
+placeholders would load `@vite/client` twice.
+
 ### 4. Ignore generated files
 
 ```
@@ -100,6 +103,10 @@ Run `vite build` before packaging (for example from a Gradle task, as in the
 `.vite/manifest.json` with their stylesheets and `modulepreload` hints. Files are served under `/build/` with
 `Cache-Control: public, max-age=31536000, immutable`. The asset version is the SHA-256 of the manifest.
 
+Every file under the build directory is served as immutable, so keep unhashed files out of it: set `publicDir: false`
+in `vite.config.ts`, or serve Vite's `public/` files elsewhere. Exclude `vite.hot` from Docker images
+(`.dockerignore`), otherwise production renders dev tags.
+
 ## Configuration
 
 ### Spring Boot
@@ -110,7 +117,7 @@ Run `vite build` before packaging (for example from a Gradle task, as in the
 | `inertia.vite.hot-file` | `vite.hot` | File enabling dev mode |
 | `inertia.vite.build-directory` | `static/build` | Classpath directory of the build output |
 | `inertia.vite.manifest` | `{build-directory}/.vite/manifest.json` | Classpath location of the manifest |
-| `inertia.vite.public-path` | `/build/` | URL prefix of built files |
+| `inertia.vite.public-path` | `/build/` | URL prefix of built files; a path such as `/build/`, not an absolute URL |
 | `inertia.vite.cache-max-age` | `365d` | `max-age` of built files |
 
 Defining your own `Vite`, `VersionProvider` or `TemplateRenderer` bean replaces the default one.
@@ -143,3 +150,20 @@ See [Advanced usage](advanced.md#vite-tags-in-a-custom-renderer).
 - **`Unable to locate '...' in the Vite manifest`** — the placeholder entry must match `build.rollupOptions.input`,
   relative to the Vite root.
 - **Scripts blocked by CORS in development** — set `server.cors.origin` to the backend origin.
+
+## Upgrading
+
+Behavior changes for existing users:
+
+- The Vite integration is enabled by default. Without `vite.hot` and without a manifest, the asset version stays `1`
+  and templates without placeholders render as before.
+- `/build/**` is now served from `classpath:/static/build/` with `Cache-Control: public, max-age=31536000, immutable`.
+  Opt out with `inertia.vite.enabled=false` (Spring) or `vite { serveAssets = false }` (Ktor).
+- Spring: `inertia.*` properties (`inertia.template-path`, `inertia.encrypt-history`) are now actually bound; they were
+  previously ignored.
+- Spring: `AbstractInertiaSpringAutoconfiguration#versionProvider` and `#templateRenderer` now take a `Vite`
+  parameter. This affects only subclasses of the auto-configuration.
+- Ktor: `versionProvider` is now nullable (`(() -> String)?`, default `null` uses the Vite version); setting it is
+  unchanged.
+- Ktor: the plugin installs routing when `serveAssets` is true. Install `Routing` with `routing { }` rather than
+  `install(Routing)` after `install(Inertia)`, or disable `serveAssets`.
