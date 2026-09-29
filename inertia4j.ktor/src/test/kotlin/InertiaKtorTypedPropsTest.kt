@@ -20,6 +20,13 @@ data class UsersShowProps(val firstName: String)
 @InertiaShared
 data class AppShared(val appName: String)
 
+data class Address(val streetName: String)
+
+data class Owner(val firstName: String, val homeAddress: Address)
+
+@InertiaPage("Owners/Show")
+data class OwnersShowProps(val owner: Owner)
+
 class InertiaKtorTypedPropsTest {
     private fun testApp(
         configure: InertiaKtorConfiguration.() -> Unit = {},
@@ -90,6 +97,22 @@ class InertiaKtorTypedPropsTest {
         val response = client.get("/") { header("X-Inertia", "true") }
 
         val expectedBody = """{"component":"Users/Show","props":{"app_name":"Inertia4J","first_name":"Miles"},"url":"/","version":"1","encryptHistory":false,"clearHistory":false}"""
+        assertEquals(expectedBody, response.bodyAsText())
+    }
+
+    @Test
+    fun `snake property naming renames nested objects with the default serializer`() = testApp({
+        propertyNaming = PropertyNaming.Snake
+    }) {
+        routing {
+            get("/") {
+                inertia.render(OwnersShowProps(Owner("Miles", Address("Main"))))
+            }
+        }
+
+        val response = client.get("/") { header("X-Inertia", "true") }
+
+        val expectedBody = """{"component":"Owners/Show","props":{"owner":{"first_name":"Miles","home_address":{"street_name":"Main"}}},"url":"/","version":"1","encryptHistory":false,"clearHistory":false}"""
         assertEquals(expectedBody, response.bodyAsText())
     }
 }

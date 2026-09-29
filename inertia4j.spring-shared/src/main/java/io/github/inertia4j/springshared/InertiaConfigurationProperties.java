@@ -33,7 +33,8 @@ public class InertiaConfigurationProperties {
      */
     final boolean encryptHistory;
     /**
-     * Naming strategy used when converting typed props objects.
+     * Naming strategy used when converting typed props objects, also applied to the objects inside props by the default
+     * {@link io.github.inertia4j.spi.PageObjectSerializer}.
      * Corresponds to the `inertia.property-naming` property (`camel` or `snake`).
      */
     final PropertyNaming propertyNaming;

@@ -48,9 +48,9 @@ public class InertiaSpringAutoconfiguration extends AbstractInertiaSpringAutocon
     public PageObjectSerializer pageObjectSerializer() {
         try {
             Class.forName("tools.jackson.databind.ObjectMapper");
-            return new Jackson3PageObjectSerializer();
+            return new Jackson3PageObjectSerializer(properties.getPropertyNaming());
         } catch (ClassNotFoundException e) {
-            return new DefaultPageObjectSerializer();
+            return new DefaultPageObjectSerializer(properties.getPropertyNaming());
         }
     }
 }

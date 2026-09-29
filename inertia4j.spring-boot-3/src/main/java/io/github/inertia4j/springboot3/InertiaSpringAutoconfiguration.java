@@ -45,6 +45,6 @@ public class InertiaSpringAutoconfiguration extends AbstractInertiaSpringAutocon
     @Bean
     @ConditionalOnMissingBean
     public PageObjectSerializer pageObjectSerializer() {
-        return new DefaultPageObjectSerializer();
+        return new DefaultPageObjectSerializer(properties.getPropertyNaming());
     }
 }

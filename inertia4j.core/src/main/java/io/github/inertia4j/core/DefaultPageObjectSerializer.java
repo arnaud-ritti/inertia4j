@@ -25,12 +25,23 @@ public class DefaultPageObjectSerializer implements PageObjectSerializer {
      * @throws MissingDependencyException if Jackson Databind is not found on the classpath.
      */
     public DefaultPageObjectSerializer() {
+        this(PropertyNaming.Camel);
+    }
+
+    /**
+     * Constructs a new DefaultPageObjectSerializer applying a naming strategy to the properties of objects inside props,
+     * checking for Jackson dependency.
+     *
+     * @param propertyNaming naming strategy, matching the one used to convert typed props.
+     * @throws MissingDependencyException if Jackson Databind is not found on the classpath.
+     */
+    public DefaultPageObjectSerializer(PropertyNaming propertyNaming) {
         try {
             Class.forName("com.fasterxml.jackson.databind.ObjectMapper");
         } catch (ClassNotFoundException exception) {
             throw new MissingDependencyException("Missing Jackson JSON dependency. Please add it to the classpath or provide a custom PageObjectSerializer implementation");
         }
-        this.actualSerializer = new JacksonPageObjectSerializer();
+        this.actualSerializer = new JacksonPageObjectSerializer(propertyNaming);
     }
 
     /**

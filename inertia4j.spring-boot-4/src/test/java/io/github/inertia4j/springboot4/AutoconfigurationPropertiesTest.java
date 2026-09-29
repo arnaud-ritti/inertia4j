@@ -17,6 +17,13 @@ public class AutoconfigurationPropertiesTest {
     @InertiaPage("Users/Show")
     private record UsersShowProps(String firstName) {}
 
+    private record Address(String streetName) {}
+
+    private record Owner(String firstName, Address homeAddress) {}
+
+    @InertiaPage("Owners/Show")
+    private record OwnersShowProps(Owner owner) {}
+
     private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
         .withConfiguration(AutoConfigurations.of(InertiaSpringAutoconfiguration.class));
 
@@ -42,6 +49,23 @@ public class AutoconfigurationPropertiesTest {
             String body = context.getBean(Inertia.class).render(new UsersShowProps("Miles")).getBody();
 
             assertTrue(body.contains("\"props\":{\"first_name\":\"Miles\"}"), body);
+        });
+    }
+
+    @Test
+    void propertyNaming_snakeIsAppliedToNestedObjectsByAutoconfiguredSerializer() {
+        currentRequest(true);
+
+        contextRunner.withPropertyValues("inertia.property-naming=snake").run(context -> {
+            String body = context.getBean(Inertia.class)
+                .render(new OwnersShowProps(new Owner("Miles", new Address("Main"))))
+                .getBody();
+
+            assertTrue(
+                body.contains("\"props\":{\"owner\":{\"first_name\":\"Miles\",\"home_address\":{\"street_name\":\"Main\"}}}"),
+                body
+            );
+            assertTrue(body.contains("\"encryptHistory\":false,\"clearHistory\":false"), body);
         });
     }
 

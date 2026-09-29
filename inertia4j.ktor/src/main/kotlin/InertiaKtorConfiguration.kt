@@ -20,7 +20,7 @@ class InertiaKtorConfiguration {
     var versionProvider: () -> String = { "1" }
     /**
      * The serializer used to convert the [io.github.inertia4j.spi.PageObject] into a JSON string.
-     * Defaults to `null`. If left `null`, [DefaultPageObjectSerializer] will be used,
+     * Defaults to `null`. If left `null`, [DefaultPageObjectSerializer] will be used with [propertyNaming],
      * which requires Jackson Databind on the classpath.
      * Provide a custom implementation if you don't want to use Jackson or need custom serialization logic.
      */
@@ -46,7 +46,8 @@ class InertiaKtorConfiguration {
 
     /**
      * Naming strategy used when converting typed props objects. Defaults to [PropertyNaming.Camel].
-     * Must match the naming strategy of the configured [serializer].
+     * Also applied to the objects inside props by the default serializer; a custom [serializer] must use the same
+     * naming strategy.
      */
     var propertyNaming: PropertyNaming = PropertyNaming.Camel
 
@@ -79,6 +80,6 @@ class InertiaKtorConfiguration {
     }
 
     internal val serializerOrDefault: PageObjectSerializer get() {
-        return serializer ?: DefaultPageObjectSerializer()
+        return serializer ?: DefaultPageObjectSerializer(propertyNaming)
     }
 }

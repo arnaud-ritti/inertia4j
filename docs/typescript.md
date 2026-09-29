@@ -74,7 +74,10 @@ build script when you set these options.
   to run it in CI.
 
 If you set `propertyNaming` to `Snake`, also set `inertia.property-naming=snake` (Spring) or
-`propertyNaming = PropertyNaming.Snake` (Ktor), and configure your JSON serializer the same way.
+`propertyNaming = PropertyNaming.Snake` (Ktor). The default page object serializer then applies Jackson's `SNAKE_CASE`
+to the objects inside props, so nested objects are snake_case too, while the Inertia protocol keys (`component`,
+`props`, `encryptHistory`, `deferredProps`, …) and the keys of maps stay as they are. If you provide your own
+`PageObjectSerializer`, it must use the same naming strategy for the objects inside props.
 
 ## 3. Use the types in the frontend
 
