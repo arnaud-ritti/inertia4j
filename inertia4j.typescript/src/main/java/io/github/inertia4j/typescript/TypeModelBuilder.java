@@ -207,6 +207,13 @@ final class TypeModelBuilder {
                 continue;
             }
 
+            if (type.getTypeParameters().length > 0) {
+                throw new GenerationException(
+                    "@InertiaPage class " + type.getName() + " has type parameters, which a page cannot be typed with."
+                        + " Use a non-generic page class."
+                );
+            }
+
             String component = (String) Annotations.value(page.get(), "value");
             if (component.isBlank()) {
                 throw new GenerationException("@InertiaPage of " + type.getName() + " has a blank component name");

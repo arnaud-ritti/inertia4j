@@ -52,6 +52,14 @@ class RolesTest {
     }
 
     @Test
+    void genericPage_isRejected() {
+        GenerationException exception = assertThrows(GenerationException.class, () -> generate("genericpage"));
+
+        assertTrue(exception.getMessage().contains("io.github.inertia4j.typescript.fixtures.genericpage.GenericPage"), exception.getMessage());
+        assertTrue(exception.getMessage().contains("type parameters"), exception.getMessage());
+    }
+
+    @Test
     void blankComponent_isRejected() {
         GenerationException exception = assertThrows(GenerationException.class, () -> generate("blankpage"));
 
