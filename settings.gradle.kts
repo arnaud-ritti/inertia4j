@@ -15,6 +15,7 @@ dependencyResolutionManagement {
 rootProject.name = "inertia4j"
 
 include("inertia4j.typescript-annotations")
+include("inertia4j.typescript")
 include("inertia4j.spi")
 include("inertia4j.core")
 include("inertia4j.ktor")
